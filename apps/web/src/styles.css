@@ -12,6 +12,7 @@
   --color-brand: #6366f1;       /* màu nhấn */
   --color-correct: #22c55e;     /* đáp án đúng */
   --color-wrong: #ef4444;       /* đáp án sai */
+  --color-warn: #f59e0b;        /* cảnh báo */
 }
 
 html,

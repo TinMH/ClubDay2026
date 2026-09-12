@@ -1,0 +1,162 @@
+/**
+ * "DATABASE" của dự án — toàn bộ state nằm trong RAM.
+ *
+ * Cố ý KHÔNG dùng SQLite/ORM: mỗi lượt chỉ 5 người, xem kết quả rồi thôi,
+ * không cần truy vấn lịch sử. Xem plan v2 mục 0 để biết lý do.
+ */
+import type { GameKind, Player, Round } from './types.js';
+import { MAX_PLAYERS } from './types.js';
+import { newPlayerId, newRoundId } from '../lib/id.js';
+
+const rounds = new Map<string, Round>();
+/** playerId -> roundId, để tra ngược nhanh. */
+const playerIndex = new Map<string, string>();
+
+type Listener = (round: Round) => void;
+/** Mỗi lượt một kênh riêng — SSE subscribe vào đây. */
+const listeners = new Map<string, Set<Listener>>();
+
+// ─────────────────────────── đọc ───────────────────────────
+
+export function getRound(id: string): Round | null {
+  return rounds.get(id.toUpperCase()) ?? null;
+}
+
+export function allRounds(): Round[] {
+  return [...rounds.values()];
+}
+
+/** Tra ngược từ playerId ra lượt + người chơi. Dùng ở mọi route cần xác thực. */
+export function findPlayer(playerId: string): { round: Round; player: Player } | null {
+  const roundId = playerIndex.get(playerId);
+  if (!roundId) return null;
+  const round = rounds.get(roundId);
+  const player = round?.players.get(playerId);
+  return round && player ? { round, player } : null;
+}
+
+// ─────────────────────────── tạo ───────────────────────────
+
+export function createRound(game: GameKind, now = Date.now()): Round {
+  let id = newRoundId();
+  while (rounds.has(id)) id = newRoundId();
+
+  const round: Round = {
+    id,
+    game,
+    status: 'lobby',
+    createdAt: now,
+    startedAt: null,
+    endsAt: null,
+    players: new Map(),
+    questions: null,
+    target: null,
+    version: 0,
+    live: true,
+  };
+  rounds.set(id, round);
+  return round;
+}
+
+/** Lượt đang mở còn chỗ — dùng cho Cách A (1 QR duy nhất, tự vào lượt đang mở). */
+export function openRound(game: GameKind, now = Date.now()): Round {
+  for (const r of rounds.values()) {
+    if (r.live !== false && r.game === game && r.status === 'lobby' && r.players.size < MAX_PLAYERS) {
+      return r;
+    }
+  }
+  return createRound(game, now);
+}
+
+export function addPlayer(round: Round, name: string, now = Date.now()): Player {
+  const player: Player = {
+    id: newPlayerId(),
+    name: name.trim().slice(0, 20) || 'Ẩn danh',
+    joinedAt: now,
+    score: 0,
+    flagged: false,
+    finished: false,
+    correct: 0,
+    wrong: 0,
+    qIndex: 0,
+    lastAnswerAt: 0,
+    seq: 0,
+    lastFrameAt: 0,
+    solved: false,
+    solvedAt: null,
+    lastGuess: null,
+  };
+  round.players.set(player.id, player);
+  playerIndex.set(player.id, round.id);
+  touch(round);
+  return player;
+}
+
+// ───────────────────── thay đổi & thông báo ─────────────────────
+
+/** Đánh dấu lượt đã đổi → version++ → SSE phát cho mọi client đang xem. */
+export function touch(round: Round): void {
+  round.version += 1;
+  const subs = listeners.get(round.id);
+  if (!subs) return;
+  for (const fn of subs) {
+    try {
+      fn(round);
+    } catch {
+      /* một subscriber lỗi không được làm sập cả vòng phát */
+    }
+  }
+}
+
+export function subscribe(roundId: string, fn: Listener): () => void {
+  const key = roundId.toUpperCase();
+  let subs = listeners.get(key);
+  if (!subs) {
+    subs = new Set();
+    listeners.set(key, subs);
+  }
+  subs.add(fn);
+  return () => {
+    subs.delete(fn);
+    if (subs.size === 0) listeners.delete(key);
+  };
+}
+
+// ───────────────────── dọn dẹp & khôi phục ─────────────────────
+
+function removeRound(id: string): void {
+  const r = rounds.get(id);
+  if (!r) return;
+  for (const pid of r.players.keys()) playerIndex.delete(pid);
+  rounds.delete(id);
+  listeners.delete(id);
+}
+
+/** Giữ RAM phẳng suốt sự kiện dài: bỏ lượt đã xong quá lâu và lượt khôi phục từ snapshot. */
+export function pruneRounds(keepMs: number, now = Date.now()): void {
+  for (const [id, r] of [...rounds]) {
+    if (r.live === false) {
+      removeRound(id); // khôi phục sau restart — chỉ để xem lại, không cần giữ
+      continue;
+    }
+    const ref = r.endsAt ?? r.createdAt;
+    if (r.status === 'done' && now - ref > keepMs) removeRound(id);
+  }
+}
+
+export function startGc(keepMs = 2 * 60 * 60 * 1_000, intervalMs = 5 * 60 * 1_000): NodeJS.Timeout {
+  const t = setInterval(() => pruneRounds(keepMs), intervalMs);
+  t.unref();
+  return t;
+}
+
+export function resetAll(): void {
+  for (const r of rounds.values()) for (const pid of r.players.keys()) playerIndex.delete(pid);
+  rounds.clear();
+}
+
+/** Dùng khi khôi phục từ snapshot lúc boot. */
+export function restoreRound(round: Round): void {
+  rounds.set(round.id, round);
+  for (const pid of round.players.keys()) playerIndex.set(pid, round.id);
+}

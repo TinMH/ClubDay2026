@@ -17,7 +17,8 @@
     "start": "node apps/server/dist/index.js",
     "test": "npm run test -w apps/server",
     "prefetch": "tsx scripts/prefetch-model.ts",
-    "check:offline": "tsx scripts/check-offline.ts"
+    "check:offline": "tsx scripts/check-offline.ts",
+    "smoke": "node scripts/smoke-test.mjs"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

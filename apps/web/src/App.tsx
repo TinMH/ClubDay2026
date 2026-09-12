@@ -1,39 +1,29 @@
-const GAMES = [
-  { name: 'Tính nhanh', desc: '90 giây · trả lời phép toán' },
-  { name: 'Vẽ hình nhanh', desc: '15 giây · AI nhận diện' },
-];
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { Home } from './routes/Home';
+import { Lobby } from './routes/Lobby';
+import { Play } from './routes/Play';
+import { Dashboard } from './routes/Dashboard';
+import { Admin } from './routes/Admin';
 
+/**
+ * Router. File nền tảng — ĐÓNG BĂNG.
+ *
+ * Không cần thêm route khi làm game: `Play.tsx` là dispatcher, tự chọn
+ * MathGame hay DrawGame dựa trên `round.game`.
+ */
 export function App() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-8 px-5 py-10">
-      <header>
-        <h1 className="text-4xl font-bold tracking-tight">ClubDay</h1>
-        <p className="mt-2 text-muted">
-          Web 2 trò chơi cho sự kiện CLB. Mỗi lượt tối đa 5 người.
-        </p>
-      </header>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        {GAMES.map((g) => (
-          <section
-            key={g.name}
-            className="rounded-xl border border-white/10 bg-ink-soft p-4"
-          >
-            <h2 className="font-semibold">{g.name}</h2>
-            <p className="mt-1 text-sm text-muted">{g.desc}</p>
-          </section>
-        ))}
-      </div>
-
-      <footer className="text-sm text-muted">
-        Khung dự án đã sẵn sàng — game sẽ được thêm ở Phase 1–4.{' '}
-        <a
-          href="/api/health"
-          className="text-brand underline-offset-4 hover:underline"
-        >
-          /api/health
-        </a>
-      </footer>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        {/* Cách B: QR riêng cho từng lượt / khu vực */}
+        <Route path="/r/:code" element={<Home />} />
+        <Route path="/lobby/:roundId" element={<Lobby />} />
+        <Route path="/play/:roundId" element={<Play />} />
+        <Route path="/dashboard/:roundId" element={<Dashboard />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
