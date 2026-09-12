@@ -1,0 +1,43 @@
+# ---------- dependencies ----------
+node_modules/
+
+# ---------- build output ----------
+dist/
+build/
+*.tsbuildinfo
+.vite/
+
+# ---------- runtime data (lượt chơi, snapshot JSON) ----------
+data/
+*.db
+*.db-wal
+*.db-shm
+
+# ---------- model cache (~20MB) ----------
+# Tải lại bằng: npm run prefetch  (xem scripts/prefetch-model.ts)
+models/
+
+# ---------- env / secrets ----------
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ---------- logs ----------
+*.log
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---------- editors ----------
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+desktop.ini

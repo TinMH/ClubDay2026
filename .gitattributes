@@ -1,0 +1,17 @@
+# Chuẩn hoá line-ending: lưu LF trong repo, tránh diff nhiễu giữa Windows/Linux/macOS.
+* text=auto eol=lf
+
+# File nhị phân — không đụng tới
+*.onnx  binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.pdf   binary
+
+# Lockfile: giữ nguyên, không merge tự động
+package-lock.json  -diff linguist-generated
