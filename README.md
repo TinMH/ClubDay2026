@@ -55,7 +55,9 @@ MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 
 - Server phục vụ luôn static build của web → chỉ cần **1 URL duy nhất** (`http://<IP>:8787`).
 - In QR trỏ tới URL đó dán ở khu vực chơi.
-- **Bắt buộc chạy `npm run prefetch` trước** và thử lại khi đã rút mạng.
+- **Bắt buộc chạy `npm run prefetch` trước** (khi còn internet) để tải model về `./models`.
+- Xác nhận chạy được offline: `npm run check:offline` → phải in `✅ OFFLINE OK`.
+  Script này chặn hẳn request tải model, nên nếu nó chạy được thì sự kiện không phụ thuộc internet.
 
 ## Ghi chú kỹ thuật
 

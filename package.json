@@ -16,7 +16,8 @@
     "build": "npm run build -w apps/web && npm run build -w apps/server",
     "start": "node apps/server/dist/index.js",
     "test": "npm run test -w apps/server",
-    "prefetch": "tsx scripts/prefetch-model.ts"
+    "prefetch": "tsx scripts/prefetch-model.ts",
+    "check:offline": "tsx scripts/check-offline.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.2",
