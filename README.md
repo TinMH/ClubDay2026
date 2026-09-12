@@ -286,6 +286,12 @@ references mà không mất gì.
 
 ## Tài liệu thiết kế
 
-Kế hoạch triển khai đầy đủ (kiến trúc, chống gian lận, task list, checklist sự kiện, bảng rủi ro):
+Hai tài liệu, chia vai rõ ràng:
 
-- **`.hermes/plans/2026-09-11_231500-clubday-2-games-nodejs-v2-inmemory.md`** ← bản chuẩn
+| Tài liệu | Vai trò |
+|---|---|
+| **`2026-09-11_231500-...-v2-inmemory.md`** | **Đặc tả kỹ thuật.** Kiến trúc, chống gian lận, hằng số đã đo, checklist sự kiện, bảng rủi ro. Đọc trước. |
+| **`2026-09-12_201457-clubday-split-2-tracks.md`** | **Điều phối công việc.** Chia 2 track song song, bảng phân quyền file, hợp đồng đóng băng, quy trình git. |
+
+> Làm việc nhóm? Đọc file **split-2-tracks** để biết file nào của ai. Bảng phân quyền file ở mục 3
+> là thứ quyết định việc 2 người có xung đột hay không.
