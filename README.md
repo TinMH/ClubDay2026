@@ -92,7 +92,7 @@ ClubDay/
 │   │   ├── package.json           ✅
 │   │   └── tsconfig.json          ✅
 │   │
-│   └── web/                       ── Frontend: React + Vite
+│   └── web/                       ── Frontend: React + Vite + Tailwind CSS 4
 │       ├── src/
 │       │   ├── main.tsx           ✅ điểm khởi động React
 │       │   ├── App.tsx            ✅ component gốc (tạm) — sẽ thành router
@@ -146,6 +146,12 @@ Lợi ích cụ thể: `services/math-session.ts` nhận `now` như một **tham
 | **Màn hình** | `routes/` | 1 file = 1 màn hình. Ghép component + gọi API. |
 | **UI** | `components/` | Component tái dùng, không gọi API, nhận props. |
 | **Tiện ích** | `lib/` | `api.ts` (fetch), `sse.ts` (EventSource), `strokes.ts` (bắt nét vẽ), `useCountdown.ts`. |
+
+**Giao diện dùng Tailwind CSS 4.** Theme được khai báo ngay trong `apps/web/src/styles.css`
+bằng khối `@theme` — **không có `tailwind.config.js`** (đây là cách của Tailwind v4).
+Muốn thêm màu hay token mới thì thêm biến `--color-*` vào khối đó, rồi dùng như utility bình
+thường (`bg-brand`, `text-muted`, …). Hạn chế viết CSS rời; chỉ viết tay khi thật cần
+(ví dụ `touch-action: none` cho canvas vẽ).
 
 ### Luồng request
 
@@ -283,4 +289,3 @@ references mà không mất gì.
 Kế hoạch triển khai đầy đủ (kiến trúc, chống gian lận, task list, checklist sự kiện, bảng rủi ro):
 
 - **`.hermes/plans/2026-09-11_231500-clubday-2-games-nodejs-v2-inmemory.md`** ← bản chuẩn
-- `.hermes/plans/2026-09-11_223902-clubday-2-games-nodejs.md` — bản cũ (còn database), để tham khảo

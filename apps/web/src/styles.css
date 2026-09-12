@@ -1,26 +1,36 @@
-:root {
-  --bg: #0b1020;
-  --fg: #eef2ff;
-  --muted: #94a3b8;
-  --accent: #6366f1;
+@import 'tailwindcss';
+
+/*
+ * Tailwind v4: cấu hình theme ngay trong CSS bằng @theme, KHÔNG cần tailwind.config.js.
+ * Mọi biến --color-* ở đây tự sinh ra utility (vd --color-brand -> bg-brand, text-brand).
+ */
+@theme {
+  --color-ink: #0b1020;         /* nền chính */
+  --color-ink-soft: #151b30;    /* nền thẻ */
+  --color-paper: #eef2ff;       /* chữ chính */
+  --color-muted: #94a3b8;       /* chữ phụ */
+  --color-brand: #6366f1;       /* màu nhấn */
+  --color-correct: #22c55e;     /* đáp án đúng */
+  --color-wrong: #ef4444;       /* đáp án sai */
 }
 
-* { box-sizing: border-box; }
+html,
+body,
+#root {
+  height: 100%;
+}
 
 body {
   margin: 0;
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--fg);
+  background: var(--color-ink);
+  color: var(--color-paper);
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.app {
-  max-width: 40rem;
-  margin: 0 auto;
-  padding: 2rem 1.25rem;
+/* Canvas vẽ hình: chặn scroll/zoom để nét vẽ không bị đứt trên điện thoại. */
+.draw-canvas {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
-
-.muted { color: var(--muted); }
-
-a { color: var(--accent); }
