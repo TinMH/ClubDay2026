@@ -189,6 +189,74 @@ try {
     `sau ${Date.now() - t0}ms, status=${drawState.data?.status}`,
   );
 
+  // ── TRACK A: game Tính nhanh ──
+  console.log('\n── 5. Track A — game Tính nhanh ──');
+  const m = await call('/api/admin/rounds', { method: 'POST', body: { game: 'math' }, token: TOKEN });
+  const mId = m.data.roundId;
+  const mJoin = await call('/api/rounds/join', { method: 'POST', body: { name: 'An', roundId: mId } });
+  const mPid = mJoin.data.playerId;
+  await call(`/api/rounds/${mId}/start`, { method: 'POST', body: {}, token: TOKEN });
+
+  /** Tính đáp án chỉ từ chuỗi hiển thị — giống cách người chơi nhìn đề. */
+  const solve = (prompt) => {
+    const p = /^(\d+) ([+\-×÷]) (\d+)$/.exec(prompt ?? '');
+    if (!p) return null;
+    const a = Number(p[1]);
+    const b = Number(p[3]);
+    return p[2] === '+' ? a + b : p[2] === '-' ? a - b : p[2] === '×' ? a * b : a / b;
+  };
+
+  const q0 = await call(`/api/rounds/${mId}/question?playerId=${mPid}`);
+  check('Lấy được câu hỏi đầu tiên', typeof q0.data?.question?.prompt === 'string', JSON.stringify(q0.data?.question));
+  // Regression cho lỗi rò rỉ: client TUYỆT ĐỐI không được thấy đáp án
+  check(
+    'Câu hỏi KHÔNG lộ đáp án ra client',
+    q0.data?.question != null && !('answer' in q0.data.question),
+    JSON.stringify(q0.data?.question),
+  );
+
+  const wrong = await call(`/api/rounds/${mId}/answer`, {
+    method: 'POST',
+    body: { playerId: mPid, idx: 0, value: -999 },
+  });
+  check('Trả lời sai → correct=false, score=0', wrong.data?.correct === false && wrong.data?.score === 0, JSON.stringify(wrong.data));
+
+  await sleep(350); // vượt ngưỡng chống spam 250ms
+  const q1 = await call(`/api/rounds/${mId}/question?playerId=${mPid}`);
+  const truth = solve(q1.data?.question?.prompt);
+  check('Câu kế tiếp cũng KHÔNG lộ đáp án', q1.data?.question != null && !('answer' in q1.data.question));
+  check('Đáp án tính được từ đề hiển thị', truth !== null && Number.isInteger(truth), `prompt=${q1.data?.question?.prompt}`);
+
+  const right = await call(`/api/rounds/${mId}/answer`, {
+    method: 'POST',
+    body: { playerId: mPid, idx: 1, value: truth },
+  });
+  check('Trả lời đúng → correct=true, score=1', right.data?.correct === true && right.data?.score === 1, JSON.stringify(right.data));
+
+  const spam = await call(`/api/rounds/${mId}/answer`, {
+    method: 'POST',
+    body: { playerId: mPid, idx: 2, value: 1 },
+  });
+  check('Spam nhanh hơn 250ms → 429 TOO_FAST', spam.status === 429 && spam.data?.error === 'TOO_FAST', `HTTP ${spam.status}`);
+
+  await sleep(350);
+  const cheat = await call(`/api/rounds/${mId}/answer`, {
+    method: 'POST',
+    body: { playerId: mPid, idx: 2, value: -1, score: 9999 },
+  });
+  check('Body kèm "score":9999 bị server bỏ qua', cheat.data?.score === 1, `server trả score=${cheat.data?.score}`);
+
+  await sleep(350);
+  const jump = await call(`/api/rounds/${mId}/answer`, {
+    method: 'POST',
+    body: { playerId: mPid, idx: 40, value: 1 },
+  });
+  check('Nhảy câu → 400 BAD_INDEX', jump.status === 400 && jump.data?.error === 'BAD_INDEX', `HTTP ${jump.status}`);
+
+  const mDash = await call(`/api/rounds/${mId}/dashboard`);
+  const row = mDash.data?.rows?.find((r) => r.playerId === mPid);
+  check('Bảng hạng ghi đúng đúng/sai', row?.correct === 1 && row?.wrong === 2, JSON.stringify(row));
+
   // ── kết luận ──
   console.log(`\n${'─'.repeat(50)}`);
   console.log(`  ${pass} passed, ${fail} failed`);
