@@ -1,11 +1,28 @@
 import { existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-// Node >= 20.12 có sẵn process.loadEnvFile — không cần dotenv.
-if (existsSync('.env')) {
+/**
+ * Nạp .env từ GỐC repo, KHÔNG phụ thuộc thư mục khởi động.
+ *
+ * Lý do: `npm run dev:server` chạy với cwd = `apps/server`, còn `npm start` chạy với
+ * cwd = gốc repo. Nếu tìm .env theo cwd thì ở chế độ dev nó bị bỏ qua âm thầm —
+ * `/admin` sẽ không được bảo vệ mà không có cảnh báo nào.
+ *
+ * `src/config.ts` và `dist/config.js` đều nằm sâu 3 cấp dưới gốc repo, nên
+ * `../../../` trỏ đúng gốc trong cả hai trường hợp.
+ */
+const repoRootEnv = join(dirname(fileURLToPath(import.meta.url)), '../../../.env');
+const cwdEnv = join(process.cwd(), '.env');
+
+const envFile = existsSync(repoRootEnv) ? repoRootEnv : existsSync(cwdEnv) ? cwdEnv : null;
+
+if (envFile) {
   try {
-    (process as NodeJS.Process & { loadEnvFile?: (p?: string) => void }).loadEnvFile?.('.env');
-  } catch {
-    /* .env hỏng thì bỏ qua, dùng biến môi trường thật */
+    (process as NodeJS.Process & { loadEnvFile?: (p?: string) => void }).loadEnvFile?.(envFile);
+    console.log(`  Cấu hình: nạp từ ${envFile}`);
+  } catch (err) {
+    console.warn(`  ⚠️  Không nạp được ${envFile}: ${err instanceof Error ? err.message : err}`);
   }
 }
 
@@ -21,7 +38,7 @@ export function warnIfInsecure(): void {
   if (!ADMIN_TOKEN) {
     console.warn(
       '\n  ⚠️  ADMIN_TOKEN chưa đặt — trang /admin KHÔNG được bảo vệ.\n' +
-        '      Đặt biến này trước khi chạy sự kiện (xem .env.example).\n',
+        '      Tạo file .env ở gốc repo (copy từ .env.example) và đặt ADMIN_TOKEN.\n',
     );
   }
 }
