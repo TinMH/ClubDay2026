@@ -262,47 +262,151 @@ npm run smoke  # 18 kiểm tra end-to-end (tự bật server rồi tắt)
 
 ---
 
-## Yêu cầu
+## Cách chạy
 
-- Node.js >= 20 (đã test trên v24)
-- ~150MB dung lượng cho `onnxruntime-node`
+Bốn mốc: **cài một lần** → **dev hằng ngày** → **chạy bản thật** → **thử chơi**.
 
-## Cài đặt
+### 0. Yêu cầu
+
+| | |
+|---|---|
+| Node.js | >= 20 (đã test trên v24.13.0) |
+| Dung lượng trống | ~150MB cho `onnxruntime-node`, ~20MB cho model |
+| Shell | bash (git-bash trên Windows). Các lệnh dưới viết theo bash. |
+
+### 1. Cài đặt (chỉ một lần)
 
 ```bash
+git clone <repo-url> ClubDay
+cd ClubDay
 npm install
-cp .env.example .env          # rồi sửa ADMIN_TOKEN
-npm run prefetch              # tải model ONNX (~20MB) về ./models
-npm run check:offline         # xác nhận chạy được khi không có internet
 ```
 
-## Chạy dev
+Tạo file cấu hình:
 
 ```bash
-npm run dev:server            # Fastify  -> http://localhost:8787
-npm run dev:web               # Vite     -> http://localhost:5173
+cp .env.example .env          # Windows không có cp thì dùng:  copy .env.example .env
 ```
 
-Kiểm tra server: <http://localhost:8787/api/health>
+Mở `.env` và **đổi `ADMIN_TOKEN`** — đây là mật khẩu bảo vệ trang `/admin`:
 
-## Build & chạy production
+```ini
+ADMIN_TOKEN=ma-cua-ban-dat-o-day
+PORT=8787
+```
+
+Tải model AI về máy (cần internet, chỉ một lần):
+
+```bash
+npm run prefetch              # tải model ONNX (~20MB) về ./models
+npm run check:offline         # phải in "✅ OFFLINE OK"
+```
+
+> **Thứ tự ưu tiên:** biến môi trường **thắng** `.env`.
+> Nên `MODEL_OFFLINE=1 npm start` ghi đè giá trị trong `.env` — tiện khi cần thử nhanh mà không sửa file.
+
+### 2. Chạy khi phát triển
+
+Cần **2 terminal chạy song song**:
+
+```bash
+# Terminal 1 — server API
+npm run dev:server            # http://localhost:8787
+
+# Terminal 2 — giao diện web
+npm run dev:web               # http://localhost:5173
+```
+
+Mở **<http://localhost:5173>** — *không phải* 8787.
+Ở chế độ dev, Vite phục vụ giao diện và tự chuyển tiếp `/api` sang server. Thiếu một trong hai terminal là không chạy được.
+
+Kiểm tra server sống: <http://localhost:8787/api/health>
+
+### 3. Chạy bản thật (giống ngày sự kiện)
 
 ```bash
 npm run build                 # web -> apps/web/dist, server -> apps/server/dist
 npm start
 ```
 
-## Ngày sự kiện
+Lúc này **chỉ cần một URL duy nhất**: <http://localhost:8787> — server phục vụ luôn cả giao diện.
+Chế độ này **không cần** chạy Vite nữa.
+
+Tắt server: `Ctrl+C` — server tự lưu snapshot trước khi thoát.
+
+### 4. Thử chơi — luồng vận hành
+
+| Bước | Ai | Làm gì |
+|---|---|---|
+| 1 | BTC | Mở `/admin`, dán `ADMIN_TOKEN` vào ô trên cùng (lưu vào máy, chỉ nhập một lần) |
+| 2 | BTC | Bấm **+ Lượt Tính nhanh** hoặc **+ Lượt Vẽ hình** → hiện mã 6 ký tự và URL để in QR |
+| 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → nhập tên → vào phòng chờ |
+| 4 | | Tối đa **5 người**. Người thứ 6 bị chặn và báo "chờ lượt sau" |
+| 5 | BTC | Bấm **BẮT ĐẦU** — ở `/admin`, hoặc ở `/lobby/<mã>` nếu máy đó đã nhập token |
+| 6 | | Hết giờ tự chuyển sang bảng xếp hạng của đúng 5 người đó |
+
+Vài chi tiết đã cài sẵn:
+- Nút **BẮT ĐẦU** chỉ hiện ở `/lobby` nếu trình duyệt đó đã nhập `ADMIN_TOKEN` ở `/admin` (lưu trong localStorage). Máy BTC nhập một lần là xong.
+- Bắt đầu được với **≥ 1 người** — không có timeout tự động, BTC chủ động về nhịp.
+- Bấm **Bỏ qua** ở `/admin` để kết thúc lượt ngay.
+- Ai vào sau khi lượt đã bắt đầu sẽ bị từ chối — để không ai bị thiếu giờ so với người khác.
+
+### 5. Chơi từ điện thoại (LAN)
+
+Lấy IP máy BTC:
 
 ```bash
+ipconfig                      # tìm dòng "IPv4 Address", ví dụ 192.168.1.14
+```
+
+Điện thoại **cùng Wi-Fi**, mở `http://192.168.1.14:8787`.
+
+Nếu không vào được:
+- Server phải bind `0.0.0.0` (mặc định), không phải `127.0.0.1`.
+- Windows Firewall có thể chặn lần đầu — bấm **Allow** ở hộp thoại, hoặc mở cổng thủ công:
+  ```bash
+  netsh advfirewall firewall add rule name="ClubDay" dir=in action=allow protocol=TCP localport=8787
+  ```
+- Điện thoại và máy BTC phải **cùng một mạng** — Wi-Fi khách (guest) thường chặn kết nối nội bộ.
+
+### 6. Checklist ngày sự kiện
+
+```bash
+npm run build
 MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 ```
 
-- Server phục vụ luôn static build của web → chỉ cần **1 URL duy nhất** (`http://<IP>:8787`).
-- In QR trỏ tới URL đó dán ở khu vực chơi.
-- **Bắt buộc chạy `npm run prefetch` trước** (khi còn internet) để tải model về `./models`.
-- Xác nhận chạy được offline: `npm run check:offline` → phải in `✅ OFFLINE OK`.
-  Script này chặn hẳn request tải model, nên nếu nó chạy được thì sự kiện không phụ thuộc internet.
+- **Bắt buộc `npm run prefetch` trước** khi còn internet, và xác nhận bằng `npm run check:offline`
+  → phải in `✅ OFFLINE OK`. Lệnh này chặn hẳn request tải model, nên chạy được nghĩa là
+  sự kiện không phụ thuộc internet.
+- In QR trỏ `http://<IP>:8787` dán ở khu vực chơi.
+- Tắt sleep/hibernate và Windows Update trên máy BTC; cắm sạc.
+- Diễn tập trước bằng 5 người thật, cả 2 game.
+
+### Tất cả lệnh
+
+| Lệnh | Việc |
+|---|---|
+| `npm run dev:server` | Server dev, tự nạp lại khi sửa code |
+| `npm run dev:web` | Giao diện dev (Vite) |
+| `npm start` | Chạy bản đã build — server phục vụ cả API lẫn web, 1 cổng |
+| `npm run build` | Build cả web và server |
+| `npm test` | 24 unit test (store / lobby / dashboard) |
+| `npm run smoke` | 18 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
+| `npm run prefetch` | Tải model ONNX về `./models` |
+| `npm run check:offline` | Xác nhận model vẫn load được khi không có internet |
+
+### Xử lý sự cố
+
+| Hiện tượng | Cách sửa |
+|---|---|
+| `EADDRINUSE :8787` | Cổng bị chiếm. Đổi `PORT` trong `.env`, hoặc tìm và tắt tiến trình: `netstat -ano \| grep :8787` rồi `taskkill /F /PID <pid>` |
+| Mở 5173 ra trang trắng | Chưa chạy `npm run dev:server` ở terminal kia |
+| `/admin` báo "Sai mã quản trị" | `ADMIN_TOKEN` trong `.env` khác với mã đã nhập |
+| Vào `/admin` không cần mã | `.env` chưa có `ADMIN_TOKEN`. Server in cảnh báo lúc khởi động — đọc log |
+| "Lượt này đủ 5 người rồi" | Đúng thiết kế. BTC tạo lượt mới ở `/admin` |
+| Model lỗi khi khởi động | Chưa chạy `npm run prefetch` |
+| Sửa `.env` mà không thấy đổi | Server chỉ đọc `.env` lúc khởi động — phải khởi động lại |
 
 ---
 
