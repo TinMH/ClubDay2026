@@ -4,6 +4,7 @@ import { registerStartHook } from '../store/lobby.js';
 import { findPlayer } from '../store/store.js';
 import { generateQuestions, seedFromRoundId } from '../services/math-gen.js';
 import { currentQuestion, submitAnswer } from '../services/math-session.js';
+import type { Question } from '../store/types.js';
 
 /**
  * TRACK A — TÍNH NHANH (API).
@@ -25,6 +26,16 @@ const CODE_STATUS: Record<string, number> = {
   BAD_INDEX: 400,
   TOO_FAST: 429,
 };
+
+/**
+ * Câu hỏi gửi ra cho client — CẮT `answer`.
+ *
+ * Client TUYỆT ĐỐI không được thấy đáp án: mở DevTools là đọc được, và toàn bộ
+ * phần chấm điểm phía server thành vô nghĩa. Chỉ gửi chuỗi hiển thị.
+ */
+function publicQuestion(question: Question | null): { prompt: string } | null {
+  return question ? { prompt: question.prompt } : null;
+}
 
 /** Tra người chơi và xác nhận họ thuộc ĐÚNG lượt này (không thì trả null). */
 function locate(roundId: string, playerId: string) {
@@ -60,7 +71,7 @@ export async function mathRoutes(app: FastifyInstance): Promise<void> {
       roundId: round.id,
       status: round.status,
       index: player.qIndex,
-      question: currentQuestion(round, player),
+      question: publicQuestion(currentQuestion(round, player)),
       score: player.score,
       correct: player.correct,
       wrong: player.wrong,
@@ -94,7 +105,7 @@ export async function mathRoutes(app: FastifyInstance): Promise<void> {
       correctCount: player.correct,
       wrongCount: player.wrong,
       index: outcome.index,
-      question: outcome.question,
+      question: publicQuestion(outcome.question),
       serverNow: now,
     };
   });
