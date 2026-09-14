@@ -4,6 +4,11 @@
  * File này chứa đủ field cho CẢ HAI game. Nếu bạn thấy cần thêm field,
  * dừng lại và nhắn người kia: đó là dấu hiệu hợp đồng thiếu.
  * Chi tiết: .hermes/plans/2026-09-12_201457-clubday-split-2-tracks.md
+ *
+ * ĐÃ MỞ MỘT LẦN, theo đúng cách hợp đồng cho phép — CHỈ thêm field mới, không đổi
+ * nghĩa field cũ, nên track còn lại không phải sửa gì:
+ *   - `streak`                                     (TRACK A — điểm là chuỗi đúng dài nhất)
+ *   - `committed`, `commitReason`, `committedAt`   (TRACK B — chấm bài lúc NỘP)
  */
 
 export type GameKind = 'math' | 'draw';
@@ -57,9 +62,22 @@ export interface Player {
   /** ⏱ Server ghi mỗi lần nhận frame — dùng chống spam. */
   lastFrameAt: number;
   solved: boolean;
-  /** Thời điểm giải xong — dùng xếp hạng khi bằng điểm. */
+  /**
+   * ⏱ Thời điểm lượt của người này KẾT THÚC — tức lúc bài được nộp, đúng hay sai
+   * đều tính. Dùng để xếp hạng khi bằng điểm. Đúng/sai nằm ở `solved`.
+   */
   solvedAt: number | null;
   lastGuess: Prediction | null;
+  /**
+   * ĐÃ NỘP BÀI chưa. Mỗi người nộp ĐÚNG MỘT lần: bấm nút, hoặc server tự nộp khi
+   * hết giờ. Điểm chỉ sinh ra ở đúng lúc này — trước đó model có đọc ra hình đúng
+   * cũng KHÔNG cho điểm. Xem services/draw-session.ts.
+   */
+  committed: boolean;
+  /** Nộp bằng cách nào. `null` = chưa nộp. */
+  commitReason: 'button' | 'timeout' | null;
+  /** ⏱ Thời điểm SERVER chấm bài. */
+  committedAt: number | null;
 }
 
 export interface Round {

@@ -86,6 +86,9 @@ export function addPlayer(round: Round, name: string, now = Date.now()): Player 
     solved: false,
     solvedAt: null,
     lastGuess: null,
+    committed: false,
+    commitReason: null,
+    committedAt: null,
   };
   round.players.set(player.id, player);
   playerIndex.set(player.id, round.id);

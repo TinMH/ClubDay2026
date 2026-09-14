@@ -30,7 +30,17 @@ export function loadSnapshot(file: string, now = Date.now()): number {
     let count = 0;
     for (const r of parsed.rounds ?? []) {
       const players = new Map<string, Player>();
-      for (const p of r.players) players.set(p.id, p);
+      for (const p of r.players) {
+        // Field thêm sau thì snapshot cũ không có. Điền mặc định NGAY TẠI ĐÂY: chỗ
+        // này spread JSON thẳng vào kiểu `Player`, không điền thì kiểu đó thành lời
+        // nói dối và người đọc sau phải tự đoán `undefined` nghĩa là gì.
+        players.set(p.id, {
+          ...p,
+          committed: p.committed ?? false,
+          commitReason: p.commitReason ?? null,
+          committedAt: p.committedAt ?? null,
+        });
+      }
       // Đồng hồ của lượt cũ đã trôi qua → không thể tiếp tục, chỉ giữ để xem kết quả.
       restoreRound({
         ...r,
