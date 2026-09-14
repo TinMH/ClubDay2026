@@ -1,10 +1,17 @@
 /**
- * Smoke test nền tảng (Wave 1) — chạy được bằng MỘT lệnh, không cần bật server trước.
+ * Smoke test end-to-end — chạy được bằng MỘT lệnh, không cần bật server trước.
  *
  *   npm run smoke
  *
  * Script tự khởi động server trên cổng riêng (8799) và CSDL snapshot riêng
  * (data/smoke-test.json), chạy hết kiểm tra rồi tắt. Không đụng tới server thật.
+ *
+ * Gồm: nền tảng (lượt, SSE, đồng hồ, bảng hạng), Track A (Tính nhanh), và
+ * Track B (Vẽ hình nhanh — có nạp model thật, nên lần chạy đầu chậm hơn).
+ *
+ * ⚠️ Khi viết thêm request: ĐỪNG gửi `content-type: application/json` mà không
+ * có body — Fastify sẽ cố parse body rỗng và trả 400 cho một request hoàn toàn
+ * hợp lệ. Hàm `call()` dưới đây chỉ gắn header đó khi thật sự có body.
  *
  * Yêu cầu: đã chạy `npm run build` (cần apps/server/dist).
  */
@@ -343,6 +350,194 @@ try {
     row?.score === 3,
     `score=${row?.score} correct=${row?.correct}`,
   );
+
+  // ── TRACK B: game Vẽ hình nhanh ──
+  console.log('\n── 6. Track B — game Vẽ hình nhanh ──');
+
+  const h2 = await call('/api/health');
+  check('Model nhận diện sẵn sàng (health.model=ready)', h2.data?.model === 'ready', `model=${h2.data?.model}`);
+
+  const d = await call('/api/admin/rounds', { method: 'POST', body: { game: 'draw' }, token: TOKEN });
+  const dId = d.data.roundId;
+  const dJoin = await call('/api/rounds/join', { method: 'POST', body: { name: 'An', roundId: dId } });
+  const dPid = dJoin.data.playerId;
+  const dStart = await call(`/api/rounds/${dId}/start`, { method: 'POST', body: {}, token: TOKEN });
+  const dTarget = dStart.data?.state?.target;
+  check('Lượt Vẽ có từ khoá do SERVER chọn', typeof dTarget?.id === 'string', JSON.stringify(dTarget));
+  check(
+    'Từ khoá kèm tên tiếng Việt',
+    typeof dTarget?.labelVi === 'string' && dTarget.labelVi !== dTarget.id,
+    JSON.stringify(dTarget),
+  );
+
+  /** Gửi một frame. `canvasW/H` chỉ để hợp lệ hoá — server tự chuẩn hoá theo bbox. */
+  const frame = (body) =>
+    call(`/api/rounds/${dId}/frame`, {
+      method: 'POST',
+      body: { canvasW: 300, canvasH: 300, ...body },
+    });
+
+  const okFrame = await frame({ playerId: dPid, seq: 1, strokes: [[[20, 20], [200, 200]]] });
+  check('Frame hợp lệ → 200', okFrame.status === 200, `HTTP ${okFrame.status}`);
+  check(
+    'Trả về top-3 kèm tên tiếng Việt',
+    Array.isArray(okFrame.data?.top) &&
+      okFrame.data.top.length === 3 &&
+      typeof okFrame.data.top[0]?.labelVi === 'string',
+    JSON.stringify(okFrame.data?.top),
+  );
+
+  const fastFrame = await frame({ playerId: dPid, seq: 2, strokes: [[[20, 20], [200, 200]]] });
+  check(
+    '2 frame cách <1s → 429 TOO_FAST',
+    fastFrame.status === 429 && fastFrame.data?.error === 'TOO_FAST',
+    `HTTP ${fastFrame.status} ${fastFrame.data?.error}`,
+  );
+
+  await sleep(1100);
+  const replay = await frame({ playerId: dPid, seq: 1, strokes: [[[20, 20], [200, 200]]] });
+  check(
+    'Gửi lại seq cũ → 409 SEQUENCE',
+    replay.status === 409 && replay.data?.error === 'SEQUENCE',
+    `HTTP ${replay.status} ${replay.data?.error}`,
+  );
+
+  await sleep(1100);
+  const blankFrame = await frame({ playerId: dPid, seq: 3, strokes: [] });
+  check(
+    'Canvas trống → 200, matched=false, không crash',
+    blankFrame.status === 200 &&
+      blankFrame.data?.matched === false &&
+      Array.isArray(blankFrame.data?.top) &&
+      blankFrame.data.top.length === 0,
+    `HTTP ${blankFrame.status} top=${JSON.stringify(blankFrame.data?.top)}`,
+  );
+
+  await sleep(1100);
+  // Nhiều nét, mỗi nét dưới trần, nhưng TỔNG thì vượt — đây mới là kiểu tấn công thật.
+  const manyStrokes = Array.from({ length: 200 }, () =>
+    Array.from({ length: 100 }, (_, i) => [i, (i * 3) % 100]),
+  );
+  const huge = await frame({ playerId: dPid, seq: 4, strokes: manyStrokes });
+  check('Tổng 20000 điểm → 413', huge.status === 413, `HTTP ${huge.status} ${huge.data?.error}`);
+
+  const stranger = await frame({ playerId: 'khong-co-nguoi-nay', seq: 5, strokes: [] });
+  check('Người chơi lạ → 404', stranger.status === 404, `HTTP ${stranger.status}`);
+
+  const badCoords = await frame({ playerId: dPid, seq: 6, strokes: [[[1, 2], ['x', 3]]] });
+  check('Toạ độ không phải số → 400', badCoords.status === 400, `HTTP ${badCoords.status}`);
+
+  // ── đường THẮNG, chạy trên model thật qua HTTP ──
+  //
+  // Từ khoá do server chọn ngẫu nhiên theo mã lượt, nên chỉ kiểm được khi gặp
+  // từ khoá mà script tự vẽ được. Không gặp thì BỎ QUA chứ không đánh trượt —
+  // một test thất bại ngẫu nhiên còn tệ hơn không có test.
+  const STROKES_FOR = {
+    circle: () => {
+      const pts = [];
+      for (let i = 0; i <= 24; i++) {
+        const a = (i / 24) * Math.PI * 2 - Math.PI / 2;
+        pts.push([Math.round(150 + 90 * Math.cos(a)), Math.round(150 + 90 * Math.sin(a))]);
+      }
+      return [pts];
+    },
+    square: () => [[[30, 30], [270, 30], [270, 270], [30, 270], [30, 30]]],
+    triangle: () => [[[150, 20], [280, 280], [20, 280], [150, 20]]],
+    star: () => {
+      const pts = [];
+      for (let i = 0; i <= 10; i++) {
+        const a = (i / 5) * Math.PI - Math.PI / 2;
+        const r = i % 2 === 0 ? 110 : 45;
+        pts.push([Math.round(150 + r * Math.cos(a)), Math.round(150 + r * Math.sin(a))]);
+      }
+      return [pts];
+    },
+    lightning: () => [[[160, 20], [70, 150], [140, 150], [40, 280], [200, 120], [120, 120], [160, 20]]],
+    rainbow: () => {
+      const arcs = [];
+      for (let k = 0; k < 3; k++) {
+        const r = 120 - k * 30;
+        const pts = [];
+        for (let i = 0; i <= 16; i++) {
+          const a = Math.PI + (i / 16) * Math.PI;
+          pts.push([Math.round(150 + r * Math.cos(a)), Math.round(250 + r * Math.sin(a))]);
+        }
+        arcs.push(pts);
+      }
+      return arcs;
+    },
+    mountain: () => [
+      [[10, 260], [95, 110], [175, 260]],
+      [[150, 260], [225, 130], [290, 260]],
+    ],
+    tent: () => [
+      [[150, 40], [270, 260], [30, 260], [150, 40]],
+      [[150, 40], [150, 260]],
+    ],
+    sun: () => {
+      const strokes = [[]];
+      for (let i = 0; i <= 20; i++) {
+        const a = (i / 20) * Math.PI * 2;
+        strokes[0].push([Math.round(150 + 55 * Math.cos(a)), Math.round(150 + 55 * Math.sin(a))]);
+      }
+      for (let k = 0; k < 8; k++) {
+        const a = (k / 8) * Math.PI * 2;
+        strokes.push([
+          [Math.round(150 + 80 * Math.cos(a)), Math.round(150 + 80 * Math.sin(a))],
+          [Math.round(150 + 125 * Math.cos(a)), Math.round(150 + 125 * Math.sin(a))],
+        ]);
+      }
+      return strokes;
+    },
+  };
+
+  let won = null;
+  for (let attempt = 0; attempt < 60 && !won; attempt++) {
+    const c = await call('/api/admin/rounds', { method: 'POST', body: { game: 'draw' }, token: TOKEN });
+    const rid = c.data.roundId;
+    const jr = await call('/api/rounds/join', { method: 'POST', body: { name: 'An', roundId: rid } });
+    const sr = await call(`/api/rounds/${rid}/start`, { method: 'POST', body: {}, token: TOKEN });
+    const target = sr.data?.state?.target;
+    const strokes = STROKES_FOR[target?.id];
+    if (!strokes) continue;
+
+    const res = await call(`/api/rounds/${rid}/frame`, {
+      method: 'POST',
+      body: { playerId: jr.data.playerId, seq: 1, strokes: strokes(), canvasW: 300, canvasH: 300 },
+    });
+    won = { target, res };
+  }
+
+  if (!won) {
+    console.log('  ⏭  Bỏ qua kiểm đường thắng: 60 lượt liên tiếp không gặp từ khoá vẽ được');
+  } else {
+    check(
+      `Vẽ đúng từ khoá "${won.target.labelVi}" → matched=true`,
+      won.res.status === 200 && won.res.data?.matched === true,
+      `HTTP ${won.res.status} matched=${won.res.data?.matched} top=${JSON.stringify(won.res.data?.top)}`,
+    );
+    const wScore = won.res.data?.score ?? 0;
+    check(
+      'Điểm thắng do server tính (150 − số giây), không phải client',
+      wScore > 0 && wScore <= 150,
+      `score=${wScore} seconds=${won.res.data?.seconds}`,
+    );
+  }
+
+  // Đóng lượt bằng admin rồi thử frame muộn — tất định và nhanh hơn nhiều so với
+  // ngồi chờ hết 15 giây. (Nếu để đồng hồ tự chạy, lượt có thể vẫn đang mở và
+  // frame sẽ được chấp nhận, làm test này lúc đỏ lúc xanh.)
+  await call(`/api/admin/rounds/${dId}/skip`, { method: 'POST', body: {}, token: TOKEN });
+
+  const before = (await call(`/api/rounds/${dId}/dashboard`)).data?.rows?.[0]?.score;
+  const late = await frame({ playerId: dPid, seq: 99, strokes: [[[20, 20], [200, 200]]] });
+  const after = (await call(`/api/rounds/${dId}/dashboard`)).data?.rows?.[0]?.score;
+  check(
+    'Lượt đã đóng → frame bị từ chối (409)',
+    late.status === 409,
+    `HTTP ${late.status} ${late.data?.error}`,
+  );
+  check('Điểm không đổi sau frame bị từ chối', before === after, `${before} → ${after}`);
 
   // ── kết luận ──
   console.log(`\n${'─'.repeat(50)}`);
