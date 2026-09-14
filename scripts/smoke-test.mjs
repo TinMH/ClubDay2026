@@ -215,23 +215,64 @@ try {
     JSON.stringify(q0.data?.question),
   );
 
+  const truth0 = solve(q0.data?.question?.prompt);
+  const opts0 = q0.data?.question?.options ?? [];
+  check(
+    'Câu hỏi kèm ĐÚNG 4 lựa chọn, khác nhau từng đôi',
+    opts0.length === 4 && new Set(opts0).size === 4,
+    JSON.stringify(opts0),
+  );
+  check(
+    'Đáp án LUÔN nằm trong 4 lựa chọn — thiếu là không ai trả lời đúng được',
+    opts0.includes(truth0),
+    `đáp án=${truth0} lựa chọn=${JSON.stringify(opts0)}`,
+  );
+  check(
+    'Mọi lựa chọn đều là số nguyên không âm',
+    opts0.every((v) => Number.isInteger(v) && v >= 0),
+    JSON.stringify(opts0),
+  );
+
+  // Lựa chọn phải ỔN ĐỊNH giữa các lần hỏi: hỏi lại mà đổi thứ tự thì người chơi
+  // đang nhắm nút này sẽ bấm nhầm nút khác.
+  const q0again = await call(`/api/rounds/${mId}/question?playerId=${mPid}`);
+  check(
+    'Hỏi lại cùng câu → cùng bộ lựa chọn, cùng thứ tự',
+    JSON.stringify(q0again.data?.question?.options) === JSON.stringify(opts0),
+    JSON.stringify(q0again.data?.question?.options),
+  );
+
+  // Sai vì CHỌN NHẦM một lựa chọn có thật trên màn hình — đúng kiểu sai của người chơi.
+  const wrongPick = opts0.find((v) => v !== truth0);
   const wrong = await call(`/api/rounds/${mId}/answer`, {
     method: 'POST',
-    body: { playerId: mPid, idx: 0, value: -999 },
+    body: { playerId: mPid, idx: 0, value: wrongPick },
   });
-  check('Trả lời sai → correct=false, score=0', wrong.data?.correct === false && wrong.data?.score === 0, JSON.stringify(wrong.data));
+  check('Chọn nhầm lựa chọn sai → correct=false, score=0', wrong.data?.correct === false && wrong.data?.score === 0, JSON.stringify(wrong.data));
 
   await sleep(350); // vượt ngưỡng chống spam 250ms
   const q1 = await call(`/api/rounds/${mId}/question?playerId=${mPid}`);
   const truth = solve(q1.data?.question?.prompt);
   check('Câu kế tiếp cũng KHÔNG lộ đáp án', q1.data?.question != null && !('answer' in q1.data.question));
   check('Đáp án tính được từ đề hiển thị', truth !== null && Number.isInteger(truth), `prompt=${q1.data?.question?.prompt}`);
+  check(
+    'Câu kế tiếp cũng có 4 lựa chọn chứa đáp án',
+    q1.data?.question?.options?.length === 4 && q1.data?.question?.options?.includes(truth),
+    JSON.stringify(q1.data?.question?.options),
+  );
 
   const right = await call(`/api/rounds/${mId}/answer`, {
     method: 'POST',
     body: { playerId: mPid, idx: 1, value: truth },
   });
   check('Trả lời đúng → correct=true, score=1', right.data?.correct === true && right.data?.score === 1, JSON.stringify(right.data));
+  check(
+    'Câu kế tiếp trong chính response đó cũng có 4 lựa chọn, không lộ đáp án',
+    right.data?.question?.options?.length === 4 &&
+      !('answer' in (right.data?.question ?? {})) &&
+      right.data.question.options.includes(solve(right.data.question.prompt)),
+    JSON.stringify(right.data?.question),
+  );
 
   const spam = await call(`/api/rounds/${mId}/answer`, {
     method: 'POST',
@@ -240,6 +281,9 @@ try {
   check('Spam nhanh hơn 250ms → 429 TOO_FAST', spam.status === 429 && spam.data?.error === 'TOO_FAST', `HTTP ${spam.status}`);
 
   await sleep(350);
+  // `value: -1` giờ còn là ca "client gửi một số KHÔNG có trong 4 lựa chọn" —
+  // giao diện không cho bấm ra ngoài, nhưng sửa request thì bấm được số nào cũng
+  // xong, nên server vẫn phải tự chấm theo đáp án của nó.
   const cheat = await call(`/api/rounds/${mId}/answer`, {
     method: 'POST',
     body: { playerId: mPid, idx: 2, value: -1, score: 9999 },
