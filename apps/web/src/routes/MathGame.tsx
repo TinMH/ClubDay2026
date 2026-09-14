@@ -1,28 +1,139 @@
+import { useEffect, useState } from 'react';
+import { AnswerPad } from '../components/AnswerPad';
+import { ApiError } from '../lib/api';
+import { mathApi, type PublicQuestion } from '../lib/api-math';
 import type { GameProps } from '../lib/types';
 
 /**
- * TRACK A — TÍNH NHANH.  ← file này thuộc Track A.
+ * TRACK A — TÍNH NHANH (màn hình).
  *
- * Việc của Track A ở đây:
- *   - hiển thị phép toán + ô nhập đáp án (inputMode="numeric", Enter để gửi)
- *   - gọi POST /api/rounds/:id/answer { playerId, idx, value }
- *   - hiện điểm / streak; hết giờ thì Play.tsx tự chuyển sang Dashboard
- *   - KHÔNG tự tính điểm: server trả về `score` sau mỗi câu
+ * Điểm hiển thị ở đầu màn hình do Play.tsx vẽ từ SSE; ở đây chỉ quản lý câu hỏi
+ * đang mở, chuỗi đúng liên tiếp, và phản hồi đúng/sai.
  *
- * `state` được cập nhật realtime qua SSE — không cần tự poll.
+ * Không tự tính điểm: mọi con số đến từ server.
  */
 export function MathGame({ roundId, playerId, state }: GameProps) {
+  const [question, setQuestion] = useState<PublicQuestion | null>(null);
+  const [index, setIndex] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [bestStreak, setBestStreak] = useState(0);
+  const [lastResult, setLastResult] = useState<'correct' | 'wrong' | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [roundOver, setRoundOver] = useState(false);
+
+  const playing = state.status === 'playing';
+
+  // Nạp câu hỏi đang mở khi vào lượt (và khi tải lại trang giữa chừng).
+  useEffect(() => {
+    if (!playing || !playerId) return;
+    let alive = true;
+    mathApi
+      .question(roundId, playerId)
+      .then((s) => {
+        if (!alive) return;
+        setQuestion(s.question);
+        setIndex(s.index);
+      })
+      .catch(() => {
+        if (alive) setError('Không tải được câu hỏi.');
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [roundId, playerId, playing]);
+
+  async function submit(value: number) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await mathApi.answer(roundId, playerId, index, value);
+      setIndex(res.index);
+      setQuestion(res.question);
+
+      if (res.correct) {
+        const next = streak + 1;
+        setStreak(next);
+        if (next > bestStreak) setBestStreak(next);
+        setLastResult('correct');
+      } else {
+        setStreak(0);
+        setLastResult('wrong');
+      }
+    } catch (err) {
+      if (err instanceof ApiError) {
+        // Gõ nhanh hơn 250ms: bỏ qua im lặng, người chơi chỉ cần gõ lại.
+        if (err.code === 'TOO_FAST') return;
+        // Hết giờ hoặc lượt đã đóng: SSE sẽ chuyển màn hình, không cần báo lỗi.
+        if (err.code === 'TIME_UP' || err.code === 'NOT_PLAYING') {
+          setRoundOver(true);
+          return;
+        }
+      }
+      setError('Có lỗi khi gửi đáp án, thử lại.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading) return <p className="py-10 text-center text-muted">Đang lấy câu hỏi…</p>;
+
+  if (error) {
+    return (
+      <div className="rounded-xl border border-wrong/40 bg-wrong/10 p-4 text-center">
+        <p className="text-wrong">{error}</p>
+      </div>
+    );
+  }
+
+  // Hết đề mà chưa hết giờ — hiếm nhưng vẫn phải xử lý.
+  if (!question) {
+    return (
+      <div className="rounded-xl border border-white/10 bg-ink-soft p-8 text-center">
+        <p className="text-lg font-semibold">Hết câu hỏi!</p>
+        <p className="mt-1 text-sm text-muted">
+          {roundOver ? 'Lượt đã kết thúc.' : 'Chờ hết giờ để xem kết quả.'}
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-xl border border-dashed border-white/20 p-6 text-center">
-      <p className="text-lg font-semibold">Tính nhanh</p>
-      <p className="mt-1 text-sm text-muted">Track A implement màn hình này.</p>
-      <pre className="mt-4 overflow-x-auto rounded-lg bg-black/30 p-3 text-left text-xs text-muted">
-        {JSON.stringify(
-          { roundId, playerId, status: state.status, playerCount: state.players.length },
-          null,
-          2,
-        )}
-      </pre>
+    <div className="space-y-6">
+      <div
+        className={`rounded-2xl border-2 px-4 py-10 text-center transition-colors ${
+          lastResult === 'correct'
+            ? 'border-correct/60 bg-correct/10'
+            : lastResult === 'wrong'
+              ? 'border-wrong/60 bg-wrong/10'
+              : 'border-white/10 bg-ink-soft'
+        }`}
+      >
+        <p className="text-5xl font-bold tabular-nums sm:text-6xl">{question.prompt}</p>
+        <p className="mt-3 h-5 text-sm">
+          {lastResult === 'correct' && <span className="text-correct">✓ đúng</span>}
+          {lastResult === 'wrong' && <span className="text-wrong">✗ sai</span>}
+        </p>
+      </div>
+
+      <div className="flex justify-between text-sm text-muted">
+        <span>
+          Câu <span className="font-semibold text-paper">{index + 1}</span>
+        </span>
+        <span>
+          Chuỗi đúng:{' '}
+          <span className={`font-semibold ${streak > 0 ? 'text-correct' : 'text-paper'}`}>
+            {streak}
+          </span>
+          {bestStreak > 0 && <span className="ml-2">(tốt nhất {bestStreak})</span>}
+        </span>
+      </div>
+
+      <AnswerPad onSubmit={submit} busy={busy} resetKey={index} disabled={!playing} />
     </div>
   );
 }
