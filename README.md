@@ -88,6 +88,7 @@ ClubDay/
 │   │   │   ├── services/          ── NGHIỆP VỤ: không biết gì về HTTP
 │   │   │   │   ├── math-gen.ts    ✅ 🅰️ sinh câu hỏi (PRNG seed, chống trùng liền kề)
 │   │   │   │   ├── math-session.ts✅ 🅰️ trọng tài Tính nhanh (đồng hồ, spam, chấm điểm)
+│   │   │   │   ├── math-options.ts✅ 🅰️ sinh 4 lựa chọn, xáo trộn, TẤT ĐỊNH theo đề
 │   │   │   │   ├── draw-session.ts⬜ 🅱️ trọng tài Vẽ
 │   │   │   │   └── classifier.ts  ⬜ 🅱️ model singleton + hàng đợi
 │   │   │   │
@@ -117,7 +118,7 @@ ClubDay/
 │       │   │   ├── Shell.tsx      ✅ 🔒 khung màn hình
 │       │   │   ├── Countdown.tsx  ✅ 🔒 đồng hồ + thanh tiến độ
 │       │   │   ├── RankTable.tsx  ✅ 🔒 bảng hạng
-│       │   │   ├── AnswerPad.tsx  ✅ 🅰️ ô nhập đáp án
+│       │   │   ├── ChoicePad.tsx  ✅ 🅰️ 4 nút đáp án (lưới 2×2, phím 1–4)
 │       │   │   └── DrawCanvas.tsx ⬜ 🅱️ canvas vẽ
 │       │   └── lib/               ✅ api · sse · useCountdown · session · types · format (🔒)
 │       │                          ✅ 🅰️ api-math.ts — client riêng của Track A
@@ -129,7 +130,7 @@ ClubDay/
 ├── scripts/                       ── Công cụ vận hành — KHÔNG thuộc runtime
 │   ├── prefetch-model.ts          ✅ tải model về ./models để chạy offline
 │   ├── check-offline.ts           ✅ chặn internet, xác nhận model vẫn load được
-│   ├── smoke-test.mjs             ✅ chạy thử nền tảng end-to-end (18 kiểm tra)
+│   ├── smoke-test.mjs             ✅ chạy thử end-to-end (34 kiểm tra)
 │   ├── eval-model.mjs             ⬜ 🅱️ đo accuracy từng class → sinh allowlist
 │   └── loadtest.mjs               ⬜ giả lập N người chơi đồng thời
 │
@@ -242,15 +243,16 @@ gửi một bức ảnh có sẵn, và payload nhẹ hơn base64 PNG khoảng 10
 | Môi trường, build, 2 workspace | ✅ chạy được |
 | Model AI tải + chạy offline | ✅ đã verify (`npm run check:offline`) |
 | **Phase F — nền tảng** (store, lobby, SSE, admin, router, 2 stub) | ✅ **XONG** — 24 unit test + 18 smoke test |
-| 🅰️ Track A — Tính nhanh (`math-gen`, `math-session`, `routes/math`, `MathGame`) | ✅ **XONG** trên nhánh `feat/math-game` |
+| 🅰️ Track A — Tính nhanh (`math-gen`, `math-session`, `routes/math`, `MathGame`) | ✅ **XONG** — đã merge vào `main` (PR #1) |
+| 🅰️ Track A — đổi sang **chọn 1 trong 4 đáp án** | ✅ **XONG** trên nhánh `feat/math-multiple-choice` |
 | 🅱️ Track B — Vẽ hình (`raster`, `classifier`, `draw-session`, `DrawGame`) | ⬜ Wave 2 |
 | Tích hợp + load test + diễn tập | ⬜ Wave 3 |
 
 Chạy kiểm tra bất cứ lúc nào:
 
 ```bash
-npm test       # 57 unit test — store / lobby / dashboard / math-gen / math-session
-npm run smoke  # 28 kiểm tra end-to-end (tự bật server rồi tắt)
+npm test       # 70 unit test — store / lobby / dashboard / math-gen / math-session / math-options
+npm run smoke  # 34 kiểm tra end-to-end (tự bật server rồi tắt)
 ```
 
 Test của game Tính nhanh tập trung vào **chống gian lận**: hết giờ không cộng điểm dù đúng,
@@ -396,8 +398,8 @@ MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 | `npm run dev:web` | Giao diện dev (Vite) |
 | `npm start` | Chạy bản đã build — server phục vụ cả API lẫn web, 1 cổng |
 | `npm run build` | Build cả web và server |
-| `npm test` | 57 unit test (nền tảng + game Tính nhanh) |
-| `npm run smoke` | 28 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
+| `npm test` | 70 unit test (nền tảng + game Tính nhanh) |
+| `npm run smoke` | 34 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
 | `npm run prefetch` | Tải model ONNX về `./models` |
 | `npm run check:offline` | Xác nhận model vẫn load được khi không có internet |
 
