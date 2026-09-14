@@ -4,7 +4,7 @@ Web 2 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người**, ch
 
 | Game | Thời lượng | Cách chơi |
 |---|---|---|
-| **Tính nhanh** | 90 giây | Trả lời phép toán, đúng +1 điểm |
+| **Tính nhanh** | 90 giây | Chọn 1 trong 4 đáp án. **Điểm = chuỗi đúng dài nhất** |
 | **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá, model AI nhận diện |
 
 ---
@@ -130,7 +130,7 @@ ClubDay/
 ├── scripts/                       ── Công cụ vận hành — KHÔNG thuộc runtime
 │   ├── prefetch-model.ts          ✅ tải model về ./models để chạy offline
 │   ├── check-offline.ts           ✅ chặn internet, xác nhận model vẫn load được
-│   ├── smoke-test.mjs             ✅ chạy thử end-to-end (34 kiểm tra)
+│   ├── smoke-test.mjs             ✅ chạy thử end-to-end (45 kiểm tra)
 │   ├── eval-model.mjs             ⬜ 🅱️ đo accuracy từng class → sinh allowlist
 │   └── loadtest.mjs               ⬜ giả lập N người chơi đồng thời
 │
@@ -244,20 +244,33 @@ gửi một bức ảnh có sẵn, và payload nhẹ hơn base64 PNG khoảng 10
 | Model AI tải + chạy offline | ✅ đã verify (`npm run check:offline`) |
 | **Phase F — nền tảng** (store, lobby, SSE, admin, router, 2 stub) | ✅ **XONG** — 24 unit test + 18 smoke test |
 | 🅰️ Track A — Tính nhanh (`math-gen`, `math-session`, `routes/math`, `MathGame`) | ✅ **XONG** — đã merge vào `main` (PR #1) |
-| 🅰️ Track A — đổi sang **chọn 1 trong 4 đáp án** | ✅ **XONG** trên nhánh `feat/math-multiple-choice` |
+| 🅰️ Track A — **chọn 1 trong 4 đáp án** + **điểm theo chuỗi dài nhất** | ✅ **XONG** trên nhánh `feat/math-multiple-choice` |
 | 🅱️ Track B — Vẽ hình (`raster`, `classifier`, `draw-session`, `DrawGame`) | ⬜ Wave 2 |
 | Tích hợp + load test + diễn tập | ⬜ Wave 3 |
 
 Chạy kiểm tra bất cứ lúc nào:
 
 ```bash
-npm test       # 70 unit test — store / lobby / dashboard / math-gen / math-session / math-options
-npm run smoke  # 34 kiểm tra end-to-end (tự bật server rồi tắt)
+npm test       # 79 unit test — store / lobby / dashboard / math-gen / math-session / math-options
+npm run smoke  # 45 kiểm tra end-to-end (tự bật server rồi tắt)
 ```
 
 Test của game Tính nhanh tập trung vào **chống gian lận**: hết giờ không cộng điểm dù đúng,
 chặn trả lời nhanh hơn 250ms, không cho nhảy câu hay trả lời lại, và **đáp án không bao giờ
 được gửi ra client** (có regression test riêng cho việc này).
+
+### Cách tính điểm Tính nhanh — đọc trước khi sửa
+
+Điểm là **chuỗi đúng dài nhất**, không phải tổng số câu đúng. Trả lời sai làm chuỗi hiện tại
+về 0 nhưng **không** lấy đi chuỗi dài nhất đã lập — người vừa mất chuỗi vẫn còn lý do trả lời
+tiếp thay vì buông xuôi 90 giây.
+
+Hệ quả cần nhớ: `player.score` **mỗi game một nghĩa** — Tính nhanh là chuỗi dài nhất, Vẽ hình
+là `150 − số giây`. `dashboard.ts` là nơi **duy nhất** đọc nó để xếp hạng. Bằng điểm là chuyện
+thường gặp ở Tính nhanh, nên khi bằng thì xếp theo **số câu đúng nhiều hơn**; nếu rơi thẳng
+xuống so thời gian thì người trả lời ít câu hơn lại xếp trên, ngược hẳn với điều ai cũng nghĩ
+là công bằng. Luật tie-break này **chỉ áp cho `game === 'math'`** — có test canh để nó không
+rò sang game Vẽ.
 
 ### Quy ước khi thêm code
 
@@ -398,8 +411,8 @@ MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 | `npm run dev:web` | Giao diện dev (Vite) |
 | `npm start` | Chạy bản đã build — server phục vụ cả API lẫn web, 1 cổng |
 | `npm run build` | Build cả web và server |
-| `npm test` | 70 unit test (nền tảng + game Tính nhanh) |
-| `npm run smoke` | 34 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
+| `npm test` | 79 unit test (nền tảng + game Tính nhanh) |
+| `npm run smoke` | 45 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
 | `npm run prefetch` | Tải model ONNX về `./models` |
 | `npm run check:offline` | Xác nhận model vẫn load được khi không có internet |
 
