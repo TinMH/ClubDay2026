@@ -160,6 +160,14 @@ interface ClassResult {
   top1: number;
   top3: number;
   failed: string | null;
+  /**
+   * Khi đoán SAI thì model đoán thành cái gì — `{ label: số lần }`.
+   *
+   * Đây là số đo cho bản đồ `ALSO_ACCEPT`: người chơi vẽ "con cá" mà model đoán
+   * "cá mập" thì không nên bị coi là sai. Chép tay bản đồ đó từ trực giác thì
+   * vừa thiếu vừa thừa; đo thì biết chắc cặp nào thật sự hay lẫn.
+   */
+  confusions: Record<string, number>;
 }
 
 interface Results {
@@ -172,7 +180,14 @@ interface Results {
 }
 
 async function evalClass(cls: string): Promise<ClassResult> {
-  const blank: ClassResult = { cls, samples: 0, top1: 0, top3: 0, failed: null };
+  const blank: ClassResult = {
+    cls,
+    samples: 0,
+    top1: 0,
+    top3: 0,
+    failed: null,
+    confusions: {},
+  };
   try {
     const records = await fetchRecords(cls);
     const strokesList: Stroke[][] = [];
@@ -185,13 +200,19 @@ async function evalClass(cls: string): Promise<ClassResult> {
 
     let top1 = 0;
     let top3 = 0;
+    const confusions: Record<string, number> = {};
+
     for (const strokes of strokesList) {
       const top = await classify(rasterize(strokes), 3);
-      if (top[0]?.label === cls) top1++;
+      const best = top[0]?.label;
+
+      if (best === cls) top1++;
+      else if (best !== undefined) confusions[best] = (confusions[best] ?? 0) + 1;
+
       if (top.some((p) => p.label === cls)) top3++;
     }
 
-    return { cls, samples: strokesList.length, top1, top3, failed: null };
+    return { cls, samples: strokesList.length, top1, top3, failed: null, confusions };
   } catch (err) {
     return { ...blank, failed: err instanceof Error ? err.message : String(err) };
   }
@@ -272,6 +293,20 @@ function renderAllowlistFile(results: Results): { text: string; allowlist: strin
     measured.map((c) => [c.cls, Number((c.top1 / c.samples).toFixed(4))]),
   );
 
+  // Bản đồ nhầm lẫn: chỉ giữ cặp đủ lớn để đáng tin (≥ 10% số mẫu) và chỉ cho
+  // những class được phép làm từ khoá. Ngưỡng này để một lần đoán mò cá biệt
+  // không trở thành "quy luật".
+  const minConfusion = Math.max(2, Math.round(results.samplesPerClass * 0.1));
+  const confusionMap: Record<string, string[]> = {};
+  for (const c of measured) {
+    if (!allowlist.includes(c.cls)) continue;
+    const pairs = Object.entries(c.confusions)
+      .filter(([, n]) => n >= minConfusion)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label]) => label);
+    if (pairs.length > 0) confusionMap[c.cls] = pairs;
+  }
+
   const text = `/**
  * SINH TỰ ĐỘNG — ĐỪNG SỬA TAY.
  *
@@ -303,6 +338,16 @@ export const ALLOWLIST: readonly string[] = ${JSON.stringify(allowlist, null, 2)
 
 /** Accuracy top-1 đo được của MỌI class đã đo — vết để soi lại, không dùng lúc chạy. */
 export const MEASURED_TOP1: Readonly<Record<string, number>> = ${JSON.stringify(top1Map, null, 2)};
+
+/**
+ * Với mỗi từ khoá: những nhãn mà model hay đoán NHẦM THÀNH (đo được, chỉ gồm cặp
+ * xuất hiện ≥ ${minConfusion}/${results.samplesPerClass} mẫu).
+ *
+ * Dùng để tha thứ cho các cặp lẫn nhau thật sự: người chơi vẽ "con cá" mà model
+ * gọi "cá mập" thì không nên bị tính là sai. Đây là danh sách ĐO ĐƯỢC, không
+ * phải đoán — và nó chỉ chứa những lẫn nhau đủ phổ biến.
+ */
+export const CONFUSIONS: Readonly<Record<string, readonly string[]>> = ${JSON.stringify(confusionMap, null, 2)};
 `;
 
   return { text, allowlist };
