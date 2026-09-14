@@ -33,6 +33,13 @@ export function dashboard(round: Round): DashboardRow[] {
   return [...round.players.values()]
     .sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
+
+      // Tính nhanh xếp theo CHUỖI DÀI NHẤT nên bằng điểm là chuyện thường gặp.
+      // Khi bằng chuỗi thì ai trả lời đúng nhiều hơn thắng. Nếu rơi thẳng xuống
+      // so thời gian thì người trả lời ÍT câu hơn lại xếp trên — `lastAnswerAt`
+      // của họ sớm hơn — ngược hẳn với điều ai cũng nghĩ là công bằng.
+      if (round.game === 'math' && b.correct !== a.correct) return b.correct - a.correct;
+
       const fa = finishAt(a);
       const fb = finishAt(b);
       // So sánh có guard: tránh Infinity - Infinity = NaN làm hỏng sort.
