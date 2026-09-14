@@ -87,6 +87,7 @@ export async function mathRoutes(app: FastifyInstance): Promise<void> {
       index: player.qIndex,
       question: publicQuestion(currentQuestion(round, player)),
       score: player.score,
+      streak: player.streak,
       correct: player.correct,
       wrong: player.wrong,
       endsAt: round.endsAt,
@@ -116,6 +117,7 @@ export async function mathRoutes(app: FastifyInstance): Promise<void> {
     return {
       correct: outcome.correct,
       score: outcome.score,
+      streak: player.streak,
       correctCount: player.correct,
       wrongCount: player.wrong,
       index: outcome.index,
