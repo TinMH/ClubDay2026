@@ -29,10 +29,17 @@ export interface DrawCanvasHandle {
 interface Props {
   recorder: StrokeRecorder;
   disabled?: boolean;
+  /**
+   * Báo cho cha biết trên canvas có mực hay không.
+   *
+   * `DrawGame` cần biết để khoá nút NỘP khi tờ giấy còn trắng: bài chỉ được chấm
+   * MỘT lần, bấm nhầm lúc chưa vẽ gì là mất luôn lượt.
+   */
+  onInkChange?: (hasInk: boolean) => void;
   ref?: Ref<DrawCanvasHandle>;
 }
 
-export function DrawCanvas({ recorder, disabled = false, ref }: Props) {
+export function DrawCanvas({ recorder, disabled = false, onInkChange, ref }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   /** Điểm cuối cùng đã vẽ TRÊN MÀN HÌNH — khác điểm cuối trong recorder. */
   const penRef = useRef<{ x: number; y: number } | null>(null);
@@ -77,6 +84,7 @@ export function DrawCanvas({ recorder, disabled = false, ref }: Props) {
       recorder.clear();
       penRef.current = null;
       repaint();
+      onInkChange?.(false);
     },
   }));
 
@@ -146,6 +154,7 @@ export function DrawCanvas({ recorder, disabled = false, ref }: Props) {
     recorder.begin(p.x, p.y);
     penRef.current = p;
     drawDot(p);
+    onInkChange?.(true);
   }
 
   function onPointerMove(e: ReactPointerEvent<HTMLCanvasElement>): void {
