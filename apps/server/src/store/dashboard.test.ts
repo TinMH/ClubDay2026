@@ -95,6 +95,52 @@ describe('dashboard', () => {
     expect(rows[0]?.solved).toBe(true);
   });
 
+  it('Tính nhanh: bằng CHUỖI thì ai ĐÚNG NHIỀU HƠN xếp trên, không phải ai xong sớm', () => {
+    // Điểm của Tính nhanh là chuỗi dài nhất nên bằng điểm là chuyện thường. Nếu
+    // rơi xuống so thời gian thì người trả lời ít câu hơn lại xếp trên — ngược
+    // hẳn với điều ai cũng nghĩ là công bằng.
+    const { round, ids } = setup(); // lượt 'math'
+    const [a, b] = ids;
+    if (!a || !b) throw new Error('thiếu id');
+
+    const pa = round.players.get(a)!;
+    const pb = round.players.get(b)!;
+
+    pa.score = pb.score = 5; // cùng chuỗi dài nhất
+    pa.correct = 9;
+    pa.lastAnswerAt = 50_000; // nhiều câu đúng nhưng "xong" muộn nhất
+    pb.correct = 4;
+    pb.lastAnswerAt = 30_000; // ít câu đúng hơn, xong sớm hơn
+
+    const rows = dashboard(round);
+    // setup() tạo 3 người; C không được cấu hình nên đứng cuối. Điều cần khẳng
+    // định là THỨ TỰ giữa A và B.
+    expect(rows.slice(0, 2).map((r) => r.name)).toEqual(['A', 'B']); // ⬅ A thắng nhờ 9 > 4
+  });
+
+  it('Vẽ hình: bằng điểm vẫn xếp theo ai giải SỚM HƠN, không dính luật của Tính nhanh', () => {
+    // Luật tie-break theo số câu đúng là của RIÊNG Tính nhanh. Nếu nó rò sang
+    // game Vẽ thì thứ tự bảng hạng của Track B đổi mà không ai ngờ.
+    const round = createRound('draw', 1_000);
+    round.startedAt = 10_000;
+    const a = addPlayer(round, 'A').id;
+    const b = addPlayer(round, 'B').id;
+
+    const pa = round.players.get(a)!;
+    const pb = round.players.get(b)!;
+
+    pa.score = pb.score = 140;
+    pa.correct = 99; // rác với game Vẽ — không được ảnh hưởng gì
+    pa.solved = true;
+    pa.solvedAt = 20_000;
+    pb.correct = 0;
+    pb.solved = true;
+    pb.solvedAt = 14_000; // giải sớm hơn
+
+    const rows = dashboard(round);
+    expect(rows.map((r) => r.name)).toEqual(['B', 'A']);
+  });
+
   it('lượt chưa ai chơi thì trả mảng rỗng, không crash', () => {
     const round = createRound('math');
     expect(dashboard(round)).toEqual([]);

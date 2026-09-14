@@ -78,6 +78,7 @@ export function addPlayer(round: Round, name: string, now = Date.now()): Player 
     finished: false,
     correct: 0,
     wrong: 0,
+    streak: 0,
     qIndex: 0,
     lastAnswerAt: 0,
     seq: 0,

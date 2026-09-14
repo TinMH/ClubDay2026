@@ -1,4 +1,4 @@
-import type { DashboardRow, GameKind } from '../lib/types';
+import { SCORE_LABEL, type DashboardRow, type GameKind } from '../lib/types';
 import { formatSeconds } from '../lib/format';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -34,7 +34,14 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
             {formatSeconds(r.msToFinish)}
           </span>
 
-          <span className="w-14 shrink-0 text-right text-xl font-bold tabular-nums">{r.score}</span>
+          <span className="w-20 shrink-0 text-right">
+            <span className="block text-xl font-bold tabular-nums">{r.score}</span>
+            {/* Con số này mỗi game một nghĩa — không ghi rõ thì Tính nhanh trông
+                như bị lỗi: đúng 12 câu mà ô điểm ghi "3". */}
+            <span className="block text-[10px] leading-tight text-muted">
+              {SCORE_LABEL[game]}
+            </span>
+          </span>
         </li>
       ))}
     </ol>

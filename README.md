@@ -4,7 +4,7 @@ Web 2 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người**, ch
 
 | Game | Thời lượng | Cách chơi |
 |---|---|---|
-| **Tính nhanh** | 90 giây | Trả lời phép toán, đúng +1 điểm |
+| **Tính nhanh** | 90 giây | Chọn 1 trong 4 đáp án. **Điểm = chuỗi đúng dài nhất** |
 | **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá, model AI nhận diện |
 
 ---
@@ -259,6 +259,19 @@ npm run smoke  # 43 kiểm tra end-to-end (tự bật server rồi tắt, có n�
 Test của game Tính nhanh tập trung vào **chống gian lận**: hết giờ không cộng điểm dù đúng,
 chặn trả lời nhanh hơn 250ms, không cho nhảy câu hay trả lời lại, và **đáp án không bao giờ
 được gửi ra client** (có regression test riêng cho việc này).
+
+### Cách tính điểm Tính nhanh — đọc trước khi sửa
+
+Điểm là **chuỗi đúng dài nhất**, không phải tổng số câu đúng. Trả lời sai làm chuỗi hiện tại
+về 0 nhưng **không** lấy đi chuỗi dài nhất đã lập — người vừa mất chuỗi vẫn còn lý do trả lời
+tiếp thay vì buông xuôi 90 giây.
+
+Hệ quả cần nhớ: `player.score` **mỗi game một nghĩa** — Tính nhanh là chuỗi dài nhất, Vẽ hình
+là `150 − số giây`. `dashboard.ts` là nơi **duy nhất** đọc nó để xếp hạng. Bằng điểm là chuyện
+thường gặp ở Tính nhanh, nên khi bằng thì xếp theo **số câu đúng nhiều hơn**; nếu rơi thẳng
+xuống so thời gian thì người trả lời ít câu hơn lại xếp trên, ngược hẳn với điều ai cũng nghĩ
+là công bằng. Luật tie-break này **chỉ áp cho `game === 'math'`** — có test canh để nó không
+rò sang game Vẽ.
 
 ### Quy ước khi thêm code
 

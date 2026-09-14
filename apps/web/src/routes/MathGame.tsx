@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnswerPad } from '../components/AnswerPad';
+import { ChoicePad } from '../components/ChoicePad';
 import { ApiError } from '../lib/api';
 import { mathApi, type PublicQuestion } from '../lib/api-math';
 import type { GameProps } from '../lib/types';
@@ -10,7 +10,8 @@ import type { GameProps } from '../lib/types';
  * Điểm hiển thị ở đầu màn hình do Play.tsx vẽ từ SSE; ở đây chỉ quản lý câu hỏi
  * đang mở, chuỗi đúng liên tiếp, và phản hồi đúng/sai.
  *
- * Không tự tính điểm: mọi con số đến từ server.
+ * Không tự tính điểm: mọi con số đến từ server. Cũng KHÔNG tự sinh lựa chọn —
+ * bốn đáp án do server gửi xuống, và client không được biết con nào đúng.
  */
 export function MathGame({ roundId, playerId, state }: GameProps) {
   const [question, setQuestion] = useState<PublicQuestion | null>(null);
@@ -35,6 +36,10 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
         if (!alive) return;
         setQuestion(s.question);
         setIndex(s.index);
+        // Chuỗi lấy từ SERVER. Tự đếm ở client thì tải lại trang giữa lượt là
+        // chuỗi hiện tại về 0, trong khi server vẫn đang giữ chuỗi thật.
+        setStreak(s.streak);
+        setBestStreak(s.score);
       })
       .catch(() => {
         if (alive) setError('Không tải được câu hỏi.');
@@ -55,15 +60,9 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
       setIndex(res.index);
       setQuestion(res.question);
 
-      if (res.correct) {
-        const next = streak + 1;
-        setStreak(next);
-        if (next > bestStreak) setBestStreak(next);
-        setLastResult('correct');
-      } else {
-        setStreak(0);
-        setLastResult('wrong');
-      }
+      setStreak(res.streak);
+      setBestStreak(res.score);
+      setLastResult(res.correct ? 'correct' : 'wrong');
     } catch (err) {
       if (err instanceof ApiError) {
         // Gõ nhanh hơn 250ms: bỏ qua im lặng, người chơi chỉ cần gõ lại.
@@ -133,7 +132,13 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
         </span>
       </div>
 
-      <AnswerPad onSubmit={submit} busy={busy} resetKey={index} disabled={!playing} />
+      <ChoicePad
+        options={question.options}
+        onPick={submit}
+        busy={busy}
+        resetKey={index}
+        disabled={!playing}
+      />
     </div>
   );
 }

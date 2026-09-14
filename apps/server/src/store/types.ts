@@ -23,6 +23,13 @@ export interface Player {
   id: string;
   name: string;
   joinedAt: number;
+  /**
+   * Số mà BẢNG HẠNG xếp theo — mỗi game một công thức, và đây là chỗ duy nhất
+   * `dashboard.ts` đọc để so:
+   *   - Tính nhanh: CHUỖI ĐÚNG DÀI NHẤT (không phải tổng số câu đúng).
+   *   - Vẽ hình:  150 − số giây đã dùng.
+   * Đổi công thức của một game là đổi luôn thứ tự bảng hạng của game đó.
+   */
   score: number;
   flagged: boolean;
   /** Cả 2 game set = true khi người chơi xong lượt của mình. */
@@ -32,6 +39,13 @@ export interface Player {
   wrong: number;
 
   // ── TRACK A dùng (Tính nhanh) ──
+  /**
+   * Chuỗi đúng LIÊN TIẾP hiện tại. Trả lời sai là về 0 ngay.
+   *
+   * Giữ riêng khỏi `score` vì `score` là chuỗi DÀI NHẤT đã đạt — sai một câu
+   * không lấy đi kỷ lục đã lập.
+   */
+  streak: number;
   /** Đang ở câu số mấy (0-based). */
   qIndex: number;
   /** ⏱ Server ghi mỗi lần nhận đáp án — dùng chống spam. */

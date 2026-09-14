@@ -11,6 +11,11 @@ import type { RoundStatus } from './types';
 /** Câu hỏi server gửi ra — CỐ Ý không có `answer`. */
 export interface PublicQuestion {
   prompt: string;
+  /**
+   * Bốn lựa chọn ĐÃ XÁO TRỘN, do server sinh. Client biết bốn con số nhưng KHÔNG
+   * biết con nào đúng — muốn biết thì phải tự tính, hoặc đoán.
+   */
+  options: number[];
 }
 
 export interface QuestionState {
@@ -18,7 +23,10 @@ export interface QuestionState {
   status: RoundStatus;
   index: number;
   question: PublicQuestion | null;
+  /** Chuỗi đúng DÀI NHẤT — con số bảng hạng xếp theo. */
   score: number;
+  /** Chuỗi đúng LIÊN TIẾP hiện tại; sai một câu là về 0. */
+  streak: number;
   correct: number;
   wrong: number;
   endsAt: number | null;
@@ -28,6 +36,8 @@ export interface QuestionState {
 export interface AnswerResult {
   correct: boolean;
   score: number;
+  /** Chuỗi đúng LIÊN TIẾP hiện tại sau câu vừa trả lời. */
+  streak: number;
   correctCount: number;
   wrongCount: number;
   index: number;

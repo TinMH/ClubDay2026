@@ -7,7 +7,7 @@ import { Shell } from '../components/Shell';
 import { Countdown } from '../components/Countdown';
 import { MathGame } from './MathGame'; // TRACK A
 import { DrawGame } from './DrawGame'; // TRACK B
-import { DURATION_MS, type GameProps, type RoundState } from '../lib/types';
+import { DURATION_MS, SCORE_LABEL, type GameProps, type RoundState } from '../lib/types';
 
 /**
  * Dispatcher: đọc `state.game` rồi render game tương ứng.
@@ -60,7 +60,7 @@ export function Play() {
           {connected ? '' : 'mất kết nối…'}
         </span>
         <span>
-          <span className="text-muted">Điểm của bạn: </span>
+          <span className="text-muted">{SCORE_LABEL[state.game]}: </span>
           <span className="text-xl font-bold tabular-nums">{me?.score ?? 0}</span>
         </span>
       </div>

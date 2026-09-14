@@ -4,6 +4,10 @@
  * Nguyên tắc duy nhất: điểm do SERVER quyết định. Client chỉ gửi "câu số mấy,
  * tôi trả lời bao nhiêu" — không bao giờ gửi điểm.
  *
+ * ĐIỂM = CHUỖI ĐÚNG DÀI NHẤT, không phải tổng số câu đúng. Trả lời sai làm chuỗi
+ * hiện tại về 0, nhưng KHÔNG lấy đi chuỗi dài nhất đã lập — nhờ vậy người chơi
+ * vẫn còn động lực trả lời tiếp sau khi đã sai, thay vì buông xuôi.
+ *
  * Mọi hàm nhận `now` như THAM SỐ (không gọi Date.now() bên trong) để test
  * giả lập được "đã hết giờ" mà không cần chờ 90 giây thật.
  */
@@ -60,11 +64,15 @@ export function submitAnswer(
 
   player.lastAnswerAt = now;
   player.qIndex = idx + 1;
+
   if (correct) {
-    player.score += 1;
     player.correct += 1;
+    player.streak += 1;
+    // Điểm là chuỗi DÀI NHẤT, nên chỉ nhích lên khi chuỗi hiện tại vượt kỷ lục.
+    if (player.streak > player.score) player.score = player.streak;
   } else {
     player.wrong += 1;
+    player.streak = 0; // chuỗi đứt; `score` giữ nguyên kỷ lục cũ
   }
 
   const next = questions[player.qIndex] ?? null;
