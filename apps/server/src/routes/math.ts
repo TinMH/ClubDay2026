@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { registerStartHook } from '../store/lobby.js';
 import { findPlayer } from '../store/store.js';
 import { generateQuestions, seedFromRoundId } from '../services/math-gen.js';
+import { optionsFor } from '../services/math-options.js';
 import { currentQuestion, submitAnswer } from '../services/math-session.js';
 import type { Question } from '../store/types.js';
 
@@ -27,14 +28,27 @@ const CODE_STATUS: Record<string, number> = {
   TOO_FAST: 429,
 };
 
+/** Câu hỏi gửi ra cho client — CỐ Ý không có `answer`. */
+interface PublicQuestion {
+  prompt: string;
+  options: number[];
+}
+
 /**
  * Câu hỏi gửi ra cho client — CẮT `answer`.
  *
  * Client TUYỆT ĐỐI không được thấy đáp án: mở DevTools là đọc được, và toàn bộ
  * phần chấm điểm phía server thành vô nghĩa. Chỉ gửi chuỗi hiển thị.
+ *
+ * Kèm 4 lựa chọn ĐÃ XÁO TRỘN — nhưng vẫn không nói con nào đúng. Người chơi nhận
+ * được bốn con số; muốn biết con nào thì phải tự tính.
  */
-function publicQuestion(question: Question | null): { prompt: string } | null {
-  return question ? { prompt: question.prompt } : null;
+function publicQuestion(question: Question | null): PublicQuestion | null {
+  if (!question) return null;
+  return {
+    prompt: question.prompt,
+    options: optionsFor(question.prompt, question.answer),
+  };
 }
 
 /** Tra người chơi và xác nhận họ thuộc ĐÚNG lượt này (không thì trả null). */
