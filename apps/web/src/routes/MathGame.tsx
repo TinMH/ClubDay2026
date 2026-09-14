@@ -36,6 +36,10 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
         if (!alive) return;
         setQuestion(s.question);
         setIndex(s.index);
+        // Chuỗi lấy từ SERVER. Tự đếm ở client thì tải lại trang giữa lượt là
+        // chuỗi hiện tại về 0, trong khi server vẫn đang giữ chuỗi thật.
+        setStreak(s.streak);
+        setBestStreak(s.score);
       })
       .catch(() => {
         if (alive) setError('Không tải được câu hỏi.');
@@ -56,15 +60,9 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
       setIndex(res.index);
       setQuestion(res.question);
 
-      if (res.correct) {
-        const next = streak + 1;
-        setStreak(next);
-        if (next > bestStreak) setBestStreak(next);
-        setLastResult('correct');
-      } else {
-        setStreak(0);
-        setLastResult('wrong');
-      }
+      setStreak(res.streak);
+      setBestStreak(res.score);
+      setLastResult(res.correct ? 'correct' : 'wrong');
     } catch (err) {
       if (err instanceof ApiError) {
         // Gõ nhanh hơn 250ms: bỏ qua im lặng, người chơi chỉ cần gõ lại.
