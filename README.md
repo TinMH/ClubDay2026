@@ -66,8 +66,6 @@ ClubDay/
 │   │   │   ├── app.ts             ✅ 🔒 factory Fastify — đăng ký sẵn CẢ 2 route
 │   │   │   ├── config.ts          ✅ 🔒 PORT, ADMIN_TOKEN, đường dẫn cache
 │   │   │   ├── model.ts           ✅ 🔒 hằng số model — GHIM dtype fp32
-│   │   │   ├── raster.ts          ⬜ 🅱️ stroke → 28×28 (hằng số đã hiệu chỉnh)
-│   │   │   ├── labels.ts          ⬜ 🅱️ allowlist + tên tiếng Việt + luật accept
 │   │   │   │
 │   │   │   ├── store/             ── "DATABASE" — state trong RAM
 │   │   │   │   ├── types.ts       ✅ 🔒 Round, Player — HỢP ĐỒNG ĐÓNG BĂNG
@@ -83,13 +81,16 @@ ClubDay/
 │   │   │   │   ├── admin.ts       ✅ 🔒 tạo lượt, bỏ qua, reset
 │   │   │   │   ├── admin-guard.ts ✅ 🔒 xác thực header x-admin-token
 │   │   │   │   ├── math.ts        ✅ 🅰️ API Tính nhanh (đã xong)
-│   │   │   │   └── draw.ts        ✅ STUB → 🅱️ Track B thay ruột
+│   │   │   │   └── draw.ts        ✅ 🅱️ API Vẽ (đã xong)
 │   │   │   │
 │   │   │   ├── services/          ── NGHIỆP VỤ: không biết gì về HTTP
 │   │   │   │   ├── math-gen.ts    ✅ 🅰️ sinh câu hỏi (PRNG seed, chống trùng liền kề)
 │   │   │   │   ├── math-session.ts✅ 🅰️ trọng tài Tính nhanh (đồng hồ, spam, chấm điểm)
-│   │   │   │   ├── draw-session.ts⬜ 🅱️ trọng tài Vẽ
-│   │   │   │   └── classifier.ts  ⬜ 🅱️ model singleton + hàng đợi
+│   │   │   │   ├── raster.ts      ✅ 🅱️ nét → 28×28 (hằng số ĐÃ ĐO — đừng đổi)
+│   │   │   │   ├── classifier.ts  ✅ 🅱️ model singleton, ghim fp32, hàng đợi tuần tự
+│   │   │   │   ├── labels.ts      ✅ 🅱️ từ khoá + tên tiếng Việt + luật chấp nhận
+│   │   │   │   ├── allowlist.generated.ts ✅ 🅱️ SINH TỰ ĐỘNG — đừng sửa tay
+│   │   │   │   └── draw-session.ts✅ 🅱️ trọng tài Vẽ (đồng hồ, spam, seq, chấm điểm)
 │   │   │   │
 │   │   │   └── lib/               ── tiện ích thuần
 │   │   │       ├── prng.ts        ✅ 🔒 mulberry32 (dùng chung 2 track)
@@ -112,15 +113,17 @@ ClubDay/
 │       │   │   ├── Dashboard.tsx  ✅ 🔒 bảng hạng 5 người
 │       │   │   ├── Admin.tsx      ✅ 🔒 màn hình BTC (tạo lượt, bắt đầu, URL in QR)
 │       │   │   ├── MathGame.tsx   ✅ 🅰️ màn hình Tính nhanh (đã xong)
-│       │   │   └── DrawGame.tsx   ✅ STUB → 🅱️ Track B thay ruột
+│       │   │   └── DrawGame.tsx   ✅ 🅱️ màn hình Vẽ (gửi frame, hiện AI đoán)
 │       │   ├── components/
 │       │   │   ├── Shell.tsx      ✅ 🔒 khung màn hình
 │       │   │   ├── Countdown.tsx  ✅ 🔒 đồng hồ + thanh tiến độ
 │       │   │   ├── RankTable.tsx  ✅ 🔒 bảng hạng
 │       │   │   ├── AnswerPad.tsx  ✅ 🅰️ ô nhập đáp án
-│       │   │   └── DrawCanvas.tsx ⬜ 🅱️ canvas vẽ
+│       │   │   └── DrawCanvas.tsx ✅ 🅱️ canvas + giữ pointer (setPointerCapture)
 │       │   └── lib/               ✅ api · sse · useCountdown · session · types · format (🔒)
 │       │                          ✅ 🅰️ api-math.ts — client riêng của Track A
+│       │                          ✅ 🅱️ api-draw.ts — client riêng của Track B
+│       │                          ✅ 🅱️ strokes.ts — gom nét từ pointer event
 │       ├── index.html             ✅
 │       ├── vite.config.ts         ✅ (proxy /api → :8787 khi dev)
 │       ├── package.json           ✅
@@ -129,8 +132,8 @@ ClubDay/
 ├── scripts/                       ── Công cụ vận hành — KHÔNG thuộc runtime
 │   ├── prefetch-model.ts          ✅ tải model về ./models để chạy offline
 │   ├── check-offline.ts           ✅ chặn internet, xác nhận model vẫn load được
-│   ├── smoke-test.mjs             ✅ chạy thử nền tảng end-to-end (18 kiểm tra)
-│   ├── eval-model.mjs             ⬜ 🅱️ đo accuracy từng class → sinh allowlist
+│   ├── smoke-test.mjs             ✅ chạy thử end-to-end (43 kiểm tra)
+│   ├── eval-model.ts              ✅ 🅱️ đo accuracy 345 class → SINH RA allowlist
 │   └── loadtest.mjs               ⬜ giả lập N người chơi đồng thời
 │
 ├── .hermes/plans/                 ── Tài liệu thiết kế (plan v2 là bản chuẩn)
@@ -243,14 +246,14 @@ gửi một bức ảnh có sẵn, và payload nhẹ hơn base64 PNG khoảng 10
 | Model AI tải + chạy offline | ✅ đã verify (`npm run check:offline`) |
 | **Phase F — nền tảng** (store, lobby, SSE, admin, router, 2 stub) | ✅ **XONG** — 24 unit test + 18 smoke test |
 | 🅰️ Track A — Tính nhanh (`math-gen`, `math-session`, `routes/math`, `MathGame`) | ✅ **XONG** trên nhánh `feat/math-game` |
-| 🅱️ Track B — Vẽ hình (`raster`, `classifier`, `draw-session`, `DrawGame`) | ⬜ Wave 2 |
+| 🅱️ Track B — Vẽ hình (`raster`, `classifier`, `labels`, `draw-session`, `DrawGame`) | ✅ **XONG** trên nhánh `feat/draw-game` |
 | Tích hợp + load test + diễn tập | ⬜ Wave 3 |
 
 Chạy kiểm tra bất cứ lúc nào:
 
 ```bash
-npm test       # 57 unit test — store / lobby / dashboard / math-gen / math-session
-npm run smoke  # 28 kiểm tra end-to-end (tự bật server rồi tắt)
+npm test       # 121 unit test — nền tảng + Track A + Track B (web + server)
+npm run smoke  # 43 kiểm tra end-to-end (tự bật server rồi tắt, có nạp model thật)
 ```
 
 Test của game Tính nhanh tập trung vào **chống gian lận**: hết giờ không cộng điểm dù đúng,
@@ -396,10 +399,11 @@ MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 | `npm run dev:web` | Giao diện dev (Vite) |
 | `npm start` | Chạy bản đã build — server phục vụ cả API lẫn web, 1 cổng |
 | `npm run build` | Build cả web và server |
-| `npm test` | 57 unit test (nền tảng + game Tính nhanh) |
-| `npm run smoke` | 28 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
+| `npm test` | 121 unit test — cả 2 workspace (server 104 + web 17) |
+| `npm run smoke` | 43 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
 | `npm run prefetch` | Tải model ONNX về `./models` |
 | `npm run check:offline` | Xác nhận model vẫn load được khi không có internet |
+| `npm run eval:model` | Đo accuracy THẬT rồi sinh lại `allowlist.generated.ts` (~35s) |
 
 ### Xử lý sự cố
 
@@ -434,7 +438,8 @@ bình thường, vẫn chạy 4ms, chỉ là trả về kết quả sai một c�
 ### Độ dày nét khi rasterize
 
 Nét vẽ được thu nhỏ về 28×28 trước khi đưa vào model. Độ dày nét ở kích thước đó **quyết định
-accuracy**: 1.5px → 70%, còn 2.5px → 19%. Hằng số đã hiệu chỉnh nằm trong `apps/server/src/raster.ts`.
+accuracy**: 1.5px → 70%, còn 2.5px → 19%. Hằng số đã hiệu chỉnh nằm trong
+`apps/server/src/services/raster.ts` — ĐỔI LÀ PHẢI CHẠY LẠI `npm run eval:model`.
 
 ### Vì sao không có `packages/shared`?
 
