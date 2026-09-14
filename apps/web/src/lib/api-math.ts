@@ -11,6 +11,11 @@ import type { RoundStatus } from './types';
 /** Câu hỏi server gửi ra — CỐ Ý không có `answer`. */
 export interface PublicQuestion {
   prompt: string;
+  /**
+   * Bốn lựa chọn ĐÃ XÁO TRỘN, do server sinh. Client biết bốn con số nhưng KHÔNG
+   * biết con nào đúng — muốn biết thì phải tự tính, hoặc đoán.
+   */
+  options: number[];
 }
 
 export interface QuestionState {

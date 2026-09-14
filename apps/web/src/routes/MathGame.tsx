@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AnswerPad } from '../components/AnswerPad';
+import { ChoicePad } from '../components/ChoicePad';
 import { ApiError } from '../lib/api';
 import { mathApi, type PublicQuestion } from '../lib/api-math';
 import type { GameProps } from '../lib/types';
@@ -10,7 +10,8 @@ import type { GameProps } from '../lib/types';
  * Điểm hiển thị ở đầu màn hình do Play.tsx vẽ từ SSE; ở đây chỉ quản lý câu hỏi
  * đang mở, chuỗi đúng liên tiếp, và phản hồi đúng/sai.
  *
- * Không tự tính điểm: mọi con số đến từ server.
+ * Không tự tính điểm: mọi con số đến từ server. Cũng KHÔNG tự sinh lựa chọn —
+ * bốn đáp án do server gửi xuống, và client không được biết con nào đúng.
  */
 export function MathGame({ roundId, playerId, state }: GameProps) {
   const [question, setQuestion] = useState<PublicQuestion | null>(null);
@@ -133,7 +134,13 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
         </span>
       </div>
 
-      <AnswerPad onSubmit={submit} busy={busy} resetKey={index} disabled={!playing} />
+      <ChoicePad
+        options={question.options}
+        onPick={submit}
+        busy={busy}
+        resetKey={index}
+        disabled={!playing}
+      />
     </div>
   );
 }
