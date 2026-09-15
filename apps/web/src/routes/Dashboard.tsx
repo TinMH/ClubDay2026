@@ -7,6 +7,7 @@ import { useRoundStream } from '../lib/sse';
 import { Shell } from '../components/Shell';
 import { RankTable } from '../components/RankTable';
 import { GameChip, Spinner, WaitDots } from '../components/Chips';
+import { DscLogo } from '../components/Logo';
 import type { DashboardRow, GameKind, RoundState } from '../lib/types';
 
 /** Kết quả của đúng 5 người trong lượt. Tự cập nhật khi có điểm mới. */
@@ -51,6 +52,7 @@ export function Dashboard() {
   return (
     <Shell>
       <header className="text-center">
+        <DscLogo size="sm" className="mb-5" />
         <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted">
           <GameChip game={game} />
           <span>

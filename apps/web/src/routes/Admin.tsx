@@ -7,7 +7,6 @@ import {
   Play as PlayIcon,
   Plus,
   QrCode,
-  ShieldCheck,
   SkipForward,
   TriangleAlert,
 } from 'lucide-react';
@@ -16,6 +15,7 @@ import { loadAdminToken, saveAdminToken } from '../lib/session';
 import { GAME_THEME } from '../lib/game-theme';
 import { Shell } from '../components/Shell';
 import { StatusBadge } from '../components/Chips';
+import { DscLogo } from '../components/Logo';
 import { DURATION_MS, GAME_LABEL, MAX_PLAYERS, type GameKind, type RoundSummary } from '../lib/types';
 
 const GAMES: GameKind[] = ['math', 'draw'];
@@ -88,9 +88,7 @@ export function Admin() {
     <Shell wide>
       <header className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary text-white shadow-[0_4px_0_var(--color-primary-deep)]">
-            <ShieldCheck aria-hidden="true" className="h-6 w-6" />
-          </span>
+          <DscLogo size="sm" className="shrink-0" />
           <div>
             <h1 className="font-display text-2xl font-extrabold leading-none">Quản trị</h1>
             <p className="mt-1 text-sm text-muted">Tạo lượt, bắt đầu, in mã QR</p>

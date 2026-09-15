@@ -6,6 +6,7 @@ import { saveSession } from '../lib/session';
 import { GAME_THEME } from '../lib/game-theme';
 import { DURATION_MS, GAME_LABEL, MAX_PLAYERS, type GameKind } from '../lib/types';
 import { Shell } from '../components/Shell';
+import { DscLogo } from '../components/Logo';
 
 const MESSAGES: Record<string, string> = {
   ROUND_FULL: 'Lượt này đủ 5 người rồi — chờ lượt sau nhé.',
@@ -47,15 +48,15 @@ export function Home() {
 
   return (
     <Shell>
-      <header className="animate-rise pt-6 text-center">
-        <span className="inline-flex -rotate-2 items-center gap-1.5 rounded-xl bg-primary px-3 py-1 font-display text-sm font-bold text-white shadow-[0_4px_0_var(--color-primary-deep)]">
-          <Sparkles aria-hidden="true" className="h-4 w-4" />
-          Mini game CLB
-        </span>
-        <h1 className="mt-4 font-display text-6xl font-extrabold leading-none tracking-tight">
+      <header className="animate-rise pt-4 text-center">
+        <DscLogo />
+        <h1 className="mt-6 font-display text-6xl font-extrabold leading-none tracking-tight">
           Club<span className="text-accent">Day</span>
         </h1>
-        <p className="mt-3 text-muted">Tối đa {MAX_PLAYERS} người một lượt — ai nhanh hơn?</p>
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-muted">
+          <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0 text-secondary" />
+          Mini game CLB · tối đa {MAX_PLAYERS} người một lượt
+        </p>
       </header>
 
       <ul aria-label="Các trò chơi" className="grid grid-cols-2 gap-3">
@@ -98,7 +99,6 @@ export function Home() {
             maxLength={20}
             autoFocus
             autoComplete="nickname"
-            placeholder="Ví dụ: Minh Anh"
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? 'join-error' : undefined}
             className="field"
