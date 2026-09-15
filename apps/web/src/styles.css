@@ -2,17 +2,74 @@
 
 /*
  * Tailwind v4: cấu hình theme ngay trong CSS bằng @theme, KHÔNG cần tailwind.config.js.
- * Mọi biến --color-* ở đây tự sinh ra utility (vd --color-brand -> bg-brand, text-brand).
+ * Mọi biến --color-* ở đây tự sinh ra utility (vd --color-primary -> bg-primary, text-primary).
+ *
+ * Hướng thiết kế: "Vibrant & Block-based" + bảng màu Gaming (skill ui-ux-pro-max).
+ * Nền tím than, khối màu đậm, nút có "đế" khối đặc bên dưới, chữ to và dày.
  */
 @theme {
-  --color-ink: #0b1020;         /* nền chính */
-  --color-ink-soft: #151b30;    /* nền thẻ */
-  --color-paper: #eef2ff;       /* chữ chính */
-  --color-muted: #94a3b8;       /* chữ phụ */
-  --color-brand: #6366f1;       /* màu nhấn */
-  --color-correct: #22c55e;     /* đáp án đúng */
-  --color-wrong: #ef4444;       /* đáp án sai */
-  --color-warn: #f59e0b;        /* cảnh báo */
+  --color-ink: #0f0f23;          /* nền chính — cũng là màu chữ trên khối màu sáng */
+  --color-surface: #1e1c35;      /* nền thẻ */
+  --color-surface-2: #2a2748;    /* nền lồng trong thẻ, ô nhập */
+  --color-line: #3d3666;         /* viền */
+  --color-edge: #08081a;         /* "đế" khối của thẻ và nút trung tính */
+
+  --color-fg: #f4f3ff;           /* chữ chính */
+  --color-muted: #a5a3c8;        /* chữ phụ — ≥ 5.9:1 trên mọi nền ở trên */
+
+  --color-primary: #7c3aed;      /* tím — hành động chính */
+  --color-primary-deep: #4c1d95;
+  --color-secondary: #a78bfa;    /* tím nhạt — nhấn phụ */
+  --color-accent: #fbbf24;       /* vàng — nút vào chơi, người dẫn đầu */
+  --color-accent-deep: #b45309;
+
+  --color-correct: #22c55e;      /* đáp án đúng */
+  --color-correct-deep: #15803d;
+  --color-wrong: #f43f5e;        /* đáp án sai */
+  --color-warn: #f59e0b;         /* cảnh báo */
+
+  --color-math: #22d3ee;         /* màu nhận diện Tính nhanh */
+  --color-draw: #f472b6;         /* màu nhận diện Vẽ hình nhanh */
+  --color-silver: #cbd5e1;       /* bục hạng 2 */
+  --color-bronze: #fb923c;       /* bục hạng 3 */
+
+  /* Font tự host (xem main.tsx) — cả hai đều có đủ dấu tiếng Việt. */
+  --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Baloo 2 Variable', 'Be Vietnam Pro', system-ui, sans-serif;
+
+  --animate-pop: pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  --animate-rise: rise 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-shake: shake 400ms ease-in-out both;
+  --animate-throb: throb 1s ease-in-out infinite;
+  --animate-blink: blink 1.2s ease-in-out infinite;
+
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(7px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(3px); }
+  }
+  @keyframes throb {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+  }
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0.25; }
+    40% { opacity: 1; }
+  }
+}
+
+html {
+  color-scheme: dark;
 }
 
 html,
@@ -24,9 +81,162 @@ body,
 body {
   margin: 0;
   background: var(--color-ink);
-  color: var(--color-paper);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+}
+
+/* Viền focus rõ cho bàn phím — KHÔNG được bỏ. */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+@layer components {
+  /*
+   * Nút khối: "đế" là box-shadow đặc bên dưới, bấm xuống thì nút lún vào đế.
+   * Chỉ dùng transform + box-shadow nên không đẩy bố cục xung quanh.
+   * Đổi màu bằng --btn-bg / --btn-fg / --btn-edge (xem các biến thể bên dưới).
+   */
+  .btn {
+    --btn-bg: var(--color-surface-2);
+    --btn-fg: var(--color-fg);
+    --btn-edge: var(--color-edge);
+    --lift: 4px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 3rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 1rem;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    font-family: var(--font-display);
+    font-weight: 700;
+    line-height: 1.1;
+    box-shadow: 0 var(--lift) 0 var(--btn-edge);
+    transition:
+      transform 90ms ease-out,
+      box-shadow 90ms ease-out,
+      filter 150ms ease-out,
+      opacity 150ms ease-out;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+  }
+  .btn:active:not(:disabled),
+  .btn[aria-pressed='true'] {
+    transform: translateY(var(--lift));
+    box-shadow: 0 0 0 var(--btn-edge);
+  }
+  /* Khoá = chuyển sang khối xám. Làm mờ màu vàng/xanh lá trên nền tối trông như bị bẩn. */
+  .btn:disabled {
+    --btn-bg: var(--color-surface-2);
+    --btn-fg: var(--color-muted);
+    --btn-edge: var(--color-edge);
+    cursor: not-allowed;
+  }
+  /* Ô đáp án thì giữ màu và chỉ làm mờ — đổi màu cả 4 ô sau mỗi lần bấm là quá gắt. */
+  .btn-tile:disabled {
+    --btn-fg: var(--color-ink);
+    opacity: 0.4;
+  }
+  /* Ô đáp án vừa bấm vẫn khoá, nhưng phải sáng rõ để người chơi thấy mình đã chọn gì. */
+  .btn[aria-pressed='true']:disabled {
+    cursor: default;
+    opacity: 1;
+  }
+  @media (hover: hover) {
+    .btn:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+  }
+
+  .btn-primary {
+    --btn-bg: var(--color-primary);
+    --btn-fg: #fff;
+    --btn-edge: var(--color-primary-deep);
+  }
+  .btn-accent {
+    --btn-bg: var(--color-accent);
+    --btn-fg: var(--color-ink);
+    --btn-edge: var(--color-accent-deep);
+  }
+  .btn-correct {
+    --btn-bg: var(--color-correct);
+    --btn-fg: var(--color-ink);
+    --btn-edge: var(--color-correct-deep);
+  }
+  .btn-ghost {
+    --btn-bg: var(--color-surface);
+    border: 2px solid var(--color-line);
+  }
+  .btn-tile {
+    --btn-fg: var(--color-ink);
+    --lift: 5px;
+    border-radius: 1.25rem;
+    font-weight: 800;
+  }
+  .btn-sm {
+    --lift: 3px;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 0.8rem;
+    font-size: 0.9rem;
+  }
+  .btn-lg {
+    --lift: 6px;
+    min-height: 4rem;
+    border-radius: 1.25rem;
+    font-size: 1.25rem;
+  }
+
+  .card {
+    background: var(--color-surface);
+    border: 2px solid var(--color-line);
+    border-radius: 1.5rem;
+    box-shadow: 0 5px 0 var(--color-edge);
+  }
+
+  .field {
+    width: 100%;
+    min-height: 3.5rem;
+    padding: 0.85rem 1rem;
+    border: 2px solid var(--color-line);
+    border-radius: 1rem;
+    background: var(--color-surface-2);
+    color: var(--color-fg);
+    font-size: 1.125rem;
+    transition:
+      border-color 150ms ease-out,
+      box-shadow 150ms ease-out;
+  }
+  .field::placeholder {
+    color: var(--color-muted);
+  }
+  .field:focus-visible {
+    outline: none;
+    border-color: var(--color-secondary);
+    box-shadow: 0 0 0 4px rgb(167 139 250 / 0.3);
+  }
+
+  /* Nền trang trí của Shell: hai vệt màu + lưới chấm. */
+  .stage-bg {
+    background:
+      radial-gradient(38rem 26rem at 100% 0%, rgb(124 58 237 / 0.32), transparent 65%),
+      radial-gradient(34rem 26rem at 0% 100%, rgb(34 211 238 / 0.13), transparent 65%),
+      radial-gradient(rgb(255 255 255 / 0.055) 1px, transparent 1.5px) 0 0 / 22px 22px;
+  }
+
+  /* Tờ giấy vẽ: nền sáng, lưới chấm mờ để dễ canh tỉ lệ. */
+  .paper {
+    background-color: #fdfcff;
+    background-image: radial-gradient(#d9d5f0 1.2px, transparent 1.6px);
+    background-size: 22px 22px;
+  }
 }
 
 /* Canvas vẽ hình: chặn scroll/zoom để nét vẽ không bị đứt trên điện thoại. */
@@ -34,4 +244,15 @@ body {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+}
+
+/* Người dùng bật "giảm chuyển động" → mọi animation về trạng thái cuối ngay lập tức. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -1,3 +1,4 @@
+import { Timer } from 'lucide-react';
 import { useCountdown } from '../lib/useCountdown';
 import { formatClock } from '../lib/format';
 
@@ -7,21 +8,30 @@ import { formatClock } from '../lib/format';
  */
 export function Countdown({ endsAt, total }: { endsAt: number | null; total: number }) {
   const remaining = useCountdown(endsAt);
-  const pct = total > 0 ? Math.max(0, Math.min(100, (remaining / total) * 100)) : 0;
+  const ratio = total > 0 ? Math.max(0, Math.min(1, remaining / total)) : 0;
   const urgent = remaining > 0 && remaining <= 10_000;
 
   return (
-    <div>
-      <div className="flex items-baseline justify-between">
-        <span className="text-sm text-muted">Thời gian</span>
-        <span className={`tabular-nums ${urgent ? 'text-2xl font-bold text-wrong' : 'text-xl font-semibold'}`}>
+    <div className={`card px-4 py-3 transition-colors ${urgent ? 'border-wrong/70' : ''}`}>
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-2 text-sm font-medium text-muted">
+          <Timer aria-hidden="true" className={`h-5 w-5 ${urgent ? 'text-wrong' : 'text-secondary'}`} />
+          Thời gian
+        </span>
+        <span
+          role="timer"
+          className={`inline-block text-3xl font-bold tabular-nums ${urgent ? 'animate-throb text-wrong' : 'text-fg'}`}
+        >
           {formatClock(remaining)}
         </span>
       </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+      <div className="mt-2.5 h-3 overflow-hidden rounded-full bg-surface-2">
+        {/* scaleX thay vì width: chạy trên GPU, không bắt trình duyệt tính lại bố cục mỗi 100ms. */}
         <div
-          className={`h-full rounded-full transition-[width] duration-100 ease-linear ${urgent ? 'bg-wrong' : 'bg-brand'}`}
-          style={{ width: `${pct}%` }}
+          className={`h-full w-full origin-left rounded-full transition-transform duration-100 ease-linear ${
+            urgent ? 'bg-wrong' : 'bg-linear-to-r from-primary to-math'
+          }`}
+          style={{ transform: `scaleX(${ratio})` }}
         />
       </div>
     </div>

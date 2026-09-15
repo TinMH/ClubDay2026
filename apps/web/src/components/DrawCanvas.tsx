@@ -19,7 +19,8 @@ import { StrokeRecorder } from '../lib/strokes';
  */
 
 const PEN_WIDTH = 3;
-const PEN_COLOR = '#eef2ff';
+/** Mực tối trên giấy sáng. Chỉ là màu hiển thị — server tự rasterize từ toạ độ nét. */
+const PEN_COLOR = '#1e1b4b';
 
 export interface DrawCanvasHandle {
   /** Xoá cả nét đã ghi lẫn hình trên màn hình. */
@@ -182,7 +183,7 @@ export function DrawCanvas({ recorder, disabled = false, onInkChange, ref }: Pro
   return (
     <canvas
       ref={canvasRef}
-      className={`draw-canvas h-full w-full rounded-xl bg-ink-soft ${
+      className={`draw-canvas paper h-full w-full ${
         disabled ? 'opacity-60' : 'cursor-crosshair'
       }`}
       onPointerDown={onPointerDown}

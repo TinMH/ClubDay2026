@@ -1,4 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  CircleCheck,
+  CircleX,
+  Eraser,
+  LoaderCircle,
+  Pencil,
+  PartyPopper,
+  Send,
+  Sparkles,
+  TriangleAlert,
+} from 'lucide-react';
 import { DrawCanvas, type DrawCanvasHandle } from '../components/DrawCanvas';
 import { ApiError } from '../lib/api';
 import { drawApi, type PublicPrediction } from '../lib/api-draw';
@@ -181,46 +192,62 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border-2 border-brand/40 bg-brand/10 px-4 py-5 text-center">
-        <p className="text-sm text-muted">Hãy vẽ</p>
-        <p className="text-4xl font-bold">{target.labelVi}</p>
+      <div className="animate-pop rounded-3xl border-2 border-draw/50 bg-draw/10 px-4 py-4 text-center shadow-[0_5px_0_var(--color-edge)]">
+        <p className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] text-draw">
+          <Pencil aria-hidden="true" className="h-4 w-4" />
+          Hãy vẽ
+        </p>
+        <p className="mt-1 font-display text-4xl font-extrabold leading-tight sm:text-5xl">
+          {target.labelVi}
+        </p>
       </div>
 
       {finished ? (
         <ResultPanel commit={commit} fallbackScore={me?.score ?? 0} />
       ) : (
         <>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted">
-              {hint ? (
-                <>
-                  AI đã nhận ra{' '}
-                  <span className="font-semibold text-correct">{target.labelVi}</span> — nộp
-                  được rồi!
-                </>
-              ) : guess ? (
-                <>
-                  AI nghĩ:{' '}
-                  <span className="font-semibold text-paper">{guess.labelVi}</span>{' '}
-                  <span className="tabular-nums">{Math.round(guess.score * 100)}%</span>
-                </>
-              ) : (
-                'AI chưa thấy gì — hãy vẽ to và rõ'
-              )}
-            </span>
+          <div className="flex items-stretch gap-2">
+            <p
+              className={`flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-2xl border-2 px-3 py-2 text-sm transition-colors ${
+                hint ? 'border-correct/60 bg-correct/10' : 'border-line bg-surface'
+              }`}
+            >
+              <Sparkles
+                aria-hidden="true"
+                className={`h-5 w-5 shrink-0 ${hint ? 'text-correct' : 'text-secondary'}`}
+              />
+              <span className="min-w-0 text-muted">
+                {hint ? (
+                  <>
+                    AI đã nhận ra{' '}
+                    <span className="font-semibold text-correct">{target.labelVi}</span> — nộp
+                    được rồi!
+                  </>
+                ) : guess ? (
+                  <>
+                    AI nghĩ:{' '}
+                    <span className="font-semibold text-fg">{guess.labelVi}</span>{' '}
+                    <span className="tabular-nums">{Math.round(guess.score * 100)}%</span>
+                  </>
+                ) : (
+                  'AI chưa thấy gì — hãy vẽ to và rõ'
+                )}
+              </span>
+            </p>
             <button
               type="button"
               onClick={() => canvasRef.current?.clear()}
               disabled={!playing}
-              className="rounded-lg border border-white/15 px-3 py-1 text-xs text-muted transition hover:border-white/30 hover:text-paper disabled:opacity-30"
+              className="btn btn-ghost btn-sm shrink-0"
             >
-              Xoá hết
+              <Eraser aria-hidden="true" className="h-4 w-4" />
+              <span className="max-[380px]:sr-only">Xoá hết</span>
             </button>
           </div>
 
           <div
             ref={wrapperRef}
-            className="h-[46vh] min-h-[260px] w-full overflow-hidden rounded-xl border border-white/10"
+            className="h-[42vh] min-h-[240px] w-full overflow-hidden rounded-3xl border-4 border-line shadow-[0_5px_0_var(--color-edge)]"
           >
             <DrawCanvas
               ref={canvasRef}
@@ -234,13 +261,21 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
             type="button"
             onClick={() => void submit()}
             disabled={!playing || sending || !hasInk}
-            className={`w-full rounded-2xl py-4 text-lg font-bold transition disabled:opacity-40 ${
-              hint
-                ? 'bg-correct text-ink ring-2 ring-correct'
-                : 'bg-brand text-paper hover:bg-brand/90'
+            className={`btn btn-lg w-full ${
+              hint ? 'btn-correct ring-4 ring-correct/40 ring-offset-2 ring-offset-ink' : 'btn-primary'
             }`}
           >
-            {sending ? 'Đang chấm…' : 'NỘP BÀI'}
+            {sending ? (
+              <>
+                <LoaderCircle aria-hidden="true" className="h-6 w-6 animate-spin" />
+                Đang chấm…
+              </>
+            ) : (
+              <>
+                <Send aria-hidden="true" className="h-6 w-6" />
+                NỘP BÀI
+              </>
+            )}
           </button>
 
           <p className="text-center text-xs text-muted">
@@ -254,7 +289,12 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
             </p>
           )}
 
-          {error && <p className="text-center text-sm text-warn">{error}</p>}
+          {error && (
+            <p role="alert" className="flex items-center justify-center gap-2 text-sm text-warn">
+              <TriangleAlert aria-hidden="true" className="h-4 w-4 shrink-0" />
+              {error}
+            </p>
+          )}
         </>
       )}
     </div>
@@ -271,13 +311,13 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
 function ResultPanel({ commit, fallbackScore }: { commit: Commit | null; fallbackScore: number }) {
   if (!commit) {
     return (
-      <div className="rounded-2xl border-2 border-white/15 bg-ink-soft px-4 py-6 text-center">
-        <p className="text-2xl font-bold">Bài đã nộp</p>
+      <ResultCard tone="neutral" icon={<CircleCheck className="h-8 w-8" />}>
+        <p className="font-display text-2xl font-extrabold">Bài đã nộp</p>
         <p className="mt-2 text-lg">
-          <span className="font-bold tabular-nums">{fallbackScore}</span> điểm
+          <span className="font-display text-4xl font-extrabold tabular-nums">{fallbackScore}</span> điểm
         </p>
         <p className="mt-1 text-sm text-muted">Chờ những người khác vẽ xong…</p>
-      </div>
+      </ResultCard>
     );
   }
 
@@ -285,24 +325,60 @@ function ResultPanel({ commit, fallbackScore }: { commit: Commit | null; fallbac
 
   if (!commit.matched) {
     return (
-      <div className="rounded-2xl border-2 border-wrong/50 bg-wrong/10 px-4 py-6 text-center">
-        <p className="text-2xl font-bold text-wrong">AI không nhận ra hình này</p>
+      <ResultCard tone="wrong" icon={<CircleX className="h-8 w-8" />}>
+        <p className="font-display text-2xl font-extrabold text-wrong">AI không nhận ra hình này</p>
         <p className="mt-2 text-lg">
-          <span className="font-bold tabular-nums">0</span> điểm
+          <span className="font-display text-4xl font-extrabold tabular-nums">0</span> điểm
         </p>
         <p className="mt-1 text-sm text-muted">{auto}Chờ những người khác vẽ xong…</p>
-      </div>
+      </ResultCard>
     );
   }
 
   return (
-    <div className="rounded-2xl border-2 border-correct/60 bg-correct/10 px-4 py-6 text-center">
-      <p className="text-2xl font-bold text-correct">AI đã nhận ra! 🎉</p>
-      <p className="mt-2 text-lg">
-        +<span className="font-bold tabular-nums">{commit.score}</span> điểm
-        <span className="ml-2 text-sm text-muted">({commit.seconds} giây)</span>
+    <ResultCard tone="correct" icon={<PartyPopper className="h-8 w-8" />}>
+      <p className="font-display text-2xl font-extrabold text-correct">AI đã nhận ra!</p>
+      <p className="mt-2 flex items-baseline justify-center gap-1 text-lg">
+        +<span className="font-display text-5xl font-extrabold tabular-nums text-correct">{commit.score}</span>{' '}
+        điểm
       </p>
-      <p className="mt-1 text-sm text-muted">{auto}Chờ những người khác vẽ xong…</p>
+      <p className="mt-1">
+        <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-sm tabular-nums text-muted">
+          {commit.seconds} giây
+        </span>
+      </p>
+      <p className="mt-2 text-sm text-muted">{auto}Chờ những người khác vẽ xong…</p>
+    </ResultCard>
+  );
+}
+
+const RESULT_TONE = {
+  neutral: { card: 'border-line bg-surface', badge: 'bg-secondary text-ink' },
+  wrong: { card: 'border-wrong/60 bg-wrong/10', badge: 'bg-wrong text-ink' },
+  correct: { card: 'border-correct/70 bg-correct/10', badge: 'bg-correct text-ink' },
+} as const;
+
+function ResultCard({
+  tone,
+  icon,
+  children,
+}: {
+  tone: keyof typeof RESULT_TONE;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  const t = RESULT_TONE[tone];
+  return (
+    <div
+      className={`animate-pop rounded-3xl border-2 px-4 py-7 text-center shadow-[0_5px_0_var(--color-edge)] ${t.card}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`mx-auto mb-3 grid h-14 w-14 -rotate-3 place-items-center rounded-2xl ${t.badge}`}
+      >
+        {icon}
+      </span>
+      {children}
     </div>
   );
 }

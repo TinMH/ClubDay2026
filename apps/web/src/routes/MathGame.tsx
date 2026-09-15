@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { CircleCheck, CircleX, Flame, Hash, TriangleAlert, Trophy } from 'lucide-react';
 import { ChoicePad } from '../components/ChoicePad';
+import { Spinner } from '../components/Chips';
 import { ApiError } from '../lib/api';
 import { mathApi, type PublicQuestion } from '../lib/api-math';
 import type { GameProps } from '../lib/types';
@@ -79,21 +81,26 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
     }
   }
 
-  if (loading) return <p className="py-10 text-center text-muted">Đang lấy câu hỏi…</p>;
+  if (loading) return <Spinner label="Đang lấy câu hỏi…" />;
 
   if (error) {
     return (
-      <div className="rounded-xl border border-wrong/40 bg-wrong/10 p-4 text-center">
-        <p className="text-wrong">{error}</p>
-      </div>
+      <p
+        role="alert"
+        className="card flex items-center justify-center gap-2 border-wrong/60 bg-wrong/10 p-4 text-wrong"
+      >
+        <TriangleAlert aria-hidden="true" className="h-5 w-5 shrink-0" />
+        {error}
+      </p>
     );
   }
 
   // Hết đề mà chưa hết giờ — hiếm nhưng vẫn phải xử lý.
   if (!question) {
     return (
-      <div className="rounded-xl border border-white/10 bg-ink-soft p-8 text-center">
-        <p className="text-lg font-semibold">Hết câu hỏi!</p>
+      <div className="card p-8 text-center">
+        <Trophy aria-hidden="true" className="mx-auto h-10 w-10 text-accent" />
+        <p className="mt-3 font-display text-2xl font-extrabold">Hết câu hỏi!</p>
         <p className="mt-1 text-sm text-muted">
           {roundOver ? 'Lượt đã kết thúc.' : 'Chờ hết giờ để xem kết quả.'}
         </p>
@@ -102,34 +109,69 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* key = số câu: sang câu mới là dựng lại thẻ → animation chạy lại (nảy khi đúng, rung khi sai). */}
       <div
-        className={`rounded-2xl border-2 px-4 py-10 text-center transition-colors ${
+        key={index}
+        className={`card px-4 py-9 text-center transition-colors ${
           lastResult === 'correct'
-            ? 'border-correct/60 bg-correct/10'
+            ? 'animate-pop border-correct/70 bg-correct/10'
             : lastResult === 'wrong'
-              ? 'border-wrong/60 bg-wrong/10'
-              : 'border-white/10 bg-ink-soft'
+              ? 'animate-shake border-wrong/70 bg-wrong/10'
+              : 'animate-pop'
         }`}
       >
-        <p className="text-5xl font-bold tabular-nums sm:text-6xl">{question.prompt}</p>
-        <p className="mt-3 h-5 text-sm">
-          {lastResult === 'correct' && <span className="text-correct">✓ đúng</span>}
-          {lastResult === 'wrong' && <span className="text-wrong">✗ sai</span>}
+        <p className="break-words font-display text-5xl font-extrabold leading-none tabular-nums sm:text-7xl">
+          {question.prompt}
+        </p>
+        <p className="mt-4 flex h-6 items-center justify-center text-sm font-bold">
+          {lastResult === 'correct' && (
+            <span className="flex items-center gap-1.5 text-correct">
+              <CircleCheck aria-hidden="true" className="h-5 w-5" />
+              Đúng rồi!
+            </span>
+          )}
+          {lastResult === 'wrong' && (
+            <span className="flex items-center gap-1.5 text-wrong">
+              <CircleX aria-hidden="true" className="h-5 w-5" />
+              Sai mất rồi
+            </span>
+          )}
         </p>
       </div>
 
-      <div className="flex justify-between text-sm text-muted">
-        <span>
-          Câu <span className="font-semibold text-paper">{index + 1}</span>
-        </span>
-        <span>
-          Chuỗi đúng:{' '}
-          <span className={`font-semibold ${streak > 0 ? 'text-correct' : 'text-paper'}`}>
-            {streak}
-          </span>
-          {bestStreak > 0 && <span className="ml-2">(tốt nhất {bestStreak})</span>}
-        </span>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-3 rounded-2xl border-2 border-line bg-surface px-3 py-2.5">
+          <Hash aria-hidden="true" className="h-5 w-5 shrink-0 text-secondary" />
+          <div className="leading-tight">
+            <p className="text-xs text-muted">Câu</p>
+            <p className="font-display text-xl font-extrabold tabular-nums">{index + 1}</p>
+          </div>
+        </div>
+        <div
+          className={`flex items-center gap-3 rounded-2xl border-2 px-3 py-2.5 transition-colors ${
+            streak > 0 ? 'border-warn/60 bg-warn/10' : 'border-line bg-surface'
+          }`}
+        >
+          <Flame
+            aria-hidden="true"
+            className={`h-5 w-5 shrink-0 ${streak > 0 ? 'text-warn' : 'text-muted'}`}
+            fill={streak > 0 ? 'currentColor' : 'none'}
+          />
+          <div className="min-w-0 leading-tight">
+            <p className="text-xs text-muted">Chuỗi đúng</p>
+            <p className="flex flex-wrap items-baseline gap-x-1.5">
+              <span
+                className={`font-display text-xl font-extrabold tabular-nums ${streak > 0 ? 'text-warn' : ''}`}
+              >
+                {streak}
+              </span>
+              {bestStreak > 0 && (
+                <span className="text-xs text-muted">tốt nhất {bestStreak}</span>
+              )}
+            </p>
+          </div>
+        </div>
       </div>
 
       <ChoicePad
