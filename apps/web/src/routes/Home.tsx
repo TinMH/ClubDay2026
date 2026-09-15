@@ -1,8 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
+import { ArrowRight, LoaderCircle, ShieldCheck, Sparkles, TriangleAlert } from 'lucide-react';
 import { api, ApiError } from '../lib/api';
 import { saveSession } from '../lib/session';
+import { GAME_THEME } from '../lib/game-theme';
+import { DURATION_MS, GAME_LABEL, MAX_PLAYERS, type GameKind } from '../lib/types';
 import { Shell } from '../components/Shell';
+import { DscLogo } from '../components/Logo';
 
 const MESSAGES: Record<string, string> = {
   ROUND_FULL: 'Lượt này đủ 5 người rồi — chờ lượt sau nhé.',
@@ -10,6 +14,8 @@ const MESSAGES: Record<string, string> = {
   NOT_FOUND: 'Không tìm thấy lượt này. Kiểm tra lại mã.',
   BAD_REQUEST: 'Tên không hợp lệ (1–20 ký tự).',
 };
+
+const GAMES: GameKind[] = ['math', 'draw'];
 
 /**
  * Nhập tên và vào lượt.
@@ -42,40 +48,95 @@ export function Home() {
 
   return (
     <Shell>
-      <header className="text-center">
-        <h1 className="text-4xl font-bold tracking-tight">ClubDay</h1>
-        <p className="mt-2 text-muted">Nhập tên để vào lượt chơi</p>
+      <header className="animate-rise pt-4 text-center">
+        <DscLogo />
+        <h1 className="mt-6 font-display text-6xl font-extrabold leading-none tracking-tight">
+          Club<span className="text-accent">Day</span>
+        </h1>
+        <p className="mt-3 flex items-center justify-center gap-1.5 text-muted">
+          <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0 text-secondary" />
+          Mini game CLB · tối đa {MAX_PLAYERS} người một lượt
+        </p>
       </header>
 
-      <form onSubmit={submit} className="space-y-4">
+      <ul aria-label="Các trò chơi" className="grid grid-cols-2 gap-3">
+        {GAMES.map((g, i) => {
+          const { icon: Icon, tile, blurb } = GAME_THEME[g];
+          return (
+            <li key={g} className="card animate-rise p-4" style={{ animationDelay: `${80 + i * 70}ms` }}>
+              <span className={`grid h-11 w-11 place-items-center rounded-xl ${tile}`}>
+                <Icon aria-hidden="true" className="h-6 w-6" />
+              </span>
+              <p className="mt-3 font-display text-lg font-bold leading-tight">{GAME_LABEL[g]}</p>
+              <p className="mt-1 text-xs text-muted">
+                {DURATION_MS[g] / 1000} giây · {blurb}
+              </p>
+            </li>
+          );
+        })}
+      </ul>
+
+      <form
+        onSubmit={submit}
+        className="card animate-rise space-y-4 p-5"
+        style={{ animationDelay: '220ms' }}
+      >
         {roundId && (
-          <p className="rounded-lg border border-brand/40 bg-brand/10 px-3 py-2 text-center text-sm">
-            Bạn đang vào lượt <span className="font-mono font-bold">{roundId}</span>
+          <p className="rounded-xl border-2 border-secondary/40 bg-secondary/10 px-3 py-2 text-center text-sm">
+            Bạn đang vào lượt{' '}
+            <span className="font-mono font-bold tracking-wider text-secondary">{roundId}</span>
           </p>
         )}
 
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          maxLength={20}
-          autoFocus
-          placeholder="Tên của bạn"
-          className="w-full rounded-xl border border-white/15 bg-ink-soft px-4 py-4 text-lg outline-none placeholder:text-muted focus:border-brand"
-        />
+        <div>
+          <label htmlFor="player-name" className="mb-2 block text-sm font-semibold">
+            Tên của bạn
+          </label>
+          <input
+            id="player-name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={20}
+            autoFocus
+            autoComplete="nickname"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'join-error' : undefined}
+            className="field"
+          />
+        </div>
 
-        <button
-          type="submit"
-          disabled={busy || !name.trim()}
-          className="w-full rounded-xl bg-brand py-4 text-lg font-semibold transition hover:brightness-110 disabled:opacity-40"
-        >
-          {busy ? 'Đang vào…' : 'Vào chơi'}
+        <button type="submit" disabled={busy || !name.trim()} className="btn btn-accent btn-lg w-full">
+          {busy ? (
+            <>
+              <LoaderCircle aria-hidden="true" className="h-6 w-6 animate-spin" />
+              Đang vào…
+            </>
+          ) : (
+            <>
+              Vào chơi
+              <ArrowRight aria-hidden="true" className="h-6 w-6" />
+            </>
+          )}
         </button>
 
-        {error && <p className="text-center text-sm text-wrong">{error}</p>}
+        {error && (
+          <p
+            id="join-error"
+            role="alert"
+            className="flex items-center justify-center gap-2 text-sm font-medium text-wrong"
+          >
+            <TriangleAlert aria-hidden="true" className="h-4 w-4 shrink-0" />
+            {error}
+          </p>
+        )}
       </form>
 
-      <footer className="mt-auto text-center text-sm text-muted">
-        <Link to="/admin" className="underline-offset-4 hover:underline">
+      <footer className="mt-auto text-center">
+        <Link
+          to="/admin"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-muted transition-colors hover:text-fg"
+        >
+          <ShieldCheck aria-hidden="true" className="h-4 w-4" />
           Trang quản trị
         </Link>
       </footer>
