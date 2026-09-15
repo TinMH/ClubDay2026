@@ -18,6 +18,21 @@ export function registerStartHook(game: GameKind, fn: StartHook): void {
   startHooks.set(game, fn);
 }
 
+// ─────────────── hook khi KẾT THÚC lượt ───────────────
+//
+// Đối xứng với `registerStartHook`, cũng để mỗi track tự lo phần của mình.
+// TRACK B cần nó để TỰ NỘP bài cho những ai chưa bấm nút — kể cả khi điện thoại
+// của họ đã treo tab và không gửi được request nào nữa.
+//
+// Hook chạy ĐỒNG BỘ ngay lúc trạng thái vừa chuyển sang 'done', nên nó chỉ được
+// làm việc nhẹ; việc nặng (gọi model chẳng hạn) phải tự đẩy sang nền.
+type EndHook = (round: Round, now: number) => void;
+const endHooks = new Map<GameKind, EndHook>();
+
+export function registerEndHook(game: GameKind, fn: EndHook): void {
+  endHooks.set(game, fn);
+}
+
 // ─────────────── join ───────────────
 
 export type JoinResult =
@@ -74,7 +89,14 @@ export function startRound(roundId: string, now = Date.now()): StartResult {
   return { ok: true, round };
 }
 
-/** BTC bỏ qua lượt đang chờ/dở → kết thúc ngay. */
+/**
+ * BTC bỏ qua lượt đang chờ/dở → kết thúc ngay.
+ *
+ * CHÚ Ý — hàm này CỐ Ý không chạy end hook: bỏ qua là HUỶ lượt, không phải lượt
+ * chơi xong. Thời gian của nó gần như bằng 0, nên nếu để hook tự nộp bài thì cả
+ * 5 người bỗng nhiên được ~150 điểm và nhảy lên đầu bảng. Điểm chỉ sinh ra từ một
+ * lượt đã chơi thật.
+ */
 export function skipRound(roundId: string, now = Date.now()): StartResult {
   const round = getRound(roundId);
   if (!round) return { ok: false, code: 'NOT_FOUND' };
@@ -109,6 +131,9 @@ export function syncRoundStatus(round: Round, now = Date.now()): boolean {
   if (!timeUp && !allPlayersFinished(round)) return false;
 
   round.status = 'done';
+  // Chạy TRƯỚC khi đánh dấu tất cả `finished`: track nào còn cần biết "ai chưa
+  // xong" để chấm nốt thì vẫn còn thấy được.
+  endHooks.get(round.game)?.(round, now);
   for (const p of round.players.values()) p.finished = true;
   touch(round);
   return true;

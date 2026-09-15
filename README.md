@@ -5,7 +5,7 @@ Web 2 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người**, ch
 | Game | Thời lượng | Cách chơi |
 |---|---|---|
 | **Tính nhanh** | 90 giây | Chọn 1 trong 4 đáp án. **Điểm = chuỗi đúng dài nhất** |
-| **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá, model AI nhận diện |
+| **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá rồi **bấm NỘP BÀI** để AI chấm — hết giờ thì tự nộp |
 
 ---
 
@@ -113,12 +113,12 @@ ClubDay/
 │       │   │   ├── Dashboard.tsx  ✅ 🔒 bảng hạng 5 người
 │       │   │   ├── Admin.tsx      ✅ 🔒 màn hình BTC (tạo lượt, bắt đầu, URL in QR)
 │       │   │   ├── MathGame.tsx   ✅ 🅰️ màn hình Tính nhanh (đã xong)
-│       │   │   └── DrawGame.tsx   ✅ 🅱️ màn hình Vẽ (gửi frame, hiện AI đoán)
+│       │   │   └── DrawGame.tsx   ✅ 🅱️ màn hình Vẽ (frame = gợi ý, nút NỘP BÀI)
 │       │   ├── components/
 │       │   │   ├── Shell.tsx      ✅ 🔒 khung màn hình
 │       │   │   ├── Countdown.tsx  ✅ 🔒 đồng hồ + thanh tiến độ
 │       │   │   ├── RankTable.tsx  ✅ 🔒 bảng hạng
-│       │   │   ├── AnswerPad.tsx  ✅ 🅰️ ô nhập đáp án
+│       │   │   ├── ChoicePad.tsx  ✅ 🅰️ 4 nút đáp án (server sinh + xáo trộn)
 │       │   │   └── DrawCanvas.tsx ✅ 🅱️ canvas + giữ pointer (setPointerCapture)
 │       │   └── lib/               ✅ api · sse · useCountdown · session · types · format (🔒)
 │       │                          ✅ 🅰️ api-math.ts — client riêng của Track A
@@ -132,7 +132,7 @@ ClubDay/
 ├── scripts/                       ── Công cụ vận hành — KHÔNG thuộc runtime
 │   ├── prefetch-model.ts          ✅ tải model về ./models để chạy offline
 │   ├── check-offline.ts           ✅ chặn internet, xác nhận model vẫn load được
-│   ├── smoke-test.mjs             ✅ chạy thử end-to-end (43 kiểm tra)
+│   ├── smoke-test.mjs             ✅ chạy thử end-to-end (68 kiểm tra)
 │   ├── eval-model.ts              ✅ 🅱️ đo accuracy 345 class → SINH RA allowlist
 │   └── loadtest.mjs               ⬜ giả lập N người chơi đồng thời
 │
@@ -222,21 +222,32 @@ Client                          Server
   │◄── dashboard 5 người ──────────│  khi now > endsAt
 ```
 
-**Vẽ hình** — ảnh không bao giờ đi qua mạng:
+**Vẽ hình** — ảnh không bao giờ đi qua mạng, và ĐIỂM CHỈ SINH RA KHI NỘP:
 
 ```
 Client                                     Server
   │                                          │
-  ├── POST /:id/frame ──────────────────────►│  ① còn trong 15s?  ② ≥1000ms từ frame trước?
+  ├── POST /:id/frame (mỗi ~1s) ────────────►│  ① còn trong 15s?  ② ≥1000ms từ frame trước?
   │   { strokes: [[[x,y],…],…] }             │  ③ rasterize(strokes) → 28×28
   │                                          │  ④ classify() → top-3 nhãn
-  │                                          │  ⑤ accepted(top3, target)?
-  │◄── { matched, top: […], timeLeftMs } ────│
-  │                                          │  matched → chốt điểm = f(thời gian còn lại)
+  │◄── { hint, top: […] } ───────────────────│  ⬅ GỢI Ý thôi: KHÔNG cộng điểm
+  │                                          │     (server giữ lại nét mới nhất)
+  │                                          │
+  │        … người chơi bấm NỘP BÀI …        │
+  ├── POST /:id/submit ─────────────────────►│  ① chưa nộp?  ② còn trong quãng ân hạn?
+  │   { strokes } — bỏ trống = nét server giữ │  ③ rasterize → classify → so từ khoá
+  │◄── { matched, score, reason } ───────────│  ④ score = 150 − số giây (kẹp ở 15)
+  │                                          │
+  │        … hết 15 giây …                   │  hook kết thúc lượt: ai CHƯA nộp thì
+  │                                          │  server tự chấm bằng nét cuối nó giữ
 ```
 
 Client gửi **toạ độ nét thô**, không gửi ảnh. Server tự vẽ lại ở 28×28 — nhờ vậy client không thể
 gửi một bức ảnh có sẵn, và payload nhẹ hơn base64 PNG khoảng 10–30 lần.
+
+Điểm **không** phụ thuộc vào việc AI có đọc ra hình trong lúc đang vẽ hay không: frame chỉ để hiện
+"AI nghĩ: …". Nếu hễ model đọc ra là cộng điểm thì người đang vẽ dở cũng bị tính là đã thắng — đó
+là lỗi cũ, và có test canh để nó không quay lại.
 
 ### Trạng thái hiện tại
 
@@ -244,16 +255,18 @@ gửi một bức ảnh có sẵn, và payload nhẹ hơn base64 PNG khoảng 10
 |---|---|
 | Môi trường, build, 2 workspace | ✅ chạy được |
 | Model AI tải + chạy offline | ✅ đã verify (`npm run check:offline`) |
-| **Phase F — nền tảng** (store, lobby, SSE, admin, router, 2 stub) | ✅ **XONG** — 24 unit test + 18 smoke test |
-| 🅰️ Track A — Tính nhanh (`math-gen`, `math-session`, `routes/math`, `MathGame`) | ✅ **XONG** trên nhánh `feat/math-game` |
-| 🅱️ Track B — Vẽ hình (`raster`, `classifier`, `labels`, `draw-session`, `DrawGame`) | ✅ **XONG** trên nhánh `feat/draw-game` |
+| **Phase F — nền tảng** (store, lobby, SSE, admin, router, 2 stub) | ✅ **XONG** |
+| 🅰️ Track A — Tính nhanh (`math-gen`, `math-session`, `math-options`, `ChoicePad`) | ✅ **XONG** — đã merge `main` |
+| 🅱️ Track B — Vẽ hình (`raster`, `classifier`, `labels`, `draw-session`) | ✅ **XONG** — đã merge `main` |
+| 🅱️ **Nộp bài** — nút NỘP BÀI + tự nộp khi hết giờ | ✅ **XONG** trên nhánh `feat/draw-submit` |
 | Tích hợp + load test + diễn tập | ⬜ Wave 3 |
 
 Chạy kiểm tra bất cứ lúc nào:
 
 ```bash
-npm test       # 121 unit test — nền tảng + Track A + Track B (web + server)
-npm run smoke  # 43 kiểm tra end-to-end (tự bật server rồi tắt, có nạp model thật)
+npm test       # 169 unit test — nền tảng + Track A + Track B (143 server + 26 web)
+npm run smoke  # 68 kiểm tra end-to-end (tự bật server rồi tắt, có nạp model thật)
+               # ⏱ chậm hơn trước ~20s: có kiểm tra phải chờ hết 15 giây thật của lượt Vẽ
 ```
 
 Test của game Tính nhanh tập trung vào **chống gian lận**: hết giờ không cộng điểm dù đúng,
@@ -272,6 +285,26 @@ thường gặp ở Tính nhanh, nên khi bằng thì xếp theo **số câu đ�
 xuống so thời gian thì người trả lời ít câu hơn lại xếp trên, ngược hẳn với điều ai cũng nghĩ
 là công bằng. Luật tie-break này **chỉ áp cho `game === 'math'`** — có test canh để nó không
 rò sang game Vẽ.
+
+### Cách chấm điểm Vẽ hình — đọc trước khi sửa
+
+Điểm chỉ sinh ra ở **đúng một thời điểm**: lúc bài được NỘP, và mỗi người chỉ nộp được một lần.
+
+- Bấm **NỘP BÀI** → chấm ngay: `150 − số giây đã dùng`; không nhận ra hình thì 0 điểm.
+- Hết 15 giây → client tự nộp. Ai không gửi được (treo tab, mất mạng) thì **server tự nộp hộ**
+  bằng nét vẽ cuối cùng nó đã nhận được, không cần client hợp tác.
+- Nộp lại lần nữa **không** chấm lại — server trả về đúng kết quả cũ kèm `already: true`, nên bấm
+  đúp hay mạng bắn lại cũng không đổi điểm.
+
+Hai chỗ dễ sửa nhầm:
+
+1. **Quãng ân hạn 2.5 giây** (`SUBMIT_GRACE_MS`) sau mốc hết giờ. Bài nộp thật của client luôn tới
+   sau `endsAt` vài trăm ms, mà đồng hồ nền của server quét mỗi 500ms — không có quãng này thì mọi
+   bài nộp đúng lúc hết giờ đều bị trả `TIME_UP` và cả lượt không ai có điểm. Số giây bị **kẹp ở độ
+   dài lượt**, nên nộp muộn không thể ăn điểm cao hơn nộp đúng mốc. Đường TỰ NỘP của server chạy
+   *sau* quãng đó nên phải truyền `force: true`, không thì nó bị chính quãng ân hạn chặn lại.
+2. **Bỏ qua lượt (admin) KHÔNG tự nộp.** Bỏ qua là huỷ lượt, thời gian gần như bằng 0, nên nếu để
+   hook kết thúc lượt tự chấm thì cả 5 người bỗng được ~150 điểm và nhảy lên đầu bảng.
 
 ### Quy ước khi thêm code
 

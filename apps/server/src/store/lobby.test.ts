@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { join, registerStartHook, skipRound, startRound, syncRoundStatus } from './lobby.js';
+import { join, registerEndHook, registerStartHook, skipRound, startRound, syncRoundStatus } from './lobby.js';
 import { addPlayer, createRound, resetAll } from './store.js';
 import { DURATION_MS, MAX_PLAYERS } from './types.js';
 
@@ -111,5 +111,43 @@ describe('lobby', () => {
     expect(r.status).toBe('done');
     expect(r.endsAt).toBe(5_000);
     expect([...r.players.values()].every((p) => p.finished)).toBe(true);
+  });
+
+  it('end hook chạy ĐÚNG MỘT LẦN khi lượt kết thúc, và TRƯỚC khi mọi người bị đánh dấu xong', () => {
+    /** Trạng thái `finished` của người chơi, ghi lại mỗi lần hook chạy. */
+    const seen: string[] = [];
+    registerEndHook('draw', (round) => {
+      seen.push([...round.players.values()].map((p) => String(p.finished)).join(','));
+    });
+
+    const r = createRound('draw');
+    join('An', { roundId: r.id });
+    const now = 1_000_000;
+    startRound(r.id, now);
+
+    expect(syncRoundStatus(r, now + 1_000)).toBe(false);
+    expect(seen).toEqual([]); // lượt chưa kết thúc thì hook chưa được chạy
+
+    expect(syncRoundStatus(r, now + DURATION_MS.draw + 1)).toBe(true);
+    // Hook phải còn thấy người chơi CHƯA finished — TRACK B dựa vào đó để biết ai
+    // còn phải chấm bài. Nếu hook chạy sau vòng lặp đánh dấu thì nó mù thông tin.
+    expect(seen).toEqual(['false']);
+
+    // Lượt đã done rồi thì gọi lại không chạy hook lần nữa.
+    syncRoundStatus(r, now + DURATION_MS.draw + 2);
+    expect(seen).toEqual(['false']);
+  });
+
+  it('end hook của game khác không chạy', () => {
+    let drawRuns = 0;
+    registerEndHook('draw', () => void (drawRuns += 1));
+
+    const r = createRound('math');
+    join('An', { roundId: r.id });
+    const now = 1_000_000;
+    startRound(r.id, now);
+    syncRoundStatus(r, now + DURATION_MS.math + 1);
+
+    expect(drawRuns).toBe(0);
   });
 });

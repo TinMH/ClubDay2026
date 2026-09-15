@@ -386,6 +386,16 @@ try {
       typeof okFrame.data.top[0]?.labelVi === 'string',
     JSON.stringify(okFrame.data?.top),
   );
+  check(
+    'Frame trả GỢI Ý (`hint`), không trả kết quả (`matched`)',
+    typeof okFrame.data?.hint === 'boolean' && okFrame.data?.matched === undefined,
+    `hint=${okFrame.data?.hint} matched=${okFrame.data?.matched}`,
+  );
+  check(
+    'Frame KHÔNG cộng điểm — vẽ đúng cũng phải chờ NỘP',
+    okFrame.data?.score === 0,
+    `score=${okFrame.data?.score}`,
+  );
 
   const fastFrame = await frame({ playerId: dPid, seq: 2, strokes: [[[20, 20], [200, 200]]] });
   check(
@@ -405,9 +415,9 @@ try {
   await sleep(1100);
   const blankFrame = await frame({ playerId: dPid, seq: 3, strokes: [] });
   check(
-    'Canvas trống → 200, matched=false, không crash',
+    'Canvas trống → 200, hint=false, không crash',
     blankFrame.status === 200 &&
-      blankFrame.data?.matched === false &&
+      blankFrame.data?.hint === false &&
       Array.isArray(blankFrame.data?.top) &&
       blankFrame.data.top.length === 0,
     `HTTP ${blankFrame.status} top=${JSON.stringify(blankFrame.data?.top)}`,
@@ -491,36 +501,119 @@ try {
     },
   };
 
-  let won = null;
-  for (let attempt = 0; attempt < 60 && !won; attempt++) {
+  /** Mở một lượt vẽ rồi VẼ ĐÚNG từ khoá của nó. Trả null nếu lượt này chưa dùng được. */
+  async function openDrawableRound() {
     const c = await call('/api/admin/rounds', { method: 'POST', body: { game: 'draw' }, token: TOKEN });
     const rid = c.data.roundId;
     const jr = await call('/api/rounds/join', { method: 'POST', body: { name: 'An', roundId: rid } });
     const sr = await call(`/api/rounds/${rid}/start`, { method: 'POST', body: {}, token: TOKEN });
     const target = sr.data?.state?.target;
-    const strokes = STROKES_FOR[target?.id];
-    if (!strokes) continue;
+    const make = STROKES_FOR[target?.id];
+    if (!make) return null;
 
+    const pid = jr.data.playerId;
+    const strokes = make();
     const res = await call(`/api/rounds/${rid}/frame`, {
       method: 'POST',
-      body: { playerId: jr.data.playerId, seq: 1, strokes: strokes(), canvasW: 300, canvasH: 300 },
+      body: { playerId: pid, seq: 1, strokes, canvasW: 300, canvasH: 300 },
     });
-    won = { target, res };
+    // Chỉ dùng lượt mà model ĐỌC RA đúng từ khoá — có vậy đường thắng mới chắc.
+    if (res.data?.hint !== true) return null;
+    return { rid, pid, target, strokes, frame: res };
   }
 
+  /** Thử tối đa 60 lượt; bỏ qua chứ không đánh trượt nếu không gặp lượt dùng được. */
+  async function findDrawableRound() {
+    for (let attempt = 0; attempt < 60; attempt++) {
+      const found = await openDrawableRound();
+      if (found) return found;
+    }
+    return null;
+  }
+
+  // ── đường 1: NỘP TAY — vẽ đúng từ khoá rồi bấm nút ──
+  const won = await findDrawableRound();
+
   if (!won) {
-    console.log('  ⏭  Bỏ qua kiểm đường thắng: 60 lượt liên tiếp không gặp từ khoá vẽ được');
+    console.log('  ⏭  Bỏ qua đường thắng: 60 lượt liên tiếp không gặp từ khoá vẽ được');
   } else {
     check(
-      `Vẽ đúng từ khoá "${won.target.labelVi}" → matched=true`,
-      won.res.status === 200 && won.res.data?.matched === true,
-      `HTTP ${won.res.status} matched=${won.res.data?.matched} top=${JSON.stringify(won.res.data?.top)}`,
+      `Vẽ đúng từ khoá "${won.target.labelVi}" → frame báo GỢI Ý nhận ra`,
+      won.frame.status === 200 && won.frame.data?.hint === true,
+      `HTTP ${won.frame.status} hint=${won.frame.data?.hint} top=${JSON.stringify(won.frame.data?.top)}`,
     );
-    const wScore = won.res.data?.score ?? 0;
+
+    const beforeSubmit = (await call(`/api/rounds/${won.rid}/dashboard`)).data?.rows?.[0]?.score;
     check(
-      'Điểm thắng do server tính (150 − số giây), không phải client',
-      wScore > 0 && wScore <= 150,
-      `score=${wScore} seconds=${won.res.data?.seconds}`,
+      'Gợi ý đúng nhưng CHƯA nộp → bảng hạng vẫn 0 điểm',
+      beforeSubmit === 0,
+      `score=${beforeSubmit}`,
+    );
+
+    const sub = await call(`/api/rounds/${won.rid}/submit`, {
+      method: 'POST',
+      body: { playerId: won.pid, strokes: won.strokes },
+    });
+    check(
+      'NỘP bài → matched=true và có điểm',
+      sub.status === 200 && sub.data?.matched === true && sub.data?.score > 0,
+      `HTTP ${sub.status} matched=${sub.data?.matched} score=${sub.data?.score}`,
+    );
+    check(
+      'Điểm do server tính (150 − số giây), nộp tay → reason=button',
+      sub.data?.score > 0 && sub.data?.score <= 150 && sub.data?.reason === 'button',
+      `score=${sub.data?.score} seconds=${sub.data?.seconds} reason=${sub.data?.reason}`,
+    );
+
+    const again = await call(`/api/rounds/${won.rid}/submit`, {
+      method: 'POST',
+      body: { playerId: won.pid, strokes: won.strokes },
+    });
+    check(
+      'Nộp lần hai → trả lại kết quả cũ, KHÔNG chấm lại',
+      again.status === 200 && again.data?.already === true && again.data?.score === sub.data?.score,
+      `HTTP ${again.status} already=${again.data?.already} score=${again.data?.score}`,
+    );
+
+    const afterSubmit = (await call(`/api/rounds/${won.rid}/dashboard`)).data?.rows?.[0]?.score;
+    check(
+      'Bảng hạng thấy đúng điểm vừa nộp',
+      afterSubmit === sub.data?.score,
+      `${beforeSubmit} → ${afterSubmit}`,
+    );
+  }
+
+  // ── đường 2: TỰ NỘP — không ai bấm nút, hết giờ server phải tự chấm ──
+  const timeoutCase = await findDrawableRound();
+
+  if (!timeoutCase) {
+    console.log('  ⏭  Bỏ qua kiểm tự nộp: 60 lượt liên tiếp không gặp từ khoá vẽ được');
+  } else {
+    // KHÔNG gọi /submit lần nào, và cũng KHÔNG đóng lượt bằng admin: bỏ qua lượt
+    // là HUỶ lượt (xem `skipRound`), còn ở đây phải là một lượt chơi thật hết giờ.
+    //
+    // ⏱ Đây là chỗ chậm nhất của bộ test: phải đợi trọn 15 giây của lượt rồi thêm
+    // quãng ân hạn ~2.5s nữa server mới tự chấm. Không rút ngắn được — chính cái
+    // đồng hồ đó là thứ đang được kiểm. Poll để xong ngay khi có kết quả.
+    console.log('  ⏳  đợi hết 15 giây của lượt + quãng ân hạn (đường tự nộp)…');
+    const waitStart = Date.now();
+    const deadline = waitStart + 22_000;
+    let row = null;
+    while (Date.now() < deadline) {
+      await sleep(500);
+      row = (await call(`/api/rounds/${timeoutCase.rid}/dashboard`)).data?.rows?.[0];
+      if (typeof row?.msToFinish === 'number') break;
+    }
+
+    check(
+      'Không ai gọi /submit → server vẫn TỰ CHẤM bài từ nét cuối',
+      typeof row?.score === 'number' && row.score > 0,
+      `score=${row?.score} solved=${row?.solved} (sau ${((Date.now() - waitStart) / 1000).toFixed(1)}s)`,
+    );
+    check(
+      'Người chơi được ghi nhận đã xong lượt',
+      typeof row?.msToFinish === 'number',
+      `msToFinish=${row?.msToFinish}`,
     );
   }
 
