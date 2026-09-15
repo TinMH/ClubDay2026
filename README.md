@@ -119,8 +119,11 @@ ClubDay/
 │       │   │   ├── Countdown.tsx  ✅ 🔒 đồng hồ + thanh tiến độ
 │       │   │   ├── RankTable.tsx  ✅ 🔒 bảng hạng
 │       │   │   ├── ChoicePad.tsx  ✅ 🅰️ 4 nút đáp án (server sinh + xáo trộn)
-│       │   │   └── DrawCanvas.tsx ✅ 🅱️ canvas + giữ pointer (setPointerCapture)
+│       │   │   ├── DrawCanvas.tsx ✅ 🅱️ canvas + giữ pointer (setPointerCapture)
+│       │   │   ├── Avatar.tsx     ✅    ô chữ cái đầu tên người chơi
+│       │   │   └── Chips.tsx      ✅    nhãn game, kết nối, trạng thái lượt, spinner
 │       │   └── lib/               ✅ api · sse · useCountdown · session · types · format (🔒)
+│       │                          ✅    game-theme.ts — icon + màu nhận diện từng game
 │       │                          ✅ 🅰️ api-math.ts — client riêng của Track A
 │       │                          ✅ 🅱️ api-draw.ts — client riêng của Track B
 │       │                          ✅ 🅱️ strokes.ts — gom nét từ pointer event
@@ -169,8 +172,17 @@ Lợi ích cụ thể: `services/math-session.ts` nhận `now` như một **tham
 **Giao diện dùng Tailwind CSS 4.** Theme được khai báo ngay trong `apps/web/src/styles.css`
 bằng khối `@theme` — **không có `tailwind.config.js`** (đây là cách của Tailwind v4).
 Muốn thêm màu hay token mới thì thêm biến `--color-*` vào khối đó, rồi dùng như utility bình
-thường (`bg-brand`, `text-muted`, …). Hạn chế viết CSS rời; chỉ viết tay khi thật cần
+thường (`bg-primary`, `text-muted`, …). Hạn chế viết CSS rời; chỉ viết tay khi thật cần
 (ví dụ `touch-action: none` cho canvas vẽ).
+
+Phong cách "Vibrant & Block-based" (nền tím than, khối màu đậm, nút có đế khối). Vài class
+dùng chung khai báo trong `@layer components` của `styles.css`: `.btn` (+ `btn-primary`,
+`btn-accent`, `btn-correct`, `btn-ghost`, `btn-sm`, `btn-lg`), `.card`, `.field`. Mỗi game có
+màu nhận diện riêng (`math` xanh cyan, `draw` hồng) — xem `lib/game-theme.ts`.
+
+Font **Baloo 2** (tiêu đề, con số) + **Be Vietnam Pro** (nội dung) được **tự host** qua
+`@fontsource` — không dùng Google Fonts CDN vì ngày sự kiện có thể không có internet.
+Icon dùng `lucide-react` (SVG, đóng gói vào bundle), không dùng emoji làm icon.
 
 ### Điểm cắm — cách 2 track nối vào nền tảng mà KHÔNG sửa file 🔒
 
