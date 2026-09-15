@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { CircleCheck, CircleX, Flame, Hash, TriangleAlert, Trophy } from 'lucide-react';
 import { ChoicePad } from '../components/ChoicePad';
 import { Spinner } from '../components/Chips';
+import { Toast, ToastRegion, useToast } from '../components/Toast';
 import { ApiError } from '../lib/api';
 import { mathApi, type PublicQuestion } from '../lib/api-math';
 import type { GameProps } from '../lib/types';
@@ -25,6 +26,8 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [roundOver, setRoundOver] = useState(false);
+  /** Thông báo đúng/sai ở góc màn hình — tự tắt, không chiếm chỗ của câu hỏi. */
+  const [toast, showToast] = useToast<{ correct: boolean; streak: number }>();
 
   const playing = state.status === 'playing';
 
@@ -65,6 +68,7 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
       setStreak(res.streak);
       setBestStreak(res.score);
       setLastResult(res.correct ? 'correct' : 'wrong');
+      showToast({ correct: res.correct, streak: res.streak });
     } catch (err) {
       if (err instanceof ApiError) {
         // Gõ nhanh hơn 250ms: bỏ qua im lặng, người chơi chỉ cần gõ lại.
@@ -110,33 +114,35 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
 
   return (
     <div className="space-y-5">
-      {/* key = số câu: sang câu mới là dựng lại thẻ → animation chạy lại (nảy khi đúng, rung khi sai). */}
+      <ToastRegion>
+        {toast &&
+          (toast.value.correct ? (
+            <Toast
+              key={toast.id}
+              tone="correct"
+              icon={<CircleCheck className="h-6 w-6" />}
+              title="Đúng rồi!"
+              detail={`Chuỗi ${toast.value.streak}`}
+            />
+          ) : (
+            <Toast
+              key={toast.id}
+              tone="wrong"
+              icon={<CircleX className="h-6 w-6" />}
+              title="Sai mất rồi"
+              detail="Chuỗi về 0"
+            />
+          ))}
+      </ToastRegion>
+
+      {/* key = số câu: sang câu mới là dựng lại thẻ → animation chạy lại một lần
+          (nảy khi đúng, rung khi sai) rồi thôi — không để lại màu đúng/sai. */}
       <div
         key={index}
-        className={`card px-4 py-9 text-center transition-colors ${
-          lastResult === 'correct'
-            ? 'animate-pop border-correct/70 bg-correct/10'
-            : lastResult === 'wrong'
-              ? 'animate-shake border-wrong/70 bg-wrong/10'
-              : 'animate-pop'
-        }`}
+        className={`card px-4 py-10 text-center ${lastResult === 'wrong' ? 'animate-shake' : 'animate-pop'}`}
       >
         <p className="break-words font-display text-5xl font-extrabold leading-none tabular-nums sm:text-7xl">
           {question.prompt}
-        </p>
-        <p className="mt-4 flex h-6 items-center justify-center text-sm font-bold">
-          {lastResult === 'correct' && (
-            <span className="flex items-center gap-1.5 text-correct">
-              <CircleCheck aria-hidden="true" className="h-5 w-5" />
-              Đúng rồi!
-            </span>
-          )}
-          {lastResult === 'wrong' && (
-            <span className="flex items-center gap-1.5 text-wrong">
-              <CircleX aria-hidden="true" className="h-5 w-5" />
-              Sai mất rồi
-            </span>
-          )}
         </p>
       </div>
 
