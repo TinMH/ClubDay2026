@@ -121,7 +121,9 @@ ClubDay/
 │       │   │   ├── ChoicePad.tsx  ✅ 🅰️ 4 nút đáp án (server sinh + xáo trộn)
 │       │   │   ├── DrawCanvas.tsx ✅ 🅱️ canvas + giữ pointer (setPointerCapture)
 │       │   │   ├── Avatar.tsx     ✅    ô chữ cái đầu tên người chơi
-│       │   │   └── Chips.tsx      ✅    nhãn game, kết nối, trạng thái lượt, spinner
+│       │   │   ├── Chips.tsx      ✅    nhãn game, kết nối, trạng thái lượt, spinner
+│       │   │   ├── Logo.tsx       ✅    logo DSC (src/assets/logo-dsc.png, luôn trên nền trắng)
+│       │   │   └── Toast.tsx      ✅    thông báo ở góc màn hình, tự tắt sau 1,2 giây
 │       │   └── lib/               ✅ api · sse · useCountdown · session · types · format (🔒)
 │       │                          ✅    game-theme.ts — icon + màu nhận diện từng game
 │       │                          ✅ 🅰️ api-math.ts — client riêng của Track A
