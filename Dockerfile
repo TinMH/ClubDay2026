@@ -1,13 +1,13 @@
-FROM node:22-alpine
+FROM node:22-bookworm-slim
 
 WORKDIR /app
 
-# Copy root + workspace manifests trước
+# Copy root + workspace manifests
 COPY package*.json ./
 COPY apps/web/package*.json ./apps/web/
 COPY apps/server/package*.json ./apps/server/
 
-# Install workspace dependencies
+# Install dependencies
 RUN npm ci
 
 # Copy source
