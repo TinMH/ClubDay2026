@@ -513,12 +513,13 @@ references mà không mất gì.
 
 ## Tài liệu thiết kế
 
-Hai tài liệu, chia vai rõ ràng:
+Ba tài liệu trong `.hermes/plans/`, chia vai rõ ràng:
 
 | Tài liệu | Vai trò |
 |---|---|
 | **`2026-09-11_231500-...-v2-inmemory.md`** | **Đặc tả kỹ thuật.** Kiến trúc, chống gian lận, hằng số đã đo, checklist sự kiện, bảng rủi ro. Đọc trước. |
 | **`2026-09-12_201457-clubday-split-2-tracks.md`** | **Điều phối công việc.** Chia 2 track song song, bảng phân quyền file, hợp đồng đóng băng, quy trình git. |
+| **`2026-09-17_161327-clubday-recruitment-funnel.md`** | **Việc đang làm.** Phễu đăng ký thành viên (Wave 4), màn hình chiếu + bảng xếp hạng toàn sự kiện (Wave 5), nợ load test (Wave 3). Có bảng theo dõi trạng thái. |
 
 > Làm việc nhóm? Đọc file **split-2-tracks** để biết file nào của ai. Bảng phân quyền file ở mục 3
 > là thứ quyết định việc 2 người có xung đột hay không.
