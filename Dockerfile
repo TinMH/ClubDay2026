@@ -2,10 +2,15 @@ FROM node:22-alpine
 
 WORKDIR /app
 
+# Copy root + workspace manifests trước
 COPY package*.json ./
+COPY apps/web/package*.json ./apps/web/
+COPY apps/server/package*.json ./apps/server/
 
+# Install workspace dependencies
 RUN npm ci
 
+# Copy source
 COPY . .
 
 # Build frontend + backend
