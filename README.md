@@ -334,6 +334,8 @@ Hai chỗ dễ sửa nhầm:
 
 Bốn mốc: **cài một lần** → **dev hằng ngày** → **chạy bản thật** → **thử chơi**.
 
+> Máy mới cài lần đầu: đọc [INSTALL.md](INSTALL.md) — hướng dẫn từng bước kèm cách kiểm tra và xử lý sự cố.
+
 ### 0. Yêu cầu
 
 | | |
