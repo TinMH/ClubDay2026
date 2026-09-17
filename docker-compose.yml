@@ -27,6 +27,7 @@ services:
       - "traefik.http.routers.club-day.rule=Host(`club-day.hcmute-dsc.io.vn`)"
       - "traefik.http.routers.club-day.entrypoints=websecure"
       - "traefik.http.routers.club-day.tls=true"
+      - "traefik.http.routers.club-day.tls.certresolver=letsencrypt"
 
       - "traefik.http.services.club-day.loadbalancer.server.port=8787"
 
