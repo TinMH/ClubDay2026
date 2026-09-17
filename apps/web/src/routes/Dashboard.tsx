@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { House, Trophy } from 'lucide-react';
+import { House, Trophy, UserPlus } from 'lucide-react';
 import { api } from '../lib/api';
-import { clearSession } from '../lib/session';
+import { clearSession, loadSession } from '../lib/session';
+import { buildSignupUrl } from '../lib/signup';
 import { useRoundStream } from '../lib/sse';
 import { Shell } from '../components/Shell';
 import { RankTable } from '../components/RankTable';
@@ -18,6 +19,7 @@ export function Dashboard() {
   const [game, setGame] = useState<GameKind>('math');
   const [state, setState] = useState<RoundState | null>(null);
   const [loading, setLoading] = useState(true);
+  const [signupUrl, setSignupUrl] = useState('');
 
   useRoundStream(roundId, setState);
 
@@ -47,6 +49,24 @@ export function Dashboard() {
     if (state) setGame(state.game);
   }, [state]);
 
+  // Link Form đăng ký — nạp MỘT lần, không nằm trong vòng lặp 2 giây ở trên:
+  // cấu hình không đổi giữa chừng, poll nó chỉ tốn request.
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      try {
+        const cfg = await api.config();
+        if (!alive) return;
+        setSignupUrl(buildSignupUrl(cfg.signupFormUrl, cfg.signupNameEntry, loadSession()?.name ?? ''));
+      } catch {
+        /* không có link thì chỉ là không hiện nút — không phải lỗi chặn màn hình */
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const stillPlaying = state?.status === 'playing';
 
   return (
@@ -75,12 +95,29 @@ export function Dashboard() {
 
       {loading ? <Spinner label="Đang tải…" /> : <RankTable rows={rows} game={game} />}
 
+      {/*
+        Thời điểm vàng của phễu: vừa chơi xong, đang vui, điện thoại đang cầm trên tay.
+        Đặt TRÊN nút "Về trang chủ" để nó là thứ ngón tay chạm tới trước.
+        `target=_blank` để người chơi không mất bảng xếp hạng đang xem.
+      */}
+      {signupUrl && (
+        <a
+          href={signupUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="btn btn-primary mt-auto w-full"
+        >
+          <UserPlus aria-hidden="true" className="h-5 w-5" />
+          Đăng ký vào CLB
+        </a>
+      )}
+
       <button
         onClick={() => {
           clearSession();
           navigate('/');
         }}
-        className="btn btn-ghost mt-auto w-full"
+        className={`btn btn-ghost w-full ${signupUrl ? 'mt-3' : 'mt-auto'}`}
       >
         <House aria-hidden="true" className="h-5 w-5" />
         Về trang chủ

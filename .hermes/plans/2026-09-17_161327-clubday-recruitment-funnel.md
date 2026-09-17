@@ -39,25 +39,35 @@ Ba sự thật trong code khiến việc này gấp:
 
 ## 1. Hai quyết định kiến trúc đã chốt
 
-### 1.1 — Đăng ký KHÔNG sống trong `Round`
+### 1.1 — Dùng Google Form, KHÔNG tự xây kho đăng ký
 
-**✅ CHỐT: `Signup` là kho riêng, tách hẳn khỏi `Map<roundId, Round>`.**
+**✅ CHỐT: màn kết quả gắn link Google Form. Server không lưu dữ liệu cá nhân nào.** (quyết định 2026-09-17)
 
-Quy ước repo nói "thêm dữ liệu mới cho một lượt thì thêm field vào `Round`/`Player`". Đăng ký **không phải**
-dữ liệu của một lượt — đây là chỗ nó khác mọi thứ đã làm trước giờ:
+Bản đầu của plan này định tự xây: `store/signups.ts`, `POST /api/signups`, chống trùng MSSV, xuất CSV,
+test cho từng phần. Đã bỏ. Google Form làm sẵn hết những việc đó.
 
-| | Round / Player | Signup |
+| | Tự xây | Google Form |
 |---|---|---|
-| Vòng đời | Phù du, hết lượt là xong | Tích luỹ cả ngày, phải sống sót tới lúc bàn giao |
-| `reset` xoá? | Có, đúng thiết kế | **Không bao giờ** |
-| Mất thì sao? | Khó chịu | Hỏng cả sự kiện |
+| Công sức | ~3 ngày | ~10 phút |
+| Dữ liệu nằm ở | Laptop BTC | Google Sheets |
+| Laptop hỏng giữa sự kiện | **Mất hết** | Không sao |
+| BTC xem kết quả | Phải mò file trong `data/` | Mở Sheets, nhiều người xem cùng lúc |
+| Thêm câu hỏi giữa sự kiện | Sửa code + build lại | Sửa Form, có hiệu lực ngay |
 
-Nhét `Signup` vào `Player` là để `resetAll()` xoá mất danh sách đăng ký — lỗi không sửa được sau sự kiện.
+Đổi lại có một **xung đột thật phải nhớ**: Google Form **cần internet**, mà game thì thiết kế để chạy
+offline. Người chơi mở được Form hay không phụ thuộc điện thoại họ đang ở đâu:
 
-**Cách lưu:** append-only JSONL ở `data/signups.jsonl`, ghi **ngay lúc nhận**, không đợi snapshot lúc thoát.
-Vẫn đúng nguyên tắc "không database, không ORM, không migration" của repo — chỉ là `appendFileSync` một dòng.
+| Điện thoại người chơi đang ở | Form mở được? |
+|---|---|
+| Wifi hội trường có internet | ✅ |
+| Hotspot từ điện thoại BTC (chia 4G) | ✅ |
+| LAN thuần không có đường ra internet | ❌ **hỏng** |
 
-> `data/` đã nằm trong `.gitignore` (dòng 10) → danh sách liên hệ **không** thể lỡ tay commit lên repo. Đã kiểm tra.
+**Phòng bị không tốn dòng code nào:** in QR của Form ra giấy dán cạnh khu vực chơi. Ai mở không được
+trong app thì quét bằng 4G của họ — cũng vớt được người đứng xem mà không chơi.
+
+> **Hệ quả tốt:** server không giữ MSSV/email/SĐT của ai cả, nên mọi lo về xử lý dữ liệu cá nhân trên
+> máy BTC biến mất. Không cần `SIGNUPS_FILE`, không cần giới hạn tốc độ chống spam, không cần xuất CSV.
 
 ### 1.2 — Chạy LAN trên máy BTC, KHÔNG deploy lên host
 
@@ -92,55 +102,40 @@ chết hẳn, không cứu được bằng cấu hình. Phòng bị theo thứ t
 
 ---
 
-## 2. Wave 4 — Phễu đăng ký 🔴 ƯU TIÊN CAO NHẤT
+## 2. Wave 4 — Phễu đăng ký ✅ ĐÃ XONG (2026-09-17)
 
-Ba việc dưới là **một mạch**, nên làm chung một lần. Làm 1 mà không có 3 thì BTC không lấy được dữ liệu ra.
+Cài đặt theo quyết định 1.1 — gắn link Google Form, không tự xây kho.
 
-### 4.1 — `POST /api/signups` + kho lưu
+### 4.1 — Cấu hình qua `.env` ✅
 
-- [ ] `store/signups.ts` — `addSignup()`, `allSignups()`, `loadSignups()` lúc boot
-- [ ] `routes/signups.ts` — validate zod, gọi service (không viết luật trong route)
-- [ ] Ghi `data/signups.jsonl` bằng append ngay trong request, không đợi `saveSnapshot`
-- [ ] `config.ts` — thêm `SIGNUPS_FILE` (mặc định `data/signups.jsonl`), theo đúng kiểu `SNAPSHOT_FILE:34`
-- [ ] Chặn trùng: cùng MSSV gửi 2 lần thì cập nhật, không thêm dòng mới trong danh sách xuất ra
-- [ ] `store/signups.test.ts` — trùng MSSV, thiếu trường, ghi rồi đọc lại đúng
+- [x] `config.ts` — `SIGNUP_FORM_URL` + `SIGNUP_NAME_ENTRY`, rỗng là mặc định an toàn (không hiện nút)
+- [x] `routes/config.ts` — `GET /api/config`, chỉ trả thứ công khai
+- [x] `app.ts` — đăng ký route (một dòng)
+- [x] `.env.example` — ghi rõ cách lấy mã ô điền sẵn
 
-**Không cần `requireAdmin`** — người chơi tự gửi. Nhưng cần giới hạn tốc độ theo IP để không ai spam
-được vài nghìn dòng rác vào file.
+**Vì sao qua server chứ không phải biến `VITE_` lúc build:** BTC đổi link thì sửa `.env` rồi khởi động
+lại là xong. Nhét vào `VITE_` thì mỗi lần đổi phải `npm run build` — không hợp lúc đang chạy sự kiện.
 
-### 4.2 — Form đăng ký ngay sau bảng xếp hạng
+### 4.2 — Nút đăng ký ở màn kết quả ✅
 
-- [ ] Thêm khối đăng ký vào `routes/Dashboard.tsx`
-- [ ] **Prefill tên** đã nhập ở lobby — người chơi không phải gõ lại
-- [ ] Gửi xong hiện xác nhận rõ ràng, dùng `Toast.tsx` đã có
-- [ ] Nhớ trạng thái "đã đăng ký" ở localStorage để không hỏi lại người đã gửi
-- [ ] Một dòng nói rõ **dùng để làm gì và ai giữ**, ngay trên nút gửi
+- [x] `lib/signup.ts` — `buildSignupUrl()` dựng link kèm tên điền sẵn
+- [x] `routes/Dashboard.tsx` — nút **Đăng ký vào CLB** đặt TRÊN nút "Về trang chủ"
+- [x] Điền sẵn tên đã nhập ở lobby → người chơi không phải gõ lại
+- [x] `lib/signup.test.ts` — 8 test: link rỗng, link sai định dạng, chặn scheme lạ, tên có dấu, giữ query cũ
+- [x] Smoke test: 3 kiểm tra `/api/config`, có một cái canh **không lộ `ADMIN_TOKEN`**
 
-**Vì sao đặt ở dashboard:** đây là thời điểm vàng — vừa chơi xong, đang vui, điện thoại đang cầm trên tay,
-tên đã có sẵn. Đặt ở trước khi chơi thì thành rào chắn và sẽ mất người ngay ở cửa.
+**Vì sao đặt ở màn kết quả:** thời điểm vàng — vừa chơi xong, đang vui, điện thoại đang cầm trên tay.
+Đặt trước khi chơi thì thành rào chắn và mất người ngay ở cửa.
 
-**⚠️ Quyết định còn mở — cần bạn chốt trước khi code:** form xin những trường nào?
+**Vì sao `buildSignupUrl` tách thành file riêng thay vì viết thẳng trong component:** để test được.
+Link hỏng là người chơi rơi vào trang lỗi đúng bước quan trọng nhất của phễu. Hàm này cũng chặn
+scheme không phải `http(s)` — `.env` là file người sửa tay, đừng để nó bơm thẳng được vào `href`.
 
-| Trường | Đề xuất | Ghi chú |
-|---|---|---|
-| Tên | ✅ bắt buộc | Đã có sẵn từ lobby, prefill |
-| MSSV | ✅ bắt buộc | Dùng làm khoá chống trùng |
-| Email **hoặc** SĐT | ✅ bắt buộc, chọn 1 | Bắt cả hai là mất người |
-| Khoa / ngành | ⬜ tuỳ | Bỏ được thì bỏ |
-| Mảng quan tâm | ⬜ tuỳ | Hữu ích cho phân nhóm, nhưng tốn một lần chạm nữa |
+### 4.3 — Còn lại, không phải việc code
 
-**Mỗi ô thêm là một người bỏ cuộc.** Đề xuất của tôi: đúng **3 ô** (tên prefill + MSSV + 1 liên lạc).
-
-### 4.3 — Xuất CSV ở `/admin`
-
-- [ ] `GET /api/admin/signups.csv` — dùng lại `requireAdmin` đã có ở `routes/admin-guard.ts`
-- [ ] Nút tải trong `routes/Admin.tsx`
-- [ ] Hiện **số đăng ký hiện tại** ngay trên màn admin — BTC theo dõi được cả ngày mà không cần mở file
-
-**Vì sao cần:** không có nút này thì BTC phải mò file trong `data/` trên máy, đúng lúc đang bận nhất.
-
-**Định nghĩa "xong" của Wave 4:** chơi thử một lượt trên **điện thoại thật** → đăng ký → bấm tải CSV ở `/admin`
-→ mở ra thấy đúng dòng vừa nhập.
+- [ ] **Dán link Form thật vào `.env`** — hiện đang rỗng nên nút chưa hiện
+- [ ] In QR của Form ra giấy làm phương án dự phòng
+- [ ] Thử mở Form từ điện thoại **khi đang nối LAN của máy BTC** — đây là chỗ xung đột offline ở mục 1.1
 
 ---
 
@@ -199,13 +194,15 @@ Làm mục đầu tiên **trước** khi bắt đầu Wave 4 — nếu phải s�
 | — | Setup + verify trên máy thật | — | ✅ xong (2026-09-17) |
 | — | INSTALL.md | — | ✅ xong (2026-09-17) |
 | — | Chốt hạ tầng: LAN, không deploy | — | ✅ chốt (2026-09-17) |
+| — | Chốt dùng Google Form, không tự xây kho | — | ✅ chốt (2026-09-17) |
 | 3 | Khảo sát wifi hội trường | 🔴 | ⬜ |
 | 3 | Load test 5 người vẽ đồng thời | 🔴 | ⬜ |
 | 3 | Diễn tập đầu-cuối, 2 game, điện thoại thật | 🔴 | ⬜ |
-| 4 | Chốt trường của form đăng ký | 🔴 | ⬜ **chờ quyết định** |
-| 4.1 | `POST /api/signups` + `data/signups.jsonl` | 🔴 | ⬜ |
-| 4.2 | Form đăng ký ở Dashboard | 🔴 | ⬜ |
-| 4.3 | Xuất CSV ở `/admin` | 🔴 | ⬜ |
+| 4.1 | `SIGNUP_FORM_URL` trong .env + `GET /api/config` | 🔴 | ✅ xong (2026-09-17) |
+| 4.2 | Nút "Đăng ký vào CLB" ở màn kết quả, điền sẵn tên | 🔴 | ✅ xong (2026-09-17) |
+| 4.3 | Dán link Form thật vào `.env` | 🔴 | ⬜ **chờ bạn** |
+| 4.3 | In QR của Form ra giấy (dự phòng) | 🟡 | ⬜ |
+| 4.3 | Thử mở Form từ điện thoại khi đang nối LAN | 🔴 | ⬜ |
 | 5.1 | Màn hình chiếu `/display` | 🟡 | ⬜ |
 | 5.2 | Bảng xếp hạng toàn sự kiện | 🟡 | ⬜ |
 | 5.3 | Sinh QR trong `/admin` | 🟢 | ⬜ |
