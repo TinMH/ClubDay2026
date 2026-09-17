@@ -85,6 +85,8 @@ const server = spawn(process.execPath, ['apps/server/dist/index.js'], {
     HOST: '127.0.0.1',
     ADMIN_TOKEN: TOKEN,
     SNAPSHOT_FILE: 'data/smoke-test.json',
+    SIGNUP_FORM_URL: 'https://docs.google.com/forms/d/e/SMOKE/viewform',
+    SIGNUP_NAME_ENTRY: 'entry.999',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -111,6 +113,15 @@ try {
   console.log('\n── 1. Health ──');
   const health = await call('/api/health');
   check('GET /api/health trả ok:true', health.data?.ok === true);
+
+  const cfg = await call('/api/config');
+  check('GET /api/config trả link Form đăng ký', cfg.data?.signupFormUrl?.includes('SMOKE') === true, JSON.stringify(cfg.data));
+  check('GET /api/config trả mã ô điền sẵn tên', cfg.data?.signupNameEntry === 'entry.999');
+  check(
+    '/api/config KHÔNG lộ ADMIN_TOKEN',
+    !JSON.stringify(cfg.data ?? {}).includes(TOKEN),
+    JSON.stringify(cfg.data),
+  );
 
   // ── xác thực admin ──
   console.log('\n── 2. Bảo vệ route admin ──');

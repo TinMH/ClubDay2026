@@ -55,6 +55,11 @@ const json = (body: unknown, token?: string): RequestInit => ({
 const get = <T>(path: string, token?: string): Promise<T> =>
   request<T>(path, token ? { headers: { 'x-admin-token': token } } : undefined);
 
+export interface ClientConfig {
+  signupFormUrl: string;
+  signupNameEntry: string;
+}
+
 export interface JoinResponse {
   playerId: string;
   roundId: string;
@@ -67,6 +72,9 @@ export const api = {
     request<JoinResponse>('/api/rounds/join', json({ name, ...(roundId ? { roundId } : {}) })),
 
   state: (roundId: string) => get<RoundState>(`/api/rounds/${roundId}/state`),
+
+  /** Cấu hình công khai (link Form đăng ký). Không chứa gì bí mật. */
+  config: () => get<ClientConfig>('/api/config'),
 
   dashboard: (roundId: string) =>
     get<{ rows: DashboardRow[] }>(`/api/rounds/${roundId}/dashboard`),

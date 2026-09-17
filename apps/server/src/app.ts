@@ -15,6 +15,7 @@ import { streamRoutes } from './routes/stream.js';
 import { adminRoutes } from './routes/admin.js';
 import { mathRoutes } from './routes/math.js'; // TRACK A
 import { drawRoutes } from './routes/draw.js'; // TRACK B
+import { configRoutes } from './routes/config.js';
 import { healthReport } from './lib/health.js';
 
 // `src` và `dist` đều nằm ngay dưới apps/server → cùng trỏ tới apps/web/dist.
@@ -42,6 +43,7 @@ export async function buildApp(opts: BuildOptions = {}): Promise<FastifyInstance
   await app.register(adminRoutes);
   await app.register(mathRoutes); // TRACK A — stub cho tới Wave 2
   await app.register(drawRoutes); // TRACK B — stub cho tới Wave 2
+  await app.register(configRoutes);
 
   // Phục vụ luôn bản build của web → sự kiện chỉ cần 1 URL duy nhất.
   if (existsSync(webDist)) {

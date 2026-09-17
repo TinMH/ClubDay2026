@@ -33,6 +33,23 @@ export const MODEL_CACHE_DIR = process.env.MODEL_CACHE_DIR ?? './models';
 export const MODEL_OFFLINE = process.env.MODEL_OFFLINE === '1';
 export const SNAPSHOT_FILE = process.env.SNAPSHOT_FILE ?? 'data/rounds.json';
 
+/**
+ * Link Google Form đăng ký thành viên — hiện thành nút ở màn kết quả.
+ *
+ * Để rỗng thì nút KHÔNG hiện (mặc định an toàn: chưa cấu hình thì không dẫn
+ * người chơi tới trang lỗi). Đọc lúc khởi động như mọi biến khác, nên đổi link
+ * chỉ cần sửa .env rồi khởi động lại — KHÔNG phải build lại web.
+ */
+export const SIGNUP_FORM_URL = process.env.SIGNUP_FORM_URL ?? '';
+
+/**
+ * Mã ô "Họ tên" trong Google Form, dạng `entry.123456789`, để điền sẵn tên người
+ * chơi đã nhập ở lobby. Lấy bằng: mở Form → ⋮ → Get pre-filled link.
+ *
+ * Để rỗng thì vẫn hiện nút, chỉ là người chơi phải tự gõ tên.
+ */
+export const SIGNUP_NAME_ENTRY = process.env.SIGNUP_NAME_ENTRY ?? '';
+
 /** Cảnh báo to nếu chưa đặt ADMIN_TOKEN — trang /admin sẽ không được bảo vệ. */
 export function warnIfInsecure(): void {
   if (!ADMIN_TOKEN) {
