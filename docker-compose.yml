@@ -1,0 +1,35 @@
+services:
+  club-day:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: club-day
+
+    restart: unless-stopped
+
+    env_file:
+      - .env
+
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 8787
+      MODEL_OFFLINE: 1
+
+    networks:
+      - edge
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=edge"
+
+      - "traefik.http.routers.club-day.rule=Host(`club-day.hcmute-dsc.io.vn`)"
+      - "traefik.http.routers.club-day.entrypoints=websecure"
+      - "traefik.http.routers.club-day.tls=true"
+
+      - "traefik.http.services.club-day.loadbalancer.server.port=8787"
+
+networks:
+  edge:
+    external: true
