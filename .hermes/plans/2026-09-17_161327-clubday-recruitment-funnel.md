@@ -4,7 +4,7 @@
 > chống gian lận, hằng số đã đo). File này **không lặp lại** đặc tả đó — nó chỉ nói việc còn phải làm và tại sao.
 >
 > **Trạng thái nền tảng:** Phase F + Track A + Track B đã xong và đã merge `main`. Setup đã verify trên máy thật
-> (171 unit test, 68 smoke, model chạy offline). Xem [INSTALL.md](../../INSTALL.md).
+> (179 unit test, 71 smoke, model chạy offline). Xem [INSTALL.md](../../INSTALL.md).
 
 **Goal:** Biến game từ "trò chơi vui" thành **công cụ thu form đăng ký thành viên** cho Club Day.
 
@@ -76,15 +76,19 @@ trong app thì quét bằng 4G của họ — cũng vớt được người đ�
 Đã cân nhắc VPS và loại. Ghi lại phép tính để sau không phải bàn lại:
 
 **Tải inference lúc cao điểm.** Client gửi frame mỗi 1050ms (`routes/DrawGame.tsx:39`), server chặn dưới
-1000ms (`store/types.ts:112`). 5 người vẽ cùng lúc → **~5 lần chạy model mỗi giây**, mỗi lần **256ms** đo
-trên máy BTC (i5-10400, 6 nhân).
+1000ms (`store/types.ts:112`). 5 người vẽ cùng lúc → **~5 lần chạy model mỗi giây**.
 
-> **1,28 giây CPU cho mỗi giây đồng hồ.** Trên 6 nhân là ~21%, thoải mái.
-> Nhưng nó đã **vượt quá một nhân** — VPS 1 vCPU giá rẻ sẽ không kịp, hàng đợi dồn lại, gợi ý hiện ra
-> sau khi lượt 15 giây đã xong.
-
-Muốn chạy VPS thì tối thiểu **4 vCPU dedicated** (không phải burstable), ≥1GB RAM, vùng **Singapore/VN**,
-và phải load test 5 người trên chính con VPS đó.
+> ⚠️ **SỬA SỐ LIỆU (2026-09-17, sau khi đo thật).** Bản đầu của mục này ghi mỗi lần chạy model mất
+> **256ms** và kết luận 5 người là 1,28 giây CPU mỗi giây đồng hồ — **sai khoảng 100 lần**.
+> Con số 256ms lấy nhầm từ `npm run check:offline`, mà lệnh đó in **load + warmup + inference GỘP LẠI**
+> (`scripts/check-offline.ts:20-27`), không phải riêng inference.
+>
+> Đo tách ra trên cùng máy: **rasterize 0,15ms + inference 2,6ms** (p95 3,3ms). Input model chỉ 28×28
+> (`src/model.ts:21`) nên nhanh hơn nhiều so với tưởng tượng ban đầu.
+>
+> **Hệ quả:** lập luận "VPS 1 vCPU không kịp" là SAI. 5 người ≈ 13ms CPU mỗi giây — khoảng 1,3% một nhân.
+> VPS rẻ nhất cũng thừa sức. Quyết định chạy LAN vẫn giữ, nhưng nó đứng trên lý do dưới đây, **không phải**
+> lý do hiệu năng.
 
 **Lý do chọn LAN dù VPS chạy được:** offline là thứ duy nhất không hỏng vì lý do ngoài tầm kiểm soát.
 VPS bắt cả sự kiện phụ thuộc internet hội trường hoặc 4G — mạng sập là không có đường lui.
@@ -99,6 +103,34 @@ chết hẳn, không cứu được bằng cấu hình. Phòng bị theo thứ t
 
 **VPS vẫn đáng có cho việc khác:** nếu muốn form đăng ký + bảng xếp hạng sống tiếp sau sự kiện để CLB nhận
 đăng ký những ngày sau. Đó là workload nhẹ, không chạy model — VPS 1 vCPU rẻ nhất là thừa.
+
+
+### 1.3 — Kết quả load test (đo 2026-09-17, i5-10400 6 nhân)
+
+Chạy bằng `npm run loadtest` (xuất `data/load-test-report.json`), rồi `npm run report:loadtest`
+dựng báo cáo HTML tự chứa từ JSON đó. Mỗi "người" gửi frame đúng nhịp thật 1050ms suốt lượt 15 giây.
+
+| Kịch bản | p50 | p95 | frame/s | Kết luận |
+|---|---|---|---|---|
+| 1 người (nền) | 7ms | 22ms | 0,9 | — |
+| **5 người — kịch bản sự kiện** | **7ms** | **11ms** | 4,7 | ✅ dư sức |
+| 80 người | 75ms | 133ms | 73 | ✅ |
+| 160 người | 218ms | 367ms | 145 | ✅ |
+| 320 người | 455ms | 801ms | 283 | ✅ sát trần |
+| 480 người | 1372ms | 1530ms | 312 | ❌ hàng đợi dồn |
+| 640 người | 1902ms | 2226ms | 296 | ❌ |
+
+**Trần ≈ 300 frame/giây.** Từ 480 người trở lên, throughput đứng yên ~300/s trong khi độ trễ tăng tuyến
+tính — dấu hiệu kinh điển của bão hoà, không phải hết CPU.
+
+**Vì sao trần là 300/s chứ không phải 6 nhân × (1/2,6ms):** `services/classifier.ts` cố ý cho **mọi
+inference đi qua MỘT hàng đợi tuần tự** (biến `chain`). Trần lý thuyết là 1/2,6ms ≈ 385/s; đo được ~300/s
+sau khi trừ overhead HTTP. Khớp. Đây là lựa chọn thiết kế đúng — chạy song song chỉ làm 5 người tranh CPU
+của nhau chứ không ai nhanh hơn.
+
+**Khoảng dư cho sự kiện: ~60 lần.** Sự kiện cần 5 người đồng thời; hệ thống chịu được ~300. Kể cả BTC mở
+10 lượt song song (50 người) thì p95 vẫn dưới 100ms. **Hiệu năng không phải rủi ro của dự án này** —
+rủi ro nằm ở mạng và ở khâu vận hành.
 
 ---
 
@@ -196,7 +228,7 @@ Làm mục đầu tiên **trước** khi bắt đầu Wave 4 — nếu phải s�
 | — | Chốt hạ tầng: LAN, không deploy | — | ✅ chốt (2026-09-17) |
 | — | Chốt dùng Google Form, không tự xây kho | — | ✅ chốt (2026-09-17) |
 | 3 | Khảo sát wifi hội trường | 🔴 | ⬜ |
-| 3 | Load test 5 người vẽ đồng thời | 🔴 | ⬜ |
+| 3 | Load test 5 người vẽ đồng thời | 🔴 | ✅ xong (2026-09-17) — dư ~60 lần |
 | 3 | Diễn tập đầu-cuối, 2 game, điện thoại thật | 🔴 | ⬜ |
 | 4.1 | `SIGNUP_FORM_URL` trong .env + `GET /api/config` | 🔴 | ✅ xong (2026-09-17) |
 | 4.2 | Nút "Đăng ký vào CLB" ở màn kết quả, điền sẵn tên | 🔴 | ✅ xong (2026-09-17) |

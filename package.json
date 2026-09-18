@@ -19,7 +19,9 @@
     "prefetch": "tsx scripts/prefetch-model.ts",
     "check:offline": "tsx scripts/check-offline.ts",
     "eval:model": "tsx scripts/eval-model.ts",
-    "smoke": "node scripts/smoke-test.mjs"
+    "smoke": "node scripts/smoke-test.mjs",
+    "loadtest": "node scripts/load-test.mjs",
+    "report:loadtest": "node scripts/report-loadtest.mjs"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

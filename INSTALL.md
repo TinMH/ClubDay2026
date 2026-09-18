@@ -136,8 +136,8 @@ Build ra `apps/web/dist` (giao diện) và `apps/server/dist` (server). Không c
 Chạy test để chắc máy này cài đúng:
 
 ```bash
-npm test        # 171 unit test — server 143 + web 28
-npm run smoke   # 68 kiểm tra end-to-end, tự bật server ở cổng 8799 rồi tắt
+npm test        # 179 unit test — server 143 + web 36
+npm run smoke   # 71 kiểm tra end-to-end, tự bật server ở cổng 8799 rồi tắt
 ```
 
 `npm run smoke` mất ~30 giây vì có đoạn chờ hết giờ 15 giây của một lượt vẽ — đứng im một lúc
@@ -275,8 +275,10 @@ Biến đặt bằng `$env:` chỉ sống trong cửa sổ PowerShell đó.
 | `npm start` | Chạy bản đã build — một cổng phục vụ cả API lẫn web |
 | `npm run dev:server` | Server dev, tự nạp lại khi sửa code |
 | `npm run dev:web` | Giao diện dev (Vite), cổng 5173 |
-| `npm test` | 171 unit test, cả 2 workspace |
-| `npm run smoke` | 68 kiểm tra end-to-end |
+| `npm test` | 179 unit test, cả 2 workspace |
+| `npm run smoke` | 71 kiểm tra end-to-end |
+| `npm run loadtest` | Load + stress test đường vẽ hình → `data/load-test-report.json` |
+| `npm run report:loadtest` | JSON đó → `data/load-test-report.html` |
 | `npm run eval:model` | Đo accuracy thật rồi sinh lại `allowlist.generated.ts` (~35s) |
 
 Kiến trúc, cách tính điểm và quy ước code nằm ở [README.md](README.md).
