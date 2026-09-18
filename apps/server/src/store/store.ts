@@ -58,14 +58,26 @@ export function createRound(game: GameKind, now = Date.now()): Round {
   return round;
 }
 
-/** Lượt đang mở còn chỗ — dùng cho Cách A (1 QR duy nhất, tự vào lượt đang mở). */
-export function openRound(game: GameKind, now = Date.now()): Round {
+/**
+ * Lượt đang mở còn chỗ, hoặc `null` nếu không có — KHÔNG tạo mới.
+ *
+ * Tách khỏi `openRound` để trang chủ hiện được "3/5 đang chờ" mà không vô tình
+ * sinh ra một lượt rỗng chỉ vì có người mở trang. Và vì cả hai dùng chung đúng
+ * một điều kiện, con số hiện trên UI luôn là lượt mà `openRound` sẽ chọn — không
+ * có chuyện hiện một lượt rồi đẩy người chơi vào lượt khác.
+ */
+export function peekOpenRound(game: GameKind): Round | null {
   for (const r of rounds.values()) {
     if (r.live !== false && r.game === game && r.status === 'lobby' && r.players.size < MAX_PLAYERS) {
       return r;
     }
   }
-  return createRound(game, now);
+  return null;
+}
+
+/** Lượt đang mở còn chỗ — dùng cho Cách A (1 QR duy nhất, tự vào lượt đang mở). */
+export function openRound(game: GameKind, now = Date.now()): Round {
+  return peekOpenRound(game) ?? createRound(game, now);
 }
 
 export function addPlayer(round: Round, name: string, now = Date.now()): Player {

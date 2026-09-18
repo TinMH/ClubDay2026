@@ -123,6 +123,16 @@ try {
     JSON.stringify(cfg.data),
   );
 
+  // ── lượt đang chờ (trang chủ dùng để hiện "3/5 đang chờ") ──
+  const open0 = await call('/api/rounds/open');
+  check('GET /api/rounds/open trả cả 2 game', open0.data?.open?.math !== undefined && open0.data?.open?.draw !== undefined, JSON.stringify(open0.data));
+  check('Chưa có lượt nào → null, và KHÔNG tự sinh lượt rỗng', open0.data?.open?.draw === null, JSON.stringify(open0.data?.open));
+  const roundsBefore = (await call('/api/health')).data?.rounds;
+  await call('/api/rounds/open');
+  const roundsAfter = (await call('/api/health')).data?.rounds;
+  check('Gọi lại /open không làm tăng số lượt', roundsBefore === roundsAfter, `${roundsBefore} -> ${roundsAfter}`);
+  check('/open trả trần 5 người', open0.data?.max === 5, String(open0.data?.max));
+
   // ── xác thực admin ──
   console.log('\n── 2. Bảo vệ route admin ──');
   const noAuth = await call('/api/admin/rounds', { method: 'POST', body: { game: 'math' } });

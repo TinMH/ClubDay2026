@@ -1,9 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { join, startRound } from '../store/lobby.js';
-import { getRound } from '../store/store.js';
+import { getRound, peekOpenRound } from '../store/store.js';
 import { dashboard } from '../store/dashboard.js';
 import { toRoundState } from '../store/state.js';
+import { MAX_PLAYERS } from '../store/types.js';
 import { requireAdmin } from './admin-guard.js';
 
 const JoinBody = z.object({
@@ -45,6 +46,24 @@ export async function roundRoutes(app: FastifyInstance): Promise<void> {
       game: result.round.game,
       state: toRoundState(result.round),
     };
+  });
+
+  /**
+   * Lượt đang chờ của từng game — để trang chủ hiện "3/5 đang chờ".
+   *
+   * CÔNG KHAI, không cần token: người chơi cần thấy trước khi nhập tên, và
+   * thông tin ở đây họ vốn đã lấy được bằng cách cứ join thử.
+   *
+   * Dùng `peekOpenRound` nên KHÔNG tạo lượt mới chỉ vì có người mở trang, và
+   * con số trả về đúng là lượt mà `join` sẽ đưa họ vào.
+   */
+  app.get('/api/rounds/open', async () => {
+    const open: Record<string, { roundId: string; players: number } | null> = {};
+    for (const game of ['math', 'draw'] as const) {
+      const r = peekOpenRound(game);
+      open[game] = r ? { roundId: r.id, players: r.players.size } : null;
+    }
+    return { open, max: MAX_PLAYERS, serverNow: Date.now() };
   });
 
   /** Trạng thái lượt — client poll khi cần, hoặc dùng SSE. */

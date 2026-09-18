@@ -15,7 +15,7 @@ import { api } from '../lib/api';
  */
 
 vi.mock('../lib/api', () => ({
-  api: { join: vi.fn() },
+  api: { join: vi.fn(), openRounds: vi.fn() },
   ApiError: class ApiError extends Error {
     constructor(
       readonly code: string,
@@ -27,6 +27,7 @@ vi.mock('../lib/api', () => ({
 }));
 
 const joinMock = vi.mocked(api.join);
+const openMock = vi.mocked(api.openRounds);
 
 const renderAt = (path: string) =>
   render(
@@ -46,6 +47,8 @@ const radio = (re: RegExp) => screen.getByRole('radio', { name: re }) as HTMLInp
 beforeEach(() => {
   localStorage.clear();
   joinMock.mockReset();
+  openMock.mockReset();
+  openMock.mockResolvedValue({ open: { math: null, draw: null }, max: 5 });
   joinMock.mockResolvedValue({
     playerId: 'p1',
     roundId: 'ABC123',
@@ -135,5 +138,49 @@ describe('Home — chọn trò chơi', () => {
 
     await waitFor(() => expect(joinMock).toHaveBeenCalledTimes(1));
     expect(joinMock.mock.calls[0]?.[1]).toEqual({ roundId: 'ABC123' });
+  });
+});
+
+describe('Home — tình hình lượt đang chờ', () => {
+  it('hiện số người đang chờ và số còn thiếu, để người mới dồn vào cùng lượt', async () => {
+    openMock.mockResolvedValue({
+      open: { math: { roundId: 'ABC123', players: 3 }, draw: null },
+      max: 5,
+    });
+    renderAt('/');
+
+    await waitFor(() => expect(screen.getByText(/3\/5 đang chờ/)).toBeTruthy());
+    expect(screen.getByText(/còn 2 nữa/)).toBeTruthy();
+    // Game chưa ai chờ thì nói rõ là mở lượt mới, không để trống gây đoán.
+    expect(screen.getByText(/chưa có ai — bạn vào là người đầu tiên/)).toBeTruthy();
+  });
+
+  it('lượt có người nhưng chưa ai ở game kia → mỗi ô một trạng thái riêng', async () => {
+    openMock.mockResolvedValue({
+      open: { math: null, draw: { roundId: 'XYZ999', players: 4 } },
+      max: 5,
+    });
+    renderAt('/');
+
+    await waitFor(() => expect(screen.getByText(/4\/5 đang chờ/)).toBeTruthy());
+    expect(screen.getByText(/còn 1 nữa/)).toBeTruthy();
+  });
+
+  it('KHÔNG gọi /api/rounds/open ở Cách B — lượt đã do URL quyết định', async () => {
+    renderAt('/r/abc123');
+    await waitFor(() => expect(screen.getByLabelText(/tên của bạn/i)).toBeTruthy());
+    expect(openMock).not.toHaveBeenCalled();
+  });
+
+  it('endpoint lỗi thì vẫn chơi được, chỉ là không có số', async () => {
+    openMock.mockRejectedValue(new Error('mất mạng'));
+    renderAt('/');
+
+    fireEvent.click(radio(/vẽ hình nhanh/i));
+    fireEvent.change(nameField(), { target: { value: 'Minh' } });
+    await act(async () => {
+      fireEvent.click(joinButton());
+    });
+    await waitFor(() => expect(joinMock).toHaveBeenCalledTimes(1));
   });
 });

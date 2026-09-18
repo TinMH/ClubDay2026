@@ -228,6 +228,7 @@ Làm mục đầu tiên **trước** khi bắt đầu Wave 4 — nếu phải s�
 | — | Chốt hạ tầng: LAN, không deploy | — | ✅ chốt (2026-09-17) |
 | — | Chốt dùng Google Form, không tự xây kho | — | ✅ chốt (2026-09-17) |
 | — | Sửa lỗi không vào được game Vẽ từ trang chủ | 🔴 | ✅ xong (2026-09-18) |
+| — | Trang chủ hiện "3/5 đang chờ" để không xẻ đôi luồng người | 🔴 | ✅ xong (2026-09-18) |
 | 3 | Khảo sát wifi hội trường | 🔴 | ⬜ |
 | 3 | Load test 5 người vẽ đồng thời | 🔴 | ✅ xong (2026-09-17) — dư ~60 lần |
 | 3 | Diễn tập đầu-cuối, 2 game, điện thoại thật | 🔴 | ⬜ |
