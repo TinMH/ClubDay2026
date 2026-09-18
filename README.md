@@ -1,11 +1,12 @@
 # ClubDay
 
-Web 2 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người**, chơi xong hiện dashboard của đúng nhóm đó.
+Web 3 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người**, chơi xong hiện dashboard của đúng nhóm đó.
 
 | Game | Thời lượng | Cách chơi |
 |---|---|---|
 | **Tính nhanh** | 90 giây | Chọn 1 trong 4 đáp án. **Điểm = chuỗi đúng dài nhất** |
 | **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá rồi **bấm NỘP BÀI** để AI chấm — hết giờ thì tự nộp |
+| **Nhớ nhanh** | 60 giây | Nhìn chuỗi ô nháy sáng rồi lặp lại. **Điểm = cấp cao nhất vượt được** |
 
 ---
 
@@ -20,19 +21,20 @@ Web 2 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người**, ch
    │ tên → vào lượt   │ ──────────────────► │   ├── /api/rounds/*   (lobby)    │
    │                  │                     │   ├── /api/math/*     (game 1)   │
    │  ┌────────────┐  │                     │   ├── /api/draw/*     (game 2)   │
-   │  │  React 19  │  │ ◄────────────────── │   ├── /api/leaderboard/stream    │
-   │  │  + Vite    │  │   SSE realtime      │   └── /*  static build React     │
-   │  └────────────┘  │                     │                                  │
-   └──────────────────┘                     │  State các lượt: Map (RAM)       │
+   │  │  React 19  │  │ ◄────────────────── │   ├── /api/memory/*   (game 3)   │
+   │  │  + Vite    │  │   SSE realtime      │   ├── /api/leaderboard/stream    │
+   │  └────────────┘  │                     │   └── /*  static build React     │
+   └──────────────────┘                     │                                  │
+                                            │  State các lượt: Map (RAM)       │
                                             │  Model ONNX: nóng sẵn trong RAM  │
                                             └──────────────────────────────────┘
 ```
 
 Ba quyết định định hình toàn bộ source code:
 
-1. **Một process, hai app.** Model AI (20MB) nằm thường trú trong RAM tiến trình server, inference ~3ms. Tách thành service riêng chỉ thêm một chặng HTTP và một thứ nữa để sập — không đổi lại được gì ở quy mô một sự kiện.
+1. **Một process, cả ba game.** Model AI (20MB) nằm thường trú trong RAM tiến trình server, inference ~3ms. Tách thành service riêng chỉ thêm một chặng HTTP và một thứ nữa để sập — không đổi lại được gì ở quy mô một sự kiện.
 2. **Không database.** Mỗi lượt chơi là dữ liệu phù du: 5 người vào, chơi 90 giây, xem kết quả, xong. Không có gì cần truy vấn lịch sử, nên state nằm trong `Map` sống trong RAM. `store/` **chính là** database.
-3. **Server là nguồn sự thật duy nhất.** Đồng hồ, điểm số, thứ tự câu hỏi, từ khoá cần vẽ — tất cả do server giữ. Client chỉ là màn hình + bàn phím.
+3. **Server là nguồn sự thật duy nhất.** Đồng hồ, điểm số, thứ tự câu hỏi, từ khoá cần vẽ, chuỗi ô cần nhớ — tất cả do server giữ. Client chỉ là màn hình + bàn phím.
 
 ---
 
@@ -81,7 +83,8 @@ ClubDay/
 │   │   │   │   ├── admin.ts       ✅ 🔒 tạo lượt, bỏ qua, reset
 │   │   │   │   ├── admin-guard.ts ✅ 🔒 xác thực header x-admin-token
 │   │   │   │   ├── math.ts        ✅ 🅰️ API Tính nhanh (đã xong)
-│   │   │   │   └── draw.ts        ✅ 🅱️ API Vẽ (đã xong)
+│   │   │   │   ├── draw.ts        ✅ 🅱️ API Vẽ (đã xong)
+│   │   │   │   └── memory.ts      ✅ 🅲 API Nhớ nhanh (đã xong)
 │   │   │   │
 │   │   │   ├── services/          ── NGHIỆP VỤ: không biết gì về HTTP
 │   │   │   │   ├── math-gen.ts    ✅ 🅰️ sinh câu hỏi (PRNG seed, chống trùng liền kề)
@@ -90,7 +93,9 @@ ClubDay/
 │   │   │   │   ├── classifier.ts  ✅ 🅱️ model singleton, ghim fp32, hàng đợi tuần tự
 │   │   │   │   ├── labels.ts      ✅ 🅱️ từ khoá + tên tiếng Việt + luật chấp nhận
 │   │   │   │   ├── allowlist.generated.ts ✅ 🅱️ SINH TỰ ĐỘNG — đừng sửa tay
-│   │   │   │   └── draw-session.ts✅ 🅱️ trọng tài Vẽ (đồng hồ, spam, seq, chấm điểm)
+│   │   │   │   ├── draw-session.ts✅ 🅱️ trọng tài Vẽ (đồng hồ, spam, seq, chấm điểm)
+│   │   │   │   ├── memory-gen.ts  ✅ 🅲 sinh chuỗi ô (PRNG seed, chặn 3 ô trùng liền)
+│   │   │   │   └── memory-session.ts ✅ 🅲 trọng tài Nhớ nhanh (đồng hồ, spam, chống bot)
 │   │   │   │
 │   │   │   └── lib/               ── tiện ích thuần
 │   │   │       ├── prng.ts        ✅ 🔒 mulberry32 (dùng chung 2 track)
@@ -113,13 +118,15 @@ ClubDay/
 │       │   │   ├── Dashboard.tsx  ✅ 🔒 bảng hạng 5 người
 │       │   │   ├── Admin.tsx      ✅ 🔒 màn hình BTC (tạo lượt, bắt đầu, URL in QR)
 │       │   │   ├── MathGame.tsx   ✅ 🅰️ màn hình Tính nhanh (đã xong)
-│       │   │   └── DrawGame.tsx   ✅ 🅱️ màn hình Vẽ (frame = gợi ý, nút NỘP BÀI)
+│       │   │   ├── DrawGame.tsx   ✅ 🅱️ màn hình Vẽ (frame = gợi ý, nút NỘP BÀI)
+│       │   │   └── MemoryGame.tsx ✅ 🅲 màn hình Nhớ nhanh (xem chuỗi → lặp lại)
 │       │   ├── components/
 │       │   │   ├── Shell.tsx      ✅ 🔒 khung màn hình
 │       │   │   ├── Countdown.tsx  ✅ 🔒 đồng hồ + thanh tiến độ
 │       │   │   ├── RankTable.tsx  ✅ 🔒 bảng hạng
 │       │   │   ├── ChoicePad.tsx  ✅ 🅰️ 4 nút đáp án (server sinh + xáo trộn)
 │       │   │   ├── DrawCanvas.tsx ✅ 🅱️ canvas + giữ pointer (setPointerCapture)
+│       │   │   ├── MemoryPad.tsx  ✅ 🅲 bàn 4 ô nháy sáng (màu + hình, phím 1–4)
 │       │   │   ├── Avatar.tsx     ✅    ô chữ cái đầu tên người chơi
 │       │   │   ├── Chips.tsx      ✅    nhãn game, kết nối, trạng thái lượt, spinner
 │       │   │   ├── Logo.tsx       ✅    logo DSC (src/assets/logo-dsc.png, luôn trên nền trắng)
@@ -128,6 +135,7 @@ ClubDay/
 │       │                          ✅    game-theme.ts — icon + màu nhận diện từng game
 │       │                          ✅ 🅰️ api-math.ts — client riêng của Track A
 │       │                          ✅ 🅱️ api-draw.ts — client riêng của Track B
+│       │                          ✅ 🅲 api-memory.ts — client riêng của Track C
 │       │                          ✅ 🅱️ strokes.ts — gom nét từ pointer event
 │       ├── index.html             ✅
 │       ├── vite.config.ts         ✅ (proxy /api → :8787 khi dev)
@@ -205,6 +213,14 @@ registerStartHook('math', (round, now) => {
 });
 ```
 
+Track C thêm vào `routes/memory.ts`:
+
+```ts
+registerStartHook('memory', (round) => {
+  round.sequence = generateSequence(seedFromRoundId(round.id));
+});
+```
+
 Track B thêm vào `routes/draw.ts`:
 
 ```ts
@@ -264,6 +280,27 @@ gửi một bức ảnh có sẵn, và payload nhẹ hơn base64 PNG khoảng 10
 "AI nghĩ: …". Nếu hễ model đọc ra là cộng điểm thì người đang vẽ dở cũng bị tính là đã thắng — đó
 là lỗi cũ, và có test canh để nó không quay lại.
 
+**Nhớ nhanh** — server chỉ nhả chuỗi của ĐÚNG cấp đang chơi:
+
+```
+Client                                  Server
+  │                                       │
+  ├── GET  /:id/sequence ────────────────►│  cấp n → n ô ĐẦU của chuỗi cả lượt
+  │◄── { level: n, sequence: […n ô] } ────│  ⏱ đóng dấu "đã gửi lúc nào"
+  │                                       │     (phần sau của chuỗi KHÔNG gửi)
+  │   … nháy lại n ô, mất n × 600ms …     │
+  │   … người chơi chạm lặp lại …         │
+  │                                       │
+  ├── POST /:id/replay ──────────────────►│  ① còn trong giờ?  ② đúng cấp của mình?
+  │   { level, taps: [1,3,0,…] }          │  ③ ≥250ms từ lượt trước?
+  │                                       │  ④ ĐÃ ĐỦ THỜI GIAN XEM CHƯA?
+  │◄── { correct, score, cấp kế } ────────│  ⑤ so với chuỗi server giữ → chấm
+```
+
+Chốt ④ là thứ thay cho "chống spam" của hai game kia: muốn lặp đúng n ô thì phải
+xem hết n ô đã, mà xem hết mất `n × 600ms`. Bot nhận chuỗi rồi bấm lại ngay sẽ
+đúng từng ô nhưng về sớm hơn quãng đó — và bị chặn.
+
 ### Trạng thái hiện tại
 
 | Thành phần | Trạng thái |
@@ -274,13 +311,14 @@ là lỗi cũ, và có test canh để nó không quay lại.
 | 🅰️ Track A — Tính nhanh (`math-gen`, `math-session`, `math-options`, `ChoicePad`) | ✅ **XONG** — đã merge `main` |
 | 🅱️ Track B — Vẽ hình (`raster`, `classifier`, `labels`, `draw-session`) | ✅ **XONG** — đã merge `main` |
 | 🅱️ **Nộp bài** — nút NỘP BÀI + tự nộp khi hết giờ | ✅ **XONG** trên nhánh `feat/draw-submit` |
+| 🅲 Track C — Nhớ nhanh (`memory-gen`, `memory-session`, `MemoryPad`) | ✅ **XONG** |
 | Tích hợp + load test + diễn tập | ⬜ Wave 3 |
 
 Chạy kiểm tra bất cứ lúc nào:
 
 ```bash
-npm test       # 169 unit test — nền tảng + Track A + Track B (143 server + 26 web)
-npm run smoke  # 68 kiểm tra end-to-end (tự bật server rồi tắt, có nạp model thật)
+npm test       # 215 unit test — nền tảng + 3 track (164 server + 51 web)
+npm run smoke  # 86 kiểm tra end-to-end (tự bật server rồi tắt, có nạp model thật)
                # ⏱ chậm hơn trước ~20s: có kiểm tra phải chờ hết 15 giây thật của lượt Vẽ
 ```
 
@@ -321,8 +359,36 @@ Hai chỗ dễ sửa nhầm:
 2. **Bỏ qua lượt (admin) KHÔNG tự nộp.** Bỏ qua là huỷ lượt, thời gian gần như bằng 0, nên nếu để
    hook kết thúc lượt tự chấm thì cả 5 người bỗng được ~150 điểm và nhảy lên đầu bảng.
 
+### Cách tính điểm Nhớ nhanh — đọc trước khi sửa
+
+Điểm là **cấp cao nhất đã vượt**. Lặp sai thì cấp hiện tại về 1 nhưng **không**
+lấy đi kỷ lục — giống hệt luật chuỗi của Tính nhanh, và vì cùng lý do: người vừa
+trượt ở cấp 7 vẫn còn cớ chơi tiếp thay vì ngồi hết 60 giây.
+
+Cấp n dùng **n ô đầu của cùng một chuỗi**, nên lên cấp chỉ là nối thêm một ô vào
+thứ vừa nhớ được. Nếu mỗi cấp sinh chuỗi mới thì người chơi phải học lại từ đầu
+mỗi lần, và trò chơi mất hẳn cảm giác nhớ dài dần — có test canh tính chất này.
+
+Ba chỗ dễ sửa nhầm:
+
+1. **`MEMORY_STEP_MS = 600` là hằng số CHUNG server ↔ client.** Client phát lại
+   chuỗi theo nó, còn server dựa vào chính nó để biết một lượt lặp có kịp xem hay
+   không. Sửa một bên mà quên bên kia thì người chơi **thật** bị chặn vì nghi gian
+   lận. Bản sao nằm ở `apps/web/src/lib/types.ts`.
+2. **Ngưỡng xem là 80% thời gian phát lý thuyết** (`MIN_WATCH_RATIO`), không phải
+   100%. Server đo từ lúc nó *gửi* chuỗi nên đồng hồ của nó luôn dài hơn thời gian
+   phát thật ở máy người chơi; để nguyên 100% thì chỉ cần client lệch vài ms là
+   người thật bị gắn cờ.
+3. **Mọi đường gửi chuỗi ra ngoài phải đi qua `currentSequence()`** — nó đóng dấu
+   thời gian, tức một nửa của chốt chống bot. Trả chuỗi thẳng từ `round.sequence`
+   là vô hiệu hoá chốt đó.
+
 ### Quy ước khi thêm code
 
+0. **Thêm game mới?** Thêm đúng một phần tử vào `GAME_KINDS` (`store/types.ts`) —
+   route `/api/rounds/open`, zod enum, lưới chọn game ở trang chủ và trang BTC đều
+   đọc mảng đó. TypeScript sẽ chỉ ra nốt những chỗ còn thiếu (`DURATION_MS`,
+   `GAME_LABEL`, `SCORE_LABEL`, `GAME_THEME`, bảng `SCREENS` trong `Play.tsx`).
 1. **Thêm endpoint mới?** Tạo/sửa file trong `routes/` theo domain, validate body bằng zod, rồi gọi `services/`. Không viết luật chơi trong route.
 2. **Thêm dữ liệu mới cho một lượt?** Thêm field vào `Round` hoặc `Player` trong `store/types.ts`. **Không** thêm database, ORM, hay migration.
 3. **Đụng vào model AI?** Mọi thay đổi `dtype`, kích thước input, hay cách rasterize đều phải **chạy lại `eval-model.mjs` và đo accuracy** trước khi merge. Xem mục Ghi chú kỹ thuật.

@@ -1,4 +1,4 @@
-import { Brush, Calculator, type LucideIcon } from 'lucide-react';
+import { Brain, Brush, Calculator, type LucideIcon } from 'lucide-react';
 import type { GameKind } from './types';
 
 /**
@@ -22,5 +22,11 @@ export const GAME_THEME: Record<
     chip: 'border-draw/40 bg-draw/10 text-draw',
     tile: 'bg-draw text-ink',
     blurb: 'vẽ để AI đoán ra hình',
+  },
+  memory: {
+    icon: Brain,
+    chip: 'border-memory/40 bg-memory/10 text-memory',
+    tile: 'bg-memory text-ink',
+    blurb: 'nhớ rồi lặp lại chuỗi ô',
   },
 };

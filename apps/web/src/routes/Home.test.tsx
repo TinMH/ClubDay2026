@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Home } from './Home';
 import { api } from '../lib/api';
+import { GAME_KINDS } from '../lib/types';
 
 /**
  * Canh ĐÚNG lỗi đã xảy ra: trang chủ từng không gửi `game` khi vào lượt, mà
@@ -48,7 +49,7 @@ beforeEach(() => {
   localStorage.clear();
   joinMock.mockReset();
   openMock.mockReset();
-  openMock.mockResolvedValue({ open: { math: null, draw: null }, max: 5 });
+  openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null }, max: 5 });
   joinMock.mockResolvedValue({
     playerId: 'p1',
     roundId: 'ABC123',
@@ -144,20 +145,22 @@ describe('Home — chọn trò chơi', () => {
 describe('Home — tình hình lượt đang chờ', () => {
   it('hiện số người đang chờ và số còn thiếu, để người mới dồn vào cùng lượt', async () => {
     openMock.mockResolvedValue({
-      open: { math: { roundId: 'ABC123', players: 3 }, draw: null },
+      open: { math: { roundId: 'ABC123', players: 3 }, draw: null, memory: null },
       max: 5,
     });
     renderAt('/');
 
     await waitFor(() => expect(screen.getByText(/3\/5 đang chờ/)).toBeTruthy());
     expect(screen.getByText(/còn 2 nữa/)).toBeTruthy();
-    // Game chưa ai chờ thì nói rõ là mở lượt mới, không để trống gây đoán.
-    expect(screen.getByText(/chưa có ai — bạn vào là người đầu tiên/)).toBeTruthy();
+    // MỌI game chưa ai chờ đều phải nói rõ, không để trống gây đoán.
+    expect(screen.getAllByText(/chưa có ai — bạn vào là người đầu tiên/)).toHaveLength(
+      GAME_KINDS.length - 1,
+    );
   });
 
   it('lượt có người nhưng chưa ai ở game kia → mỗi ô một trạng thái riêng', async () => {
     openMock.mockResolvedValue({
-      open: { math: null, draw: { roundId: 'XYZ999', players: 4 } },
+      open: { math: null, draw: { roundId: 'XYZ999', players: 4 }, memory: null },
       max: 5,
     });
     renderAt('/');

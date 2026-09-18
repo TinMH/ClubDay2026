@@ -51,6 +51,7 @@ export function createRound(game: GameKind, now = Date.now()): Round {
     players: new Map(),
     questions: null,
     target: null,
+    sequence: null,
     version: 0,
     live: true,
   };
@@ -101,6 +102,9 @@ export function addPlayer(round: Round, name: string, now = Date.now()): Player 
     committed: false,
     commitReason: null,
     committedAt: null,
+    level: 1,
+    levelSentAt: 0,
+    lastReplayAt: 0,
   };
   round.players.set(player.id, player);
   playerIndex.set(player.id, round.id);

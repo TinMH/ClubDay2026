@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactElement } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, House, TriangleAlert } from 'lucide-react';
 import { api } from '../lib/api';
@@ -9,7 +9,27 @@ import { Countdown } from '../components/Countdown';
 import { ConnectionPill, GameChip, Spinner } from '../components/Chips';
 import { MathGame } from './MathGame'; // TRACK A
 import { DrawGame } from './DrawGame'; // TRACK B
-import { DURATION_MS, SCORE_LABEL, type GameProps, type RoundState } from '../lib/types';
+import { MemoryGame } from './MemoryGame'; // TRACK C
+import {
+  DURATION_MS,
+  SCORE_LABEL,
+  type GameKind,
+  type GameProps,
+  type RoundState,
+} from '../lib/types';
+
+/**
+ * Bảng tra game → màn hình.
+ *
+ * Là `Record<GameKind, …>` nên thêm game vào `GAME_KINDS` mà quên khai ở đây là
+ * TypeScript báo lỗi ngay — chuỗi if/else thì lặng lẽ rơi vào nhánh cuối và
+ * người chơi nhận nhầm game.
+ */
+const SCREENS: Record<GameKind, (props: GameProps) => ReactElement> = {
+  math: MathGame,
+  draw: DrawGame,
+  memory: MemoryGame,
+};
 
 /**
  * Dispatcher: đọc `state.game` rồi render game tương ứng.
@@ -86,10 +106,8 @@ export function Play() {
             Về trang chủ
           </Link>
         </div>
-      ) : state.game === 'math' ? (
-        <MathGame {...props} />
       ) : (
-        <DrawGame {...props} />
+        SCREENS[state.game](props)
       )}
     </Shell>
   );

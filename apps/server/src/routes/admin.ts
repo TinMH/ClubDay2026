@@ -3,9 +3,10 @@ import { z } from 'zod';
 import { allRounds, createRound, resetAll } from '../store/store.js';
 import { skipRound } from '../store/lobby.js';
 import { toRoundState } from '../store/state.js';
+import { GAME_KINDS } from '../store/types.js';
 import { requireAdmin } from './admin-guard.js';
 
-const CreateBody = z.object({ game: z.enum(['math', 'draw']) });
+const CreateBody = z.object({ game: z.enum(GAME_KINDS) });
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', requireAdmin);

@@ -653,6 +653,105 @@ try {
   );
   check('Điểm không đổi sau frame bị từ chối', before === after, `${before} → ${after}`);
 
+  // ── TRACK C: game Nhớ nhanh ──
+  console.log('\n── 7. Track C — Nhớ nhanh (nhìn chuỗi rồi lặp lại) ──');
+  const MEM_STEP_MS = 600; // phải khớp MEMORY_STEP_MS ở server
+
+  const k = await call('/api/admin/rounds', { method: 'POST', body: { game: 'memory' }, token: TOKEN });
+  const kId = k.data.roundId;
+  const kJoin = await call('/api/rounds/join', { method: 'POST', body: { name: 'Bình', roundId: kId } });
+  const kPid = kJoin.data.playerId;
+  await call(`/api/rounds/${kId}/start`, { method: 'POST', body: {}, token: TOKEN });
+
+  const kGetSeq = () => call(`/api/rounds/${kId}/sequence?playerId=${kPid}`);
+  const kReplay = (level, taps) =>
+    call(`/api/rounds/${kId}/replay`, { method: 'POST', body: { playerId: kPid, level, taps } });
+  /** Xem hết chuỗi mất đúng `level × MEM_STEP_MS` — chờ đủ rồi mới được nộp. */
+  const kWatch = (level) => sleep(level * MEM_STEP_MS + 120);
+
+  const kSeq1 = await kGetSeq();
+  check(
+    'Vào lượt là ở cấp 1, nhận chuỗi 1 ô',
+    kSeq1.data?.level === 1 && kSeq1.data?.sequence?.length === 1,
+    JSON.stringify(kSeq1.data?.sequence),
+  );
+  check(
+    'Chỉ gửi chuỗi của ĐÚNG cấp đang chơi — không lộ phần sau',
+    kSeq1.data?.sequence?.length === kSeq1.data?.level,
+    `cấp ${kSeq1.data?.level}, nhận ${kSeq1.data?.sequence?.length} ô`,
+  );
+  check(
+    'Mọi ô đều nằm trong bàn 4 ô',
+    kSeq1.data?.sequence?.every((v) => Number.isInteger(v) && v >= 0 && v < 4),
+    JSON.stringify(kSeq1.data?.sequence),
+  );
+
+  // Chốt chống bot: nhận chuỗi xong bấm lại NGAY thì chưa thể đã xem.
+  const kInstant = await kReplay(1, kSeq1.data.sequence);
+  check(
+    'Nộp ngay khi vừa nhận chuỗi → 429 (chưa kịp xem)',
+    kInstant.status === 429,
+    `HTTP ${kInstant.status} ${kInstant.data?.error}`,
+  );
+
+  // Bị chặn thì lấy lại chuỗi (server đóng dấu lại thời gian gửi) rồi xem tử tế.
+  const kSeq1b = await kGetSeq();
+  await kWatch(1);
+  const kR1 = await kReplay(1, kSeq1b.data.sequence);
+  check(
+    'Xem đủ rồi lặp đúng → qua cấp, điểm = 1',
+    kR1.status === 200 && kR1.data?.correct === true && kR1.data?.score === 1 && kR1.data?.level === 2,
+    JSON.stringify(kR1.data),
+  );
+  check(
+    'Cấp 2 nối thêm đúng MỘT ô vào chuỗi cũ',
+    kR1.data?.sequence?.length === 2 && kR1.data.sequence[0] === kSeq1b.data.sequence[0],
+    `${JSON.stringify(kSeq1b.data.sequence)} → ${JSON.stringify(kR1.data?.sequence)}`,
+  );
+
+  const kAgain = await kReplay(1, kSeq1b.data.sequence);
+  check(
+    'Nộp lại cấp vừa vượt → 400, không cộng dồn điểm',
+    kAgain.status === 400 && kAgain.data?.error === 'BAD_LEVEL',
+    `HTTP ${kAgain.status} ${kAgain.data?.error}`,
+  );
+
+  const kJump = await kReplay(6, [0, 1, 2, 3, 0, 1]);
+  check(
+    'Nhảy thẳng lên cấp 6 → 400',
+    kJump.status === 400 && kJump.data?.error === 'BAD_LEVEL',
+    `HTTP ${kJump.status} ${kJump.data?.error}`,
+  );
+
+  // Lặp SAI ở cấp 2: về cấp 1 nhưng kỷ lục cũ phải còn.
+  const kSeq2 = await kGetSeq();
+  await kWatch(2);
+  const kWrongTaps = [...kSeq2.data.sequence];
+  kWrongTaps[0] = (kWrongTaps[0] + 1) % 4;
+  const kR2 = await kReplay(2, kWrongTaps);
+  check(
+    'Lặp sai → về cấp 1 nhưng GIỮ kỷ lục',
+    kR2.status === 200 && kR2.data?.correct === false && kR2.data?.level === 1 && kR2.data?.score === 1,
+    JSON.stringify(kR2.data),
+  );
+
+  const kRows = (await call(`/api/rounds/${kId}/dashboard`)).data?.rows;
+  check(
+    'Bảng hạng thấy đúng cấp cao nhất đã vượt',
+    kRows?.[0]?.score === 1,
+    JSON.stringify(kRows?.[0]),
+  );
+
+  await call(`/api/admin/rounds/${kId}/skip`, { method: 'POST', body: {}, token: TOKEN });
+  const kSeq3 = await kGetSeq();
+  await kWatch(1);
+  const kLate = await kReplay(1, kSeq3.data?.sequence ?? [0]);
+  check(
+    'Lượt đã đóng → lượt lặp bị từ chối (409)',
+    kLate.status === 409,
+    `HTTP ${kLate.status} ${kLate.data?.error}`,
+  );
+
   // ── kết luận ──
   console.log(`\n${'─'.repeat(50)}`);
   console.log(`  ${pass} passed, ${fail} failed`);
