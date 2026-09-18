@@ -137,9 +137,10 @@ ClubDay/
 ├── scripts/                       ── Công cụ vận hành — KHÔNG thuộc runtime
 │   ├── prefetch-model.ts          ✅ tải model về ./models để chạy offline
 │   ├── check-offline.ts           ✅ chặn internet, xác nhận model vẫn load được
-│   ├── smoke-test.mjs             ✅ chạy thử end-to-end (68 kiểm tra)
+│   ├── smoke-test.mjs             ✅ chạy thử end-to-end (71 kiểm tra)
 │   ├── eval-model.ts              ✅ 🅱️ đo accuracy 345 class → SINH RA allowlist
-│   └── loadtest.mjs               ⬜ giả lập N người chơi đồng thời
+│   ├── load-test.mjs              ✅ giả lập N người vẽ đồng thời + stress → JSON
+│   └── report-loadtest.mjs        ✅ JSON đó → báo cáo HTML tự chứa
 │
 ├── .hermes/plans/                 ── Tài liệu thiết kế (plan v2 là bản chuẩn)
 ├── README.md                      ✅ file này
@@ -461,8 +462,10 @@ MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 | `npm run dev:web` | Giao diện dev (Vite) |
 | `npm start` | Chạy bản đã build — server phục vụ cả API lẫn web, 1 cổng |
 | `npm run build` | Build cả web và server |
-| `npm test` | 121 unit test — cả 2 workspace (server 104 + web 17) |
-| `npm run smoke` | 43 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
+| `npm test` | 179 unit test — cả 2 workspace (server 143 + web 36) |
+| `npm run smoke` | 71 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
+| `npm run loadtest` | Load + stress test đường vẽ. `-- --levels 16,32` để đẩy cao hơn |
+| `npm run report:loadtest` | Dựng báo cáo HTML từ JSON của lần đo gần nhất |
 | `npm run prefetch` | Tải model ONNX về `./models` |
 | `npm run check:offline` | Xác nhận model vẫn load được khi không có internet |
 | `npm run eval:model` | Đo accuracy THẬT rồi sinh lại `allowlist.generated.ts` (~35s) |
