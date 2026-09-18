@@ -5,3 +5,12 @@ node_modules
 npm-debug.log
 apps/web/dist
 apps/server/dist
+
+# Model tải trong image ở layer riêng (xem Dockerfile bước 2).
+# Loại thư mục này ra để build không phụ thuộc máy nào đang build — và để
+# `COPY . .` không ghi đè model vừa tải bằng bản của máy build.
+models
+
+# Dữ liệu chạy: snapshot lượt chơi, báo cáo load test. Không thuộc về image,
+# và trên VPS nó sống ở volume (xem docker-compose.yml).
+data

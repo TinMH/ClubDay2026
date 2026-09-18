@@ -17,6 +17,13 @@ services:
       PORT: 8787
       MODEL_OFFLINE: 1
 
+    # Snapshot lượt chơi (data/rounds.json) phải sống ngoài container.
+    # Không có volume thì `docker compose up --build` hay recreate là mất hết kết
+    # quả đã chơi — `restart` thì còn, nhưng rebuild thì không. Server chỉ ghi
+    # snapshot lúc thoát và đọc lại lúc khởi động, nên volume là đủ, không cần gì hơn.
+    volumes:
+      - club-day-data:/app/data
+
     networks:
       - edge
 
@@ -30,6 +37,9 @@ services:
       - "traefik.http.routers.club-day.tls.certresolver=letsencrypt"
 
       - "traefik.http.services.club-day.loadbalancer.server.port=8787"
+
+volumes:
+  club-day-data:
 
 networks:
   edge:
