@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowRight, LoaderCircle, ShieldCheck, Sparkles, TriangleAlert } from 'lucide-react';
-import { api, ApiError } from '../lib/api';
+import { ArrowRight, LoaderCircle, ShieldCheck, Sparkles, TriangleAlert, Users } from 'lucide-react';
+import { api, ApiError, type OpenRounds } from '../lib/api';
 import { saveSession } from '../lib/session';
 import { GAME_THEME } from '../lib/game-theme';
 import { DURATION_MS, GAME_LABEL, MAX_PLAYERS, type GameKind } from '../lib/types';
@@ -18,6 +18,36 @@ const MESSAGES: Record<string, string> = {
 const GAMES: GameKind[] = ['math', 'draw'];
 
 /**
+ * Tình hình lượt của một game: "3/5 đang chờ · còn 2 người nữa".
+ *
+ * Nói cả số còn thiếu chứ không chỉ số hiện có: "3/5" là dữ liệu, "còn 2 người
+ * nữa là bắt đầu" mới là thứ khiến người ta đứng lại chờ.
+ *
+ * `data === null` là chưa nạp xong — giữ chỗ bằng dòng rỗng để thẻ card không
+ * bị giật chiều cao khi số về.
+ */
+function WaitingLine({ game, data }: { game: GameKind; data: OpenRounds | null }) {
+  if (!data) return <p className="mt-2 h-5" aria-hidden="true" />;
+
+  const room = data.open[game];
+  // Hai trường hợp khác nhau bên dưới (chưa có lượt nào / BTC đã tạo lượt nhưng
+  // chưa ai vào) nhưng với người chơi thì kết quả y hệt: họ là người đầu tiên.
+  // Nói theo thứ họ thấy được, đừng nói "mở lượt mới" vì lượt có thể đã có sẵn.
+  if (!room || room.players === 0) {
+    return <p className="mt-2 h-5 text-xs text-muted">chưa có ai — bạn vào là người đầu tiên</p>;
+  }
+
+  const left = data.max - room.players;
+  return (
+    <p className="mt-2 flex h-5 items-center gap-1.5 text-xs font-semibold text-secondary">
+      <Users aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+      {room.players}/{data.max} đang chờ
+      {left > 0 && <span className="font-normal text-muted">· còn {left} nữa</span>}
+    </p>
+  );
+}
+
+/**
  * Nhập tên và vào lượt.
  *   - `/`          → Cách A: tự vào lượt đang mở
  *   - `/r/<mã>`    → Cách B: vào đúng lượt của khu vực đó
@@ -29,11 +59,40 @@ export function Home() {
   const [game, setGame] = useState<GameKind | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [waiting, setWaiting] = useState<OpenRounds | null>(null);
   const roundId = code?.toUpperCase();
 
   // Cách B: game do chính lượt trong URL quyết định, người chơi không chọn.
   const needsGame = !roundId;
   const ready = name.trim().length > 0 && (!needsGame || game !== null);
+
+  /**
+   * Số người đang chờ, cập nhật mỗi 2 giây.
+   *
+   * Đây là thứ giữ cho luồng người KHÔNG bị xẻ đôi: thấy "3/5 đang chờ" thì
+   * người mới có lý do dồn vào lượt đó thay vì mở lượt thứ hai, nên đủ 5 nhanh
+   * hơn và booth ít thời gian chết. Cũng làm việc chờ có nghĩa nên ít ai bỏ đi.
+   *
+   * Không cần ở Cách B: game và lượt đã do URL quyết định.
+   */
+  useEffect(() => {
+    if (roundId) return;
+    let alive = true;
+    const tick = async () => {
+      try {
+        const res = await api.openRounds();
+        if (alive) setWaiting(res);
+      } catch {
+        /* mất mạng một nhịp thì giữ số cũ — không xoá đi làm màn hình nhảy */
+      }
+    };
+    void tick();
+    const t = setInterval(() => void tick(), 2_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [roundId]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -112,6 +171,7 @@ export function Home() {
                 <p className="mt-1 text-xs text-muted">
                   {DURATION_MS[g] / 1000} giây · {blurb}
                 </p>
+                {needsGame && <WaitingLine game={g} data={waiting} />}
               </label>
             );
           })}

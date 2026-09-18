@@ -60,6 +60,12 @@ export interface ClientConfig {
   signupNameEntry: string;
 }
 
+/** `null` = game đó chưa có lượt nào đang chờ. */
+export interface OpenRounds {
+  open: Record<GameKind, { roundId: string; players: number } | null>;
+  max: number;
+}
+
 export interface JoinResponse {
   playerId: string;
   roundId: string;
@@ -91,6 +97,9 @@ export const api = {
 
   /** Cấu hình công khai (link Form đăng ký). Không chứa gì bí mật. */
   config: () => get<ClientConfig>('/api/config'),
+
+  /** Lượt đang chờ của từng game — trang chủ hiện "3/5 đang chờ". */
+  openRounds: () => get<OpenRounds>('/api/rounds/open'),
 
   dashboard: (roundId: string) =>
     get<{ rows: DashboardRow[] }>(`/api/rounds/${roundId}/dashboard`),
