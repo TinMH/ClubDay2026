@@ -68,8 +68,24 @@ export interface JoinResponse {
 }
 
 export const api = {
-  join: (name: string, roundId?: string) =>
-    request<JoinResponse>('/api/rounds/join', json({ name, ...(roundId ? { roundId } : {}) })),
+  /**
+   * Vào lượt.
+   *
+   * `game` BẮT BUỘC ở Cách A (không có `roundId`): server mặc định `'math'` khi
+   * thiếu, và `openRound` chỉ tìm lượt CÙNG game — nên bỏ trống là người chơi
+   * luôn bị đẩy vào Tính nhanh, không cách nào tới được game Vẽ.
+   *
+   * Ở Cách B (`/r/<mã>`) thì game do chính lượt đó quyết định, `game` bị bỏ qua.
+   */
+  join: (name: string, opts: { game?: GameKind; roundId?: string } = {}) =>
+    request<JoinResponse>(
+      '/api/rounds/join',
+      json({
+        name,
+        ...(opts.game ? { game: opts.game } : {}),
+        ...(opts.roundId ? { roundId: opts.roundId } : {}),
+      }),
+    ),
 
   state: (roundId: string) => get<RoundState>(`/api/rounds/${roundId}/state`),
 
