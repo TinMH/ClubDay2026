@@ -107,7 +107,7 @@ ClubDay/
 │       │   ├── App.tsx            ✅ 🔒 router — KHÔNG cần sửa khi làm game
 │       │   ├── styles.css         ✅    Tailwind v4 + khối @theme
 │       │   ├── routes/            ── 1 file = 1 màn hình
-│       │   │   ├── Home.tsx       ✅ 🔒 nhập tên (hỗ trợ cả / và /r/:code)
+│       │   │   ├── Home.tsx       ✅ 🔒 chọn game + nhập tên (cả / và /r/:code)
 │       │   │   ├── Lobby.tsx      ✅ 🔒 5 slot, chờ BTC
 │       │   │   ├── Play.tsx       ✅ 🔒 dispatcher → MathGame | DrawGame
 │       │   │   ├── Dashboard.tsx  ✅ 🔒 bảng hạng 5 người
@@ -411,7 +411,7 @@ Tắt server: `Ctrl+C` — server tự lưu snapshot trước khi thoát.
 |---|---|---|
 | 1 | BTC | Mở `/admin`, dán `ADMIN_TOKEN` vào ô trên cùng (lưu vào máy, chỉ nhập một lần) |
 | 2 | BTC | Bấm **+ Lượt Tính nhanh** hoặc **+ Lượt Vẽ hình** → hiện mã 6 ký tự và URL để in QR |
-| 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → nhập tên → vào phòng chờ |
+| 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → **chọn trò chơi** → nhập tên → vào phòng chờ |
 | 4 | | Tối đa **5 người**. Người thứ 6 bị chặn và báo "chờ lượt sau" |
 | 5 | BTC | Bấm **BẮT ĐẦU** — ở `/admin`, hoặc ở `/lobby/<mã>` nếu máy đó đã nhập token |
 | 6 | | Hết giờ tự chuyển sang bảng xếp hạng của đúng 5 người đó |
