@@ -16,9 +16,16 @@ import { GAME_THEME } from '../lib/game-theme';
 import { Shell } from '../components/Shell';
 import { StatusBadge } from '../components/Chips';
 import { DscLogo } from '../components/Logo';
-import { DURATION_MS, GAME_LABEL, MAX_PLAYERS, type GameKind, type RoundSummary } from '../lib/types';
+import {
+  DURATION_MS,
+  GAME_KINDS,
+  GAME_LABEL,
+  MAX_PLAYERS,
+  type GameKind,
+  type RoundSummary,
+} from '../lib/types';
 
-const GAMES: GameKind[] = ['math', 'draw'];
+const GAMES: readonly GameKind[] = GAME_KINDS;
 
 /**
  * Màn hình BTC: tạo lượt, xem ai đã vào, bắt đầu / bỏ qua, và in QR.
@@ -124,7 +131,7 @@ export function Admin() {
         )}
       </div>
 
-      <section className="grid gap-3 sm:grid-cols-2">
+      <section className="grid gap-3 sm:grid-cols-3">
         {GAMES.map((g) => {
           const { icon: Icon, tile } = GAME_THEME[g];
           return (

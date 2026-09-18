@@ -39,12 +39,16 @@ export function loadSnapshot(file: string, now = Date.now()): number {
           committed: p.committed ?? false,
           commitReason: p.commitReason ?? null,
           committedAt: p.committedAt ?? null,
+          level: p.level ?? 1,
+          levelSentAt: p.levelSentAt ?? 0,
+          lastReplayAt: p.lastReplayAt ?? 0,
         });
       }
       // Đồng hồ của lượt cũ đã trôi qua → không thể tiếp tục, chỉ giữ để xem kết quả.
       restoreRound({
         ...r,
         players,
+        sequence: r.sequence ?? null,
         status: 'done',
         endsAt: r.endsAt ?? now,
         live: false,

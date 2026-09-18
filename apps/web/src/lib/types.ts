@@ -2,7 +2,9 @@
  * Bản sao hợp đồng từ server (apps/server/src/store/types.ts + store/state.ts).
  * Phase F sở hữu — hai track chỉ đọc.
  */
-export type GameKind = 'math' | 'draw';
+/** Phải khớp GAME_KINDS ở server (apps/server/src/store/types.ts). */
+export const GAME_KINDS = ['math', 'draw', 'memory'] as const;
+export type GameKind = (typeof GAME_KINDS)[number];
 export type RoundStatus = 'lobby' | 'playing' | 'done';
 
 export interface RoundStatePlayer {
@@ -57,6 +59,7 @@ export interface GameProps {
 export const GAME_LABEL: Record<GameKind, string> = {
   math: 'Tính nhanh',
   draw: 'Vẽ hình nhanh',
+  memory: 'Nhớ nhanh',
 };
 
 /**
@@ -71,6 +74,7 @@ export const GAME_LABEL: Record<GameKind, string> = {
 export const SCORE_LABEL: Record<GameKind, string> = {
   math: 'Chuỗi dài nhất',
   draw: 'Điểm',
+  memory: 'Cấp cao nhất',
 };
 
 /** Phải khớp với server (apps/server/src/store/types.ts). */
@@ -79,4 +83,17 @@ export const MAX_PLAYERS = 5;
 export const DURATION_MS: Record<GameKind, number> = {
   math: 90_000,
   draw: 15_000,
+  memory: 60_000,
 };
+
+// ── Nhớ nhanh: hằng số CHIA CHUNG với server ──
+//
+// Server dựa vào đúng `MEMORY_STEP_MS` này để biết một lượt lặp có kịp xem chuỗi
+// hay không. Phát lại NHANH HƠN con số ở đây là người chơi thật bị gắn cờ gian
+// lận — đổi thì phải đổi cả apps/server/src/store/types.ts.
+
+/** Số ô trên bàn chơi. */
+export const MEMORY_PAD_COUNT = 4;
+/** Nhịp phát lại mỗi ô: sáng 400ms + tối 200ms. */
+export const MEMORY_STEP_MS = 600;
+export const MEMORY_LIT_MS = 400;

@@ -4,12 +4,12 @@ import { join, startRound } from '../store/lobby.js';
 import { getRound, peekOpenRound } from '../store/store.js';
 import { dashboard } from '../store/dashboard.js';
 import { toRoundState } from '../store/state.js';
-import { MAX_PLAYERS } from '../store/types.js';
+import { GAME_KINDS, MAX_PLAYERS } from '../store/types.js';
 import { requireAdmin } from './admin-guard.js';
 
 const JoinBody = z.object({
   name: z.string().trim().min(1).max(20),
-  game: z.enum(['math', 'draw']).optional(),
+  game: z.enum(GAME_KINDS).optional(),
   roundId: z.string().trim().length(6).optional(),
 });
 
@@ -59,7 +59,7 @@ export async function roundRoutes(app: FastifyInstance): Promise<void> {
    */
   app.get('/api/rounds/open', async () => {
     const open: Record<string, { roundId: string; players: number } | null> = {};
-    for (const game of ['math', 'draw'] as const) {
+    for (const game of GAME_KINDS) {
       const r = peekOpenRound(game);
       open[game] = r ? { roundId: r.id, players: r.players.size } : null;
     }

@@ -4,7 +4,7 @@ import { ArrowRight, LoaderCircle, ShieldCheck, Sparkles, TriangleAlert, Users }
 import { api, ApiError, type OpenRounds } from '../lib/api';
 import { saveSession } from '../lib/session';
 import { GAME_THEME } from '../lib/game-theme';
-import { DURATION_MS, GAME_LABEL, MAX_PLAYERS, type GameKind } from '../lib/types';
+import { DURATION_MS, GAME_KINDS, GAME_LABEL, MAX_PLAYERS, type GameKind } from '../lib/types';
 import { Shell } from '../components/Shell';
 import { DscLogo } from '../components/Logo';
 
@@ -15,7 +15,7 @@ const MESSAGES: Record<string, string> = {
   BAD_REQUEST: 'Tên không hợp lệ (1–20 ký tự).',
 };
 
-const GAMES: GameKind[] = ['math', 'draw'];
+const GAMES: readonly GameKind[] = GAME_KINDS;
 
 /**
  * Tình hình lượt của một game: "3/5 đang chờ · còn 2 người nữa".
@@ -148,7 +148,11 @@ export function Home() {
                 key={g}
                 className={`card animate-rise relative block cursor-pointer p-4 transition-all ${
                   selected ? 'ring-2 ring-accent' : ''
-                } ${needsGame ? '' : 'cursor-default opacity-70'}`}
+                } ${needsGame ? '' : 'cursor-default opacity-70'} ${
+                  /* Số game lẻ: thẻ cuối trải hết hàng, không để lại một ô trống
+                     trông như thiếu mất một game. */
+                  GAMES.length % 2 === 1 && i === GAMES.length - 1 ? 'col-span-2' : ''
+                }`}
                 style={{ animationDelay: `${80 + i * 70}ms` }}
               >
                 <input
