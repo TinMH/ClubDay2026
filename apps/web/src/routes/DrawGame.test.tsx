@@ -259,6 +259,67 @@ describe('DrawGame — gợi ý của AI không phải là điểm', () => {
   });
 });
 
+describe('DrawGame — nhịp gửi frame', () => {
+  /**
+   * Canh ĐÚNG lỗi đã xảy ra: bản cũ dùng `setInterval`, tức đếm nhịp từ lúc GỬI.
+   * Mạng giật một nhịp là hai frame gửi đúng giờ vẫn tới server sát nhau, server
+   * trả 429 TOO_FAST và người chơi mất một lượt nhận diện trong lượt vốn chỉ 15
+   * giây. Nhịp phải đếm từ lúc frame trước XONG.
+   */
+  it('chờ frame trước xong rồi mới hẹn frame sau', async () => {
+    vi.useFakeTimers();
+    let settle: ((v: FrameResult) => void) | undefined;
+    frameMock.mockImplementation(
+      () =>
+        new Promise<FrameResult>((resolve) => {
+          settle = resolve;
+        }),
+    );
+
+    const { canvas } = setup();
+    drawStroke(canvas);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_100);
+    });
+    expect(frameMock).toHaveBeenCalledTimes(1);
+
+    // Frame này đi mất 900ms mới về — đúng kiểu wifi hội trường.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(900);
+    });
+    expect(frameMock).toHaveBeenCalledTimes(1); // chưa xong thì chưa gửi tiếp
+
+    await act(async () => {
+      settle?.(frameOk());
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    // Tính từ lúc frame trước XONG, còn phải chờ đủ nhịp nữa. Bản cũ đã gửi
+    // frame thứ hai ở đây rồi, và server thấy hai frame cách nhau có 100ms.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_000);
+    });
+    expect(frameMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
+    });
+    expect(frameMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('hết giờ thì thôi gửi frame — không bắn thêm request chỉ để nhận 409', async () => {
+    vi.useFakeTimers();
+    const { canvas } = setup(makeState({ endsAt: Date.now() + 500 }));
+    drawStroke(canvas);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+    expect(frameMock).not.toHaveBeenCalled();
+  });
+});
+
 describe('DrawGame — hết giờ thì TỰ NỘP', () => {
   it('đồng hồ chạm 0 → tự gửi bài, không cần bấm nút', async () => {
     vi.useFakeTimers();

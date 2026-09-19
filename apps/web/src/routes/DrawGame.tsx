@@ -11,7 +11,7 @@ import {
   TriangleAlert,
 } from 'lucide-react';
 import { DrawCanvas, type DrawCanvasHandle } from '../components/DrawCanvas';
-import { ApiError } from '../lib/api';
+import { ApiError, serverNow } from '../lib/api';
 import { drawApi, type PublicPrediction } from '../lib/api-draw';
 import { StrokeRecorder } from '../lib/strokes';
 import { useCountdown } from '../lib/useCountdown';
@@ -30,13 +30,19 @@ import type { GameProps } from '../lib/types';
  */
 
 /**
- * Chu kỳ gửi frame.
+ * NGHỈ giữa hai frame — tính từ lúc frame trước ĐÃ XONG, không phải từ lúc gửi.
  *
- * KHÔNG dùng đúng 1000ms dù server cho phép 1 frame/giây: server đo khoảng cách
- * theo GIỜ NHẬN, mà độ trễ mạng dao động vài chục ms, nên 1000ms sẽ thỉnh
- * thoảng bị 429 TOO_FAST và mất một lượt nhận diện. 50ms biên là quá đủ.
+ * Server cho 1 frame/giây và đo khoảng cách theo GIỜ NHẬN của nó. Bản cũ dùng
+ * `setInterval(1050)`: đồng hồ chạy đều ở máy người chơi, nhưng độ trễ mạng thì
+ * không đều. Frame A đi mất 500ms, frame B đi mất 100ms → server thấy chúng cách
+ * nhau 650ms và trả 429 TOO_FAST. Trên wifi hội trường, dao động vài trăm ms là
+ * chuyện thường, nên cả một lượt 15 giây mất kha khá lần nhận diện.
+ *
+ * Chờ frame trước xong rồi mới hẹn frame sau thì khoảng cách ở server luôn là
+ * `1050ms + thời gian server xử lý + độ trễ của frame sau` — không bao giờ ngắn
+ * hơn 1000ms, dù mạng có giật thế nào.
  */
-const FRAME_INTERVAL_MS = 1050;
+const FRAME_GAP_MS = 1050;
 
 /** Kết quả NỘP BÀI — giữ lại để vẽ màn hình kết quả. */
 interface Commit {
@@ -126,6 +132,7 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
   }, [playing, playerId, target, remaining, submit]);
 
   // Vòng gửi frame để lấy gợi ý. KHÔNG cho điểm — chỉ để hiện "AI nghĩ: …".
+  const endsAt = state.endsAt;
   useEffect(() => {
     if (!playing || !playerId || !target || finished) return;
 
@@ -136,6 +143,11 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
       if (inflightRef.current) return;
       // Canvas trống thì không tốn một vòng request nào.
       if (recorder.isEmpty) return;
+      // Hết giờ rồi thì frame gửi thêm chỉ nhận 409; việc còn lại là NỘP BÀI
+      // (effect bên trên lo). Kiểm ở ĐÂY chứ không đưa `remaining` vào deps:
+      // nó đổi 10 lần mỗi giây, effect sẽ dựng lại vòng lặp liên tục và không
+      // frame nào kịp gửi đi.
+      if (endsAt !== null && serverNow() >= endsAt) return;
 
       const box = wrapperRef.current;
       const w = box?.clientWidth ?? 300;
@@ -179,12 +191,20 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
       }
     };
 
-    const timer = setInterval(() => void tick(), FRAME_INTERVAL_MS);
+    // Vòng tự điều nhịp: hẹn frame kế CHỈ SAU KHI frame này đã xong.
+    let timer: number | undefined;
+    const loop = async (): Promise<void> => {
+      await tick();
+      if (!alive) return;
+      timer = window.setTimeout(() => void loop(), FRAME_GAP_MS);
+    };
+    timer = window.setTimeout(() => void loop(), FRAME_GAP_MS);
+
     return () => {
       alive = false;
-      clearInterval(timer);
+      window.clearTimeout(timer);
     };
-  }, [playing, playerId, target, roundId, finished, recorder]);
+  }, [playing, playerId, target, roundId, finished, recorder, endsAt]);
 
   if (!target) {
     return <p className="py-10 text-center text-muted">Lượt này chưa có từ khoá.</p>;

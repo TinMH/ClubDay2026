@@ -117,7 +117,7 @@ export type CommitOutcome = CommitOk | { ok: false; code: FailCode };
  * Các chốt, theo đúng thứ tự kiểm tra:
  *   1. Lượt phải đang chơi và người này chưa xong.
  *   2. Còn trong thời gian — hết giờ thì không nhận frame nữa.
- *   3. Không gửi nhanh hơn 1 frame/giây; nhanh hơn là bot, đánh cờ.
+ *   3. Không gửi nhanh hơn 1 frame/giây — để một người không chiếm hết CPU của model.
  *   4. `seq` phải TĂNG DẦN: chặn gửi lại frame cũ.
  *   5. Từ khoá lấy từ `round.target` do server chọn, không bao giờ từ client.
  *
@@ -142,8 +142,14 @@ export async function previewFrame(
     return { ok: false, code: 'TIME_UP' };
   }
 
+  // Chỉ TỪ CHỐI, KHÔNG đánh cờ gian lận.
+  //
+  // Chốt này giữ tải cho model, không phải chốt chống gian lận: frame không sinh
+  // ra điểm nào (điểm chỉ đến từ `commitDrawing`), nên gửi dày hơn chẳng lợi gì.
+  // Mà khoảng cách đo theo GIỜ NHẬN, nên wifi giật một nhịp là hai frame gửi
+  // đúng nhịp vẫn tới sát nhau — đánh cờ ở đây là bêu một người chơi thật vì
+  // mạng của họ chập, đổi lại không chặn được gì.
   if (tooFast(player.lastFrameAt, now, MIN_FRAME_GAP_MS)) {
-    player.flagged = true;
     return { ok: false, code: 'TOO_FAST' };
   }
 

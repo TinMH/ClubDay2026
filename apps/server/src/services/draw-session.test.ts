@@ -444,7 +444,7 @@ describe('draw-session — CHỐNG GIAN LẬN', () => {
     expect(res.ok).toBe(true);
   });
 
-  it('SPAM: 2 frame cách nhau 200ms → chặn và đánh cờ', async () => {
+  it('SPAM: 2 frame cách nhau 200ms → chặn, nhưng KHÔNG đánh cờ gian lận', async () => {
     const { round, player } = setup('circle');
     const first = await previewFrame(round, player, { seq: 1, strokes: circleStrokes() }, T0 + 1_000, fakeClassifier(miss()));
     expect(first.ok).toBe(true);
@@ -452,8 +452,11 @@ describe('draw-session — CHỐNG GIAN LẬN', () => {
     const second = await previewFrame(round, player, { seq: 2, strokes: circleStrokes() }, T0 + 1_200, fakeClassifier(hit('circle')));
     expect(second.ok).toBe(false);
     if (!second.ok) expect(second.code).toBe('TOO_FAST');
-    expect(player.flagged).toBe(true);
     expect(player.score).toBe(0);
+    // Frame không sinh điểm nên gửi dày chẳng lợi gì; mà khoảng cách đo theo giờ
+    // NHẬN, nên wifi giật là hai frame đúng nhịp vẫn tới sát nhau. Đánh cờ ở đây
+    // chỉ bêu người chơi thật vì mạng của họ chập.
+    expect(player.flagged).toBe(false);
   });
 
   it('cách nhau đúng ngưỡng 1 giây thì hợp lệ', async () => {
