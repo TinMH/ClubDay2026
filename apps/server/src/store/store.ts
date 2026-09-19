@@ -5,7 +5,7 @@
  * không cần truy vấn lịch sử. Xem plan v2 mục 0 để biết lý do.
  */
 import type { GameKind, Player, Round } from './types.js';
-import { MAX_PLAYERS } from './types.js';
+import { MAX_PLAYERS_BY_GAME } from '../config.js';
 import { newPlayerId, newRoundId } from '../lib/id.js';
 
 const rounds = new Map<string, Round>();
@@ -74,6 +74,7 @@ export function createRound(game: GameKind, now = Date.now()): Round {
     startedAt: null,
     endsAt: null,
     players: new Map(),
+    maxPlayers: MAX_PLAYERS_BY_GAME[game],
     questions: null,
     target: null,
     sequence: null,
@@ -87,18 +88,28 @@ export function createRound(game: GameKind, now = Date.now()): Round {
 }
 
 /**
+ * "Lượt này còn nhận người không?" — ĐỊNH NGHĨA DUY NHẤT, cả hai hàm dưới dùng chung.
+ *
+ * Viết một lần chứ không chép hai lần: `peekOpenRound` là con số trang chủ hiện
+ * ra, `openRound` là lượt người chơi thật sự rơi vào. Hai điều kiện lệch nhau
+ * một chữ là hiện lượt này rồi đẩy họ sang lượt khác.
+ *
+ * Chỗ còn trống so với `r.maxPlayers` của CHÍNH lượt đó, không phải cấu hình
+ * hiện tại — BTC đổi cấu hình giữa sự kiện thì lượt đang chờ giữ nguyên luật cũ.
+ */
+function hasRoom(r: Round, game: GameKind): boolean {
+  return r.live !== false && r.game === game && r.status === 'lobby' && r.players.size < r.maxPlayers;
+}
+
+/**
  * Lượt đang mở còn chỗ, hoặc `null` nếu không có — KHÔNG tạo mới.
  *
  * Tách khỏi `openRound` để trang chủ hiện được "3/5 đang chờ" mà không vô tình
- * sinh ra một lượt rỗng chỉ vì có người mở trang. Và vì cả hai dùng chung đúng
- * một điều kiện, con số hiện trên UI luôn là lượt mà `openRound` sẽ chọn — không
- * có chuyện hiện một lượt rồi đẩy người chơi vào lượt khác.
+ * sinh ra một lượt rỗng chỉ vì có người mở trang.
  */
 export function peekOpenRound(game: GameKind): Round | null {
   for (const r of rounds.values()) {
-    if (r.live !== false && r.game === game && r.status === 'lobby' && r.players.size < MAX_PLAYERS) {
-      return r;
-    }
+    if (hasRoom(r, game)) return r;
   }
   return null;
 }

@@ -19,6 +19,8 @@ export interface RoundState {
   serverNow: number;
   startedAt: number | null;
   endsAt: number | null;
+  /** Số chỗ của RIÊNG lượt này — phòng chờ vẽ đúng bấy nhiêu ô. */
+  maxPlayers: number;
   /** Chỉ có ở game vẽ. */
   target?: { id: string; labelVi: string };
   players: RoundStatePlayer[];
@@ -32,6 +34,7 @@ export function toRoundState(round: Round, now = Date.now()): RoundState {
     serverNow: now,
     startedAt: round.startedAt,
     endsAt: round.endsAt,
+    maxPlayers: round.maxPlayers,
     players: [...round.players.values()].map((p) => ({
       id: p.id,
       name: p.name,

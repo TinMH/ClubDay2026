@@ -60,12 +60,15 @@ export interface ClientConfig {
   signupNameEntry: string;
   /** Trò BTC đang mở. `null` = đang đóng, chưa cho vào lượt mới. */
   activeGame: GameKind | null;
+  /** Số người tối đa mỗi lượt, theo từng trò. */
+  maxPlayers: Record<GameKind, number>;
 }
 
 /** `null` = game đó chưa có lượt nào đang chờ. */
 export interface OpenRounds {
   open: Record<GameKind, { roundId: string; players: number } | null>;
-  max: number;
+  /** Sức chứa mỗi trò một khác → tra theo game, đừng dùng một con số chung. */
+  max: Record<GameKind, number>;
 }
 
 export interface JoinResponse {
@@ -106,7 +109,11 @@ export const api = {
     request<{ roundId: string }>('/api/admin/rounds', json({ game }, token)),
 
   listRounds: (token: string) =>
-    get<{ activeGame: GameKind | null; rounds: RoundSummary[] }>('/api/admin/rounds', token),
+    get<{
+      activeGame: GameKind | null;
+      maxPlayers: Record<GameKind, number>;
+      rounds: RoundSummary[];
+    }>('/api/admin/rounds', token),
 
   /** BTC: chọn trò được chơi lúc này (`null` = tạm đóng). */
   setActiveGame: (game: GameKind | null, token: string) =>

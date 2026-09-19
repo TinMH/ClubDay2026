@@ -29,6 +29,7 @@ const state: RoundState = {
   serverNow: 0,
   startedAt: 0,
   endsAt: 45_000,
+  maxPlayers: 5,
   players: [],
 };
 

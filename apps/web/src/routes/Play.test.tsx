@@ -43,6 +43,7 @@ const roundState = (over: Partial<RoundState> = {}): RoundState => ({
   serverNow: 0,
   startedAt: null,
   endsAt: null,
+  maxPlayers: 5,
   players: [{ id: 'p1', name: 'An', score: 0, finished: false }],
   ...over,
 });

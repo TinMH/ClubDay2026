@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { allRounds, createRound, getActiveGame, resetAll } from '../store/store.js';
+import { MAX_PLAYERS_BY_GAME } from '../config.js';
 import { selectActiveGame, skipRound } from '../store/lobby.js';
 import { toRoundState } from '../store/state.js';
 import { GAME_KINDS } from '../store/types.js';
@@ -36,6 +37,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   /** Danh sách lượt gần đây — màn hình BTC. */
   app.get('/api/admin/rounds', async () => ({
     activeGame: getActiveGame(),
+    maxPlayers: MAX_PLAYERS_BY_GAME,
     rounds: allRounds()
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 30)
@@ -44,6 +46,7 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
         game: r.game,
         status: r.status,
         playerCount: r.players.size,
+        maxPlayers: r.maxPlayers,
         createdAt: r.createdAt,
         live: r.live !== false,
       })),

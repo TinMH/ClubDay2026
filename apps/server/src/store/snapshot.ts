@@ -6,7 +6,7 @@
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Player, Round } from './types.js';
+import { MAX_PLAYERS, type Player, type Round } from './types.js';
 import { allRounds, restoreRound } from './store.js';
 
 interface SerializedRound extends Omit<Round, 'players'> {
@@ -48,6 +48,9 @@ export function loadSnapshot(file: string, now = Date.now()): number {
       restoreRound({
         ...r,
         players,
+        // Snapshot cũ không có field này — lượt khôi phục chỉ để xem lại kết quả
+        // nên con số chỉ dùng cho hiển thị.
+        maxPlayers: r.maxPlayers ?? MAX_PLAYERS,
         sequence: r.sequence ?? null,
         status: 'done',
         endsAt: r.endsAt ?? now,

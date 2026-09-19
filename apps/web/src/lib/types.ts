@@ -21,6 +21,8 @@ export interface RoundState {
   serverNow: number;
   startedAt: number | null;
   endsAt: number | null;
+  /** Số chỗ của RIÊNG lượt này. */
+  maxPlayers: number;
   target?: { id: string; labelVi: string };
   players: RoundStatePlayer[];
 }
@@ -30,6 +32,7 @@ export interface RoundSummary {
   game: GameKind;
   status: RoundStatus;
   playerCount: number;
+  maxPlayers: number;
   createdAt: number;
   live: boolean;
 }
@@ -79,8 +82,16 @@ export const SCORE_LABEL: Record<GameKind, string> = {
   spot: 'Cấp cao nhất',
 };
 
-/** Phải khớp với server (apps/server/src/store/types.ts). */
-export const MAX_PLAYERS = 5;
+/**
+ * Số người mỗi lượt khi CHƯA biết cấu hình thật (lúc trang vừa mở, hoặc mất mạng).
+ *
+ * Con số thật đến từ server và mỗi trò một khác — BTC đặt trong `.env`. Lấy ở:
+ *   - phòng chờ  → `state.maxPlayers` (của chính lượt đó)
+ *   - trang chủ  → `config.maxPlayers[game]` / `openRounds.max[game]`
+ *   - /admin     → `maxPlayers` trong danh sách lượt
+ * Dùng hằng số này để vẽ "x/5" là nói sai với người chơi khi BTC đặt khác 5.
+ */
+export const DEFAULT_MAX_PLAYERS = 5;
 
 export const DURATION_MS: Record<GameKind, number> = {
   math: 90_000,

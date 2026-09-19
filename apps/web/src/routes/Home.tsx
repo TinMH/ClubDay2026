@@ -12,7 +12,7 @@ import {
 import { api, ApiError, type OpenRounds } from '../lib/api';
 import { saveSession } from '../lib/session';
 import { GAME_THEME } from '../lib/game-theme';
-import { DURATION_MS, GAME_KINDS, GAME_LABEL, MAX_PLAYERS, type GameKind } from '../lib/types';
+import { DEFAULT_MAX_PLAYERS, DURATION_MS, GAME_KINDS, GAME_LABEL, type GameKind } from '../lib/types';
 import { Shell } from '../components/Shell';
 import { DscLogo } from '../components/Logo';
 
@@ -39,6 +39,7 @@ function WaitingLine({ game, data }: { game: GameKind; data: OpenRounds | null }
   if (!data) return <p className="mt-2 h-5" aria-hidden="true" />;
 
   const room = data.open[game];
+  const max = data.max[game];
   // Hai trường hợp khác nhau bên dưới (chưa có lượt nào / BTC đã tạo lượt nhưng
   // chưa ai vào) nhưng với người chơi thì kết quả y hệt: họ là người đầu tiên.
   // Nói theo thứ họ thấy được, đừng nói "mở lượt mới" vì lượt có thể đã có sẵn.
@@ -46,11 +47,11 @@ function WaitingLine({ game, data }: { game: GameKind; data: OpenRounds | null }
     return <p className="mt-2 h-5 text-xs text-muted">chưa có ai — bạn vào là người đầu tiên</p>;
   }
 
-  const left = data.max - room.players;
+  const left = max - room.players;
   return (
     <p className="mt-2 flex h-5 items-center gap-1.5 text-xs font-semibold text-secondary">
       <Users aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-      {room.players}/{data.max} đang chờ
+      {room.players}/{max} đang chờ
       {left > 0 && <span className="font-normal text-muted">· còn {left} nữa</span>}
     </p>
   );
@@ -72,6 +73,8 @@ export function Home() {
    * quyết ở /admin. Màn hình này chỉ hiển thị lại quyết định đó.
    */
   const [activeGame, setActiveGame] = useState<GameKind | null | undefined>(undefined);
+  /** Sức chứa mỗi trò, do BTC đặt trong .env — `null` = chưa nạp xong. */
+  const [maxPlayers, setMaxPlayers] = useState<Record<GameKind, number> | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<OpenRounds | null>(null);
@@ -99,6 +102,7 @@ export function Home() {
         const [cfg, res] = await Promise.all([api.config(), api.openRounds()]);
         if (!alive) return;
         setActiveGame(cfg.activeGame);
+        setMaxPlayers(cfg.maxPlayers);
         setWaiting(res);
       } catch {
         /* mất mạng một nhịp thì giữ số cũ — không xoá đi làm màn hình nhảy */
@@ -137,7 +141,8 @@ export function Home() {
         </h1>
         <p className="mt-3 flex items-center justify-center gap-1.5 text-muted">
           <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0 text-secondary" />
-          Mini game CLB · tối đa {MAX_PLAYERS} người một lượt
+          Mini game CLB · tối đa{' '}
+          {activeGame && maxPlayers ? maxPlayers[activeGame] : DEFAULT_MAX_PLAYERS} người một lượt
         </p>
       </header>
 

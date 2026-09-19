@@ -7,7 +7,7 @@ import { useRoundStream } from '../lib/sse';
 import { Shell } from '../components/Shell';
 import { Avatar } from '../components/Avatar';
 import { ConnectionPill, GameChip, WaitDots } from '../components/Chips';
-import { MAX_PLAYERS, type RoundState } from '../lib/types';
+import { DEFAULT_MAX_PLAYERS, type RoundState } from '../lib/types';
 
 /**
  * Phòng chờ: 5 slot, cập nhật realtime.
@@ -39,7 +39,10 @@ export function Lobby() {
   }, [state, roundId, navigate]);
 
   const players = state?.players ?? [];
-  const slots = Array.from({ length: MAX_PLAYERS }, (_, i) => players[i]);
+  // Số chỗ của CHÍNH lượt này, không phải một hằng số chung: BTC đặt riêng cho
+  // từng trò, nên vẽ cứng 5 ô là nói sai với người đang đứng chờ.
+  const maxPlayers = state?.maxPlayers ?? DEFAULT_MAX_PLAYERS;
+  const slots = Array.from({ length: maxPlayers }, (_, i) => players[i]);
 
   if (error && !state) {
     return (
@@ -84,7 +87,7 @@ export function Lobby() {
             Người chơi
           </h2>
           <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-sm font-bold tabular-nums">
-            {players.length}/{MAX_PLAYERS}
+            {players.length}/{maxPlayers}
           </span>
         </div>
         <ul className="space-y-2">

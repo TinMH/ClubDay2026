@@ -125,6 +125,14 @@ export interface Round {
   /** ⏱ MỘT đồng hồ chung cho cả lượt — không phải mỗi người một cái. */
   endsAt: number | null;
   players: Map<string, Player>;
+  /**
+   * Số người tối đa của RIÊNG lượt này, chốt lúc tạo lượt.
+   *
+   * Chốt lại thay vì đọc cấu hình mỗi lần kiểm tra: BTC đổi cấu hình giữa sự kiện
+   * thì lượt đang chờ vẫn giữ nguyên luật nó sinh ra cùng — không có chuyện đang
+   * 5/5 thì tụt xuống 5/3 và hai người bỗng thành thừa.
+   */
+  maxPlayers: number;
   /** TRACK A: sinh sẵn khi bắt đầu lượt. */
   questions: Question[] | null;
   /** TRACK B: từ khoá cần vẽ. */
@@ -143,7 +151,23 @@ export interface Round {
   live?: boolean;
 }
 
+/**
+ * Số người MẶC ĐỊNH mỗi lượt, dùng khi `.env` không nói gì khác.
+ *
+ * Con số thật của một lượt nằm ở `Round.maxPlayers` — BTC đặt riêng cho từng trò
+ * qua biến môi trường (xem config.ts). Đừng dùng hằng số này để kiểm tra lượt đã
+ * đầy chưa: lượt nào cũng mang theo giới hạn của chính nó.
+ */
 export const MAX_PLAYERS = 5;
+
+/**
+ * Trần cứng cho cấu hình.
+ *
+ * Trên 20 người một lượt thì phòng chờ tràn màn hình điện thoại, bảng hạng thành
+ * một danh sách dài vô nghĩa, và với game Vẽ thì mỗi frame là một lần chạy model
+ * — 20 người đã là chỗ máy BTC bắt đầu hụt hơi (xem scripts/load-test.mjs).
+ */
+export const MAX_PLAYERS_CAP = 20;
 
 export const DURATION_MS: Record<GameKind, number> = {
   math: 90_000,

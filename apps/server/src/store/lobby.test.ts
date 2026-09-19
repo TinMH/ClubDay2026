@@ -21,10 +21,51 @@ describe('lobby', () => {
     if (a.ok && b.ok) expect(b.round.id).toBe(a.round.id);
   });
 
-  it('từ chối người thứ 6', () => {
+  it('từ chối người vượt quá sức chứa của lượt', () => {
     const r = createRound('math');
     for (let i = 0; i < MAX_PLAYERS; i++) join(`p${i}`, { roundId: r.id });
-    const res = join('p6', { roundId: r.id });
+    const res = join('thừa', { roundId: r.id });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.code).toBe('ROUND_FULL');
+  });
+
+  it('sức chứa lấy theo TỪNG LƯỢT, không phải một hằng số chung', () => {
+    const r = createRound('math');
+    r.maxPlayers = 2; // BTC đặt trò này 2 người trong .env
+
+    expect(join('An', { roundId: r.id }).ok).toBe(true);
+    expect(join('Bình', { roundId: r.id }).ok).toBe(true);
+
+    const res = join('Chi', { roundId: r.id });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.code).toBe('ROUND_FULL');
+  });
+
+  it('lượt đầy thì người tiếp theo được mở lượt MỚI, không bị chặn', () => {
+    // Cách A (không có mã lượt): đầy chỗ là sang lượt kế, chứ không phải hết cửa.
+    const first = join('An');
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    first.round.maxPlayers = 1;
+
+    const second = join('Bình');
+    expect(second.ok).toBe(true);
+    if (second.ok) expect(second.round.id).not.toBe(first.round.id);
+  });
+
+  it('lượt nới rộng hơn mặc định thì nhận đủ bấy nhiêu người', () => {
+    // Chiều ngược lại của ca trên: `maxPlayers` của lượt là thứ quyết định, cả
+    // khi nó LỚN hơn hằng số mặc định. Nếu đâu đó còn so với hằng số chung thì
+    // người thứ 6 bị chặn dù BTC đã cho phép 8.
+    const r = createRound('math');
+    r.maxPlayers = MAX_PLAYERS + 3;
+
+    for (let i = 0; i < MAX_PLAYERS + 3; i++) {
+      expect(join(`p${i}`, { roundId: r.id }).ok).toBe(true);
+    }
+    expect(r.players.size).toBe(MAX_PLAYERS + 3);
+
+    const res = join('thừa', { roundId: r.id });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('ROUND_FULL');
   });

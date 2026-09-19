@@ -45,6 +45,9 @@ const renderAt = (path: string) =>
     </MemoryRouter>,
   );
 
+/** Sức chứa mặc định của cả 4 trò — server trả theo từng trò. */
+const MAXES = { math: 5, draw: 5, memory: 5, spot: 5 } as const;
+
 const nameField = () => screen.getByLabelText(/tên của bạn/i);
 const joinButton = () => screen.getByRole('button', { name: /vào chơi/i }) as HTMLButtonElement;
 
@@ -53,8 +56,8 @@ beforeEach(() => {
   joinMock.mockReset();
   openMock.mockReset();
   configMock.mockReset();
-  configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'draw' });
-  openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null, spot: null }, max: 5 });
+  configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'draw', maxPlayers: MAXES });
+  openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null, spot: null }, max: MAXES });
   joinMock.mockResolvedValue({
     playerId: 'p1',
     roundId: 'ABC123',
@@ -66,6 +69,7 @@ beforeEach(() => {
       serverNow: 0,
       startedAt: null,
       endsAt: null,
+      maxPlayers: 5,
       players: [],
     },
   });
@@ -105,7 +109,7 @@ describe('Home — trò do BTC chọn', () => {
   });
 
   it('BTC đang đóng thì không vào được, và có nói vì sao', async () => {
-    configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: null });
+    configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: null, maxPlayers: MAXES });
     renderAt('/');
 
     fireEvent.change(nameField(), { target: { value: 'Minh' } });
@@ -142,10 +146,10 @@ describe('Home — trò do BTC chọn', () => {
 
 describe('Home — tình hình lượt đang chờ', () => {
   it('hiện số người đang chờ và số còn thiếu, để người mới dồn vào cùng lượt', async () => {
-    configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'math' });
+    configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'math', maxPlayers: MAXES });
     openMock.mockResolvedValue({
       open: { math: { roundId: 'ABC123', players: 3 }, draw: null, memory: null, spot: null },
-      max: 5,
+      max: MAXES,
     });
     renderAt('/');
 
@@ -154,8 +158,8 @@ describe('Home — tình hình lượt đang chờ', () => {
   });
 
   it('trò đang mở mà chưa ai chờ thì nói rõ, không để trống gây đoán', async () => {
-    configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'draw' });
-    openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null, spot: null }, max: 5 });
+    configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'draw', maxPlayers: MAXES });
+    openMock.mockResolvedValue({ open: { math: null, draw: null, memory: null, spot: null }, max: MAXES });
     renderAt('/');
 
     // ĐÚNG MỘT ô: các trò chưa tới lượt không nói chuyện chờ đợi gì cả.

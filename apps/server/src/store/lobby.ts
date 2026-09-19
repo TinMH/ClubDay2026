@@ -3,7 +3,7 @@
  * Cả 2 track gọi vào đây; không track nào tự đổi trạng thái lượt.
  */
 import type { GameKind, Player, Round } from './types.js';
-import { DURATION_MS, MAX_PLAYERS } from './types.js';
+import { DURATION_MS } from './types.js';
 import {
   addPlayer,
   allRounds,
@@ -74,7 +74,7 @@ export function join(name: string, opts: { roundId?: string } = {}, now = Date.n
   // Chặn join sau khi bắt đầu → không ai bị thiếu giờ so với người khác.
   if (round.live === false) return { ok: false, code: 'ROUND_STARTED' };
   if (round.status !== 'lobby') return { ok: false, code: 'ROUND_STARTED' };
-  if (round.players.size >= MAX_PLAYERS) return { ok: false, code: 'ROUND_FULL' };
+  if (round.players.size >= round.maxPlayers) return { ok: false, code: 'ROUND_FULL' };
 
   const player = addPlayer(round, name, now);
   return { ok: true, round, player };

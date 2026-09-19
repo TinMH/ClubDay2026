@@ -102,6 +102,7 @@ function makeState(over: Partial<RoundState> = {}): RoundState {
     serverNow: now,
     startedAt: now,
     endsAt: now + 15_000,
+    maxPlayers: 5,
     target: { id: 'circle', labelVi: 'hình tròn' },
     players: [{ id: PLAYER, name: 'An', score: 0, finished: false }],
     ...over,

@@ -26,6 +26,8 @@ if (envFile) {
   }
 }
 
+import { GAME_KINDS, MAX_PLAYERS, MAX_PLAYERS_CAP, type GameKind } from './store/types.js';
+
 export const PORT = Number(process.env.PORT ?? 8787);
 export const HOST = process.env.HOST ?? '0.0.0.0';
 export const ADMIN_TOKEN = process.env.ADMIN_TOKEN ?? '';
@@ -49,6 +51,44 @@ export const SIGNUP_FORM_URL = process.env.SIGNUP_FORM_URL ?? '';
  * Để rỗng thì vẫn hiện nút, chỉ là người chơi phải tự gõ tên.
  */
 export const SIGNUP_NAME_ENTRY = process.env.SIGNUP_NAME_ENTRY ?? '';
+
+/**
+ * Số người tối đa mỗi lượt, ĐẶT RIÊNG CHO TỪNG TRÒ.
+ *
+ *   MAX_PLAYERS=6            → mặc định cho mọi trò
+ *   MAX_PLAYERS_DRAW=3       → riêng Vẽ hình nhanh (đè lên mặc định)
+ *
+ * Vì sao cho đặt riêng: mỗi trò một sức chứa khác nhau ở booth. Vẽ hình bắt máy
+ * BTC chạy model cho từng frame của từng người nên đông là chậm; Tính nhanh thì
+ * chỉ so vài con số, 10 người cùng lúc vẫn nhẹ tênh.
+ *
+ * Giá trị hỏng (chữ, số âm, quá trần) bị BỎ QUA kèm cảnh báo chứ không làm sập
+ * server: gõ nhầm một biến môi trường lúc 7 giờ sáng ngày sự kiện không đáng để
+ * cả hệ thống không lên nổi.
+ */
+function readMaxPlayers(): Record<GameKind, number> {
+  const fallback = clampPlayers(process.env.MAX_PLAYERS, 'MAX_PLAYERS', MAX_PLAYERS);
+  const out = {} as Record<GameKind, number>;
+  for (const game of GAME_KINDS) {
+    const key = `MAX_PLAYERS_${game.toUpperCase()}`;
+    out[game] = clampPlayers(process.env[key], key, fallback);
+  }
+  return out;
+}
+
+function clampPlayers(raw: string | undefined, key: string, fallback: number): number {
+  if (raw === undefined || raw.trim() === '') return fallback;
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > MAX_PLAYERS_CAP) {
+    console.warn(
+      `  ⚠️  ${key}="${raw}" không hợp lệ (cần số nguyên 1–${MAX_PLAYERS_CAP}) — dùng ${fallback}.`,
+    );
+    return fallback;
+  }
+  return n;
+}
+
+export const MAX_PLAYERS_BY_GAME: Record<GameKind, number> = readMaxPlayers();
 
 /** Cảnh báo to nếu chưa đặt ADMIN_TOKEN — trang /admin sẽ không được bảo vệ. */
 export function warnIfInsecure(): void {

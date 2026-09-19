@@ -25,7 +25,7 @@ import {
   DURATION_MS,
   GAME_KINDS,
   GAME_LABEL,
-  MAX_PLAYERS,
+  DEFAULT_MAX_PLAYERS,
   type GameKind,
   type RoundStatus,
   type RoundSummary,
@@ -90,6 +90,8 @@ export function Admin() {
   const [rounds, setRounds] = useState<RoundSummary[]>([]);
   /** Trò đang mở — chỉ MỘT trò tại một thời điểm, do màn hình này quyết định. */
   const [activeGame, setActiveGame] = useState<GameKind | null>(null);
+  /** Sức chứa từng trò, do BTC đặt trong .env của server. */
+  const [maxPlayers, setMaxPlayers] = useState<Record<GameKind, number> | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(0);
@@ -106,6 +108,7 @@ export function Admin() {
       const res = await api.listRounds(token);
       setRounds(res.rounds);
       setActiveGame(res.activeGame);
+      setMaxPlayers(res.maxPlayers);
       setError('');
     } catch (err) {
       setError(
@@ -285,7 +288,8 @@ export function Admin() {
                   )}
                 </span>
                 <span className="block font-sans text-xs font-normal text-muted">
-                  {DURATION_MS[g] / 1000} giây · tối đa {MAX_PLAYERS} người
+                  {DURATION_MS[g] / 1000} giây · tối đa{' '}
+                  {maxPlayers?.[g] ?? DEFAULT_MAX_PLAYERS} người
                 </span>
               </span>
             </button>
@@ -385,7 +389,7 @@ export function Admin() {
                       <StatusBadge status={r.status} />
                     </p>
                     <p className="text-xs text-muted">
-                      {GAME_LABEL[r.game]} · {r.playerCount}/{MAX_PLAYERS} người
+                      {GAME_LABEL[r.game]} · {r.playerCount}/{r.maxPlayers} người
                       {!r.live && ' · cũ'}
                     </p>
                   </div>

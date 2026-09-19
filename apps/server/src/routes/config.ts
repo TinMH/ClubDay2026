@@ -10,7 +10,7 @@
  * giữa lúc đang chạy sự kiện.
  */
 import type { FastifyInstance } from 'fastify';
-import { SIGNUP_FORM_URL, SIGNUP_NAME_ENTRY } from '../config.js';
+import { MAX_PLAYERS_BY_GAME, SIGNUP_FORM_URL, SIGNUP_NAME_ENTRY } from '../config.js';
 import { getActiveGame } from '../store/store.js';
 import type { GameKind } from '../store/types.js';
 
@@ -24,6 +24,8 @@ export interface ClientConfig {
    * Trang chủ đọc để biết hiện trò nào và có cho vào lượt hay không.
    */
   activeGame: GameKind | null;
+  /** Số người tối đa mỗi lượt, theo từng trò — BTC đặt trong .env. */
+  maxPlayers: Record<GameKind, number>;
   serverNow: number;
 }
 
@@ -32,6 +34,7 @@ export async function configRoutes(app: FastifyInstance): Promise<void> {
     signupFormUrl: SIGNUP_FORM_URL,
     signupNameEntry: SIGNUP_NAME_ENTRY,
     activeGame: getActiveGame(),
+    maxPlayers: MAX_PLAYERS_BY_GAME,
     serverNow: Date.now(),
   }));
 }
