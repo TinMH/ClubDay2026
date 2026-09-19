@@ -23,9 +23,11 @@
     "smoke": "node scripts/smoke-test.mjs",
     "loadtest": "node scripts/load-test.mjs",
     "report:loadtest": "node scripts/report-loadtest.mjs",
-    "build:contract": "npm run build -w @clubday/contract"
+    "build:contract": "npm run build -w @clubday/contract",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "devDependencies": {
+    "playwright": "^1.63.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }

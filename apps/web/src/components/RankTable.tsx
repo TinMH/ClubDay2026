@@ -76,7 +76,9 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
                 </span>
                 {/* Con số này mỗi game một nghĩa — không ghi rõ thì Tính nhanh trông
                     như bị lỗi: đúng 12 câu mà ô điểm ghi "3". */}
-                <span className="mt-1 px-1 text-xs leading-tight text-muted">{SCORE_LABEL[game]}</span>
+                {/* `opacity` chứ không phải `text-muted`: bục hạng nhất nền vàng chữ đen,
+                    xám cố định trên nền vàng là không đọc nổi. */}
+                <span className="mt-1 px-1 text-xs leading-tight opacity-70">{SCORE_LABEL[game]}</span>
               </div>
             </li>
           );

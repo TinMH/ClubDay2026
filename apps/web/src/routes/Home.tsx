@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   ArrowRight,
+  Clock,
   LoaderCircle,
   Lock,
   ShieldCheck,
@@ -49,14 +50,14 @@ function WaitingLine({ game, data }: { game: GameKind; data: OpenRounds | null }
 
   const left = max - room.players;
   return (
-    <p className="mt-2 flex min-h-5 flex-wrap items-center gap-x-1.5 text-xs font-semibold text-secondary">
+    <span className="mt-2 flex min-h-5 flex-col gap-1 text-xs font-semibold text-secondary">
       {/*
         MÃ LƯỢT, hiện ngay ở đây.
         BTC hô "lượt CP9ESB" hoặc chỉ vào mã trên màn hình máy họ; người chơi phải
         đối chiếu được mình sắp vào đúng lượt đó. Mã vốn đã có sẵn trong
         `/api/rounds/open`, chỉ là trước giờ không ai hiện ra.
       */}
-      <span className="border-2 border-line bg-surface-2 px-1.5 font-mono font-black tracking-wider text-fg">
+      <span className="self-start border-2 border-line bg-surface-2 px-1.5 font-mono font-black tracking-wider text-fg">
         {room.roundId}
       </span>
       {/*
@@ -67,13 +68,13 @@ function WaitingLine({ game, data }: { game: GameKind; data: OpenRounds | null }
       {room.players === 0 ? (
         <span className="font-normal text-muted">chưa có ai — bạn vào là người đầu tiên</span>
       ) : (
-        <>
+        <span className="flex items-center gap-1">
           <Users aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
           {room.players}/{max} đang chờ
-          {left > 0 && <span className="font-normal text-muted">· còn {left} nữa</span>}
-        </>
+          {left > 0 && <span className="font-normal text-muted">· còn {left}</span>}
+        </span>
       )}
-    </p>
+    </span>
   );
 }
 
@@ -230,11 +231,23 @@ export function Home() {
                   )}
                 </div>
                 <p className="mt-3 font-display text-lg font-black uppercase tracking-tight leading-tight">{GAME_LABEL[g]}</p>
-                <p className="mt-1 text-xs text-muted">
-                  {DURATION_MS[g] / 1000} giây · tối đa{' '}
-                  {maxPlayers?.[g] ?? DEFAULT_MAX_PLAYERS} người
+                {/*
+                  Hai thông số bằng ICON, không phải câu chữ: ở khổ điện thoại với
+                  hai cột, "90 giây · tối đa 5 người" vỡ thành hai dòng và thẻ nào
+                  cũng cao lêu nghêu. Nhãn đầy đủ vẫn còn cho trình đọc màn hình.
+                */}
+                <p className="mt-1 flex items-center gap-3 text-xs text-muted">
+                  <span className="flex items-center gap-1 tabular-nums">
+                    <Clock aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                    {DURATION_MS[g] / 1000}s<span className="sr-only"> mỗi lượt</span>
+                  </span>
+                  <span className="flex items-center gap-1 tabular-nums">
+                    <Users aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+                    {maxPlayers?.[g] ?? DEFAULT_MAX_PLAYERS}
+                    <span className="sr-only"> người tối đa mỗi lượt</span>
+                  </span>
                 </p>
-                <p className="mt-0.5 text-xs text-muted">{blurb}</p>
+                <p className="mt-1 text-xs text-muted">{blurb}</p>
                 {!roundId &&
                   (open ? (
                     <WaitingLine game={g} data={waiting} />

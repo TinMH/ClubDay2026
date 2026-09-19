@@ -1,25 +1,37 @@
-# Ảnh chụp màn hình dùng trong README
+# Ảnh chụp màn hình trong README
 
-Bỏ đúng 4 file PNG vào thư mục này, đúng tên:
+**Đừng chụp tay và đừng sửa tay.** Cả năm file `.png` ở đây do script sinh ra:
 
-| Tên file | Chụp màn hình nào | Khổ nên chụp |
-|---|---|---|
-| `home.png` | Trang chủ `/` — người chơi nhập tên | điện thoại, ~390×844 |
-| `admin.png` | Trang quản trị `/admin` | máy tính, rộng ~1280 |
-| `play.png` | Một màn đang chơi (`/play/<mã>`) | điện thoại |
-| `dashboard.png` | Bảng hạng `/dashboard/<mã>` | điện thoại |
+```bash
+npm run build          # script chụp bản đã build
+npm run screenshots
+```
 
-## Cách chụp cho đẹp
+`scripts/screenshots.mjs` tự dựng một sự kiện nhỏ rồi chụp lại: bật server riêng
+ở cổng 8799 với snapshot trong thư mục tạm, tạo lượt Tính nhanh, cho hai người
+chơi giả vào, mở trình duyệt thật (Playwright/Chromium) ở khổ điện thoại
+390×844, chơi vài câu ĐÚNG để bảng hạng có điểm thật, rồi chụp:
 
-- **Khổ điện thoại**: mở DevTools (F12) → bật chế độ thiết bị (Ctrl+Shift+M) →
-  chọn một máy cỡ 390×844 → chụp. App vốn thiết kế cho điện thoại, chụp ở khổ
-  máy tính thì mọi thứ dàn ngang và trông không giống lúc chơi thật.
-- **Che thông tin thật**: ảnh `/admin` có ô mã quản trị — để nguyên dạng chấm
-  tròn, đừng chụp lúc đang hiện chữ.
-- **Dùng tên thật của người chơi thì phải xin phép họ.** Dễ nhất là tự nhập vài
-  tên giả trước khi chụp.
-- Lưu PNG, bề ngang tối đa ~1400px. Ảnh to hơn chỉ làm repo nặng chứ GitHub vẫn
-  co lại khi hiển thị.
+| File | Màn hình |
+|---|---|
+| `home.png` | Trang chủ `/` |
+| `lobby.png` | Phòng chờ `/lobby/<mã>` |
+| `play.png` | Đang chơi `/play/<mã>` |
+| `dashboard.png` | Bảng hạng `/dashboard/<mã>` |
+| `admin.png` | Quản trị `/admin`, khổ máy tính 1280 |
 
-Thêm/bớt ảnh thì sửa bảng ở mục **Giao diện** trong README gốc cho khớp — README
-trỏ thẳng vào mấy tên file trên, thiếu file là GitHub hiện ô ảnh vỡ.
+## Vì sao viết script thay vì chụp tay
+
+Giao diện còn đổi nhiều. Ảnh chụp tay thì lần sau phải mở máy chụp lại từ đầu,
+và không ai nhớ lần trước chụp ở khổ nào, tên người chơi là gì, bảng hạng có bao
+nhiêu người. Chạy lại script là ra đúng bộ ảnh cũ với đúng bố cục cũ.
+
+Nó cũng tránh được hai lỗi dễ mắc khi chụp tay: lộ mã quản trị thật, và dùng tên
+thật của người chơi mà chưa xin phép. Người chơi trong ảnh đều là tên giả do
+script nhập.
+
+## Máy chưa cài trình duyệt cho Playwright
+
+```bash
+npx playwright install chromium
+```

@@ -48,6 +48,16 @@ const renderAt = (path: string) =>
 /** Sức chứa mặc định của cả 4 trò — server trả theo từng trò. */
 const MAXES = { math: 8, draw: 3, memory: 5, spot: 5 } as const;
 
+/**
+ * Tìm phần tử theo TOÀN BỘ text bên trong nó.
+ *
+ * `getByText` mặc định chỉ ghép các text node TRỰC TIẾP, nên nó không thấy
+ * "8 người tối đa mỗi lượt" khi số nằm ngoài còn nhãn nằm trong một `sr-only`
+ * lồng bên trong — mà đó đúng là thứ trình đọc màn hình đọc ra.
+ */
+const withText = (full: string) => (_: string, el: Element | null) =>
+  el?.textContent?.replace(/\s+/g, ' ').trim() === full;
+
 const nameField = () => screen.getByLabelText(/tên của bạn/i);
 const joinButton = () => screen.getByRole('button', { name: /vào chơi/i }) as HTMLButtonElement;
 
@@ -155,7 +165,7 @@ describe('Home — tình hình lượt đang chờ', () => {
 
     // Tính nhanh đặt 8 người (xem MAXES) → phải là "3/8", không phải "3/5".
     await waitFor(() => expect(screen.getByText(/3\/8 đang chờ/)).toBeTruthy());
-    expect(screen.getByText(/còn 5 nữa/)).toBeTruthy();
+    expect(screen.getByText(/còn 5/)).toBeTruthy();
   });
 
   it('hiện MÃ LƯỢT của trò đang mở, để đối chiếu với màn hình BTC', async () => {
@@ -197,16 +207,22 @@ describe('Home — tình hình lượt đang chờ', () => {
   it('mỗi trò hiện sức chứa CỦA CHÍNH NÓ, không phải một con số chung', async () => {
     // Trước đây trang chủ ghi "tối đa 5 người một lượt" cho cả app — sai ngay khi
     // BTC đặt Tính nhanh 8 người còn Vẽ hình 3 người.
+    // Thông số hiện bằng icon + số; nhãn đầy đủ nằm ở phần `sr-only`, và đó cũng
+    // chính là thứ trình đọc màn hình đọc ra — kiểm đúng cái đó luôn.
     renderAt('/');
-    await waitFor(() => expect(screen.getByText(/90 giây · tối đa 8 người/)).toBeTruthy());
-    expect(screen.getByText(/15 giây · tối đa 3 người/)).toBeTruthy();
+    await waitFor(() =>
+      expect(screen.getAllByText(withText('8 người tối đa mỗi lượt')).length).toBeGreaterThan(0),
+    );
+    expect(screen.getAllByText(withText('3 người tối đa mỗi lượt')).length).toBeGreaterThan(0);
   });
 
   it('vào bằng /r/<mã> vẫn nạp được sức chứa', async () => {
     // Vòng nạp cấu hình từng nằm chung với vòng đếm người chờ, mà vòng đó tắt ở
     // Cách B — nên màn hình kẹt ở con số mặc định.
     renderAt('/r/abc123');
-    await waitFor(() => expect(screen.getByText(/90 giây · tối đa 8 người/)).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getAllByText(withText('8 người tối đa mỗi lượt')).length).toBeGreaterThan(0),
+    );
   });
 
   it('KHÔNG gọi /api/rounds/open ở Cách B — lượt đã do URL quyết định', async () => {

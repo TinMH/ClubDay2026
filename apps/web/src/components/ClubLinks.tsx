@@ -39,29 +39,31 @@ export function ClubLinks({ className = '' }: { className?: string }) {
   return (
     <section
       aria-label="Trang của CLB"
-      className={`card flex flex-wrap items-center gap-2 p-3 ${className}`}
+      className={`card flex flex-col gap-2 p-3 sm:flex-row sm:items-center ${className}`}
     >
-      <p className="mr-auto text-sm font-semibold">Theo dõi DSC</p>
+      <p className="text-sm font-black uppercase sm:mr-auto">Theo dõi DSC</p>
 
-      <a
-        href={FACEBOOK_URL}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="btn btn-sm [--btn-bg:#1877f2] [--btn-edge:#0b4da2] [--btn-fg:#fff]"
-      >
-        <FacebookMark />
-        Facebook
-      </a>
+      <div className="grid grid-cols-2 gap-2 sm:flex">
+        <a
+          href={FACEBOOK_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="btn btn-sm [--btn-bg:#1877f2] [--btn-fg:#fff]"
+        >
+          <FacebookMark />
+          Facebook
+        </a>
 
-      <a
-        href={GITHUB_URL}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="btn btn-sm [--btn-bg:#24292f] [--btn-edge:#0d1117] [--btn-fg:#fff]"
-      >
-        <GithubMark />
-        GitHub
-      </a>
+        <a
+          href={GITHUB_URL}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="btn btn-sm [--btn-bg:#24292f] [--btn-fg:#fff]"
+        >
+          <GithubMark />
+          GitHub
+        </a>
+      </div>
     </section>
   );
 }

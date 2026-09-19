@@ -97,7 +97,7 @@ export function Play() {
         </div>
         <div className="shrink-0 border-2 border-line bg-accent px-3 py-1.5 text-right text-ink shadow-[4px_4px_0_var(--color-edge)]">
           <span className="block text-xs font-bold uppercase">{SCORE_LABEL[state.game]}</span>
-          <span className="block font-display text-2xl font-black uppercase tracking-tight leading-none tabular-nums text-accent">
+          <span className="block font-display text-2xl font-black leading-none tabular-nums">
             {me?.score ?? 0}
           </span>
         </div>

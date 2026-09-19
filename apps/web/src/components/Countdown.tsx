@@ -25,11 +25,11 @@ export function Countdown({ endsAt, total }: { endsAt: number | null; total: num
           {formatClock(remaining)}
         </span>
       </div>
-      <div className="mt-2.5 h-3 overflow-hidden rounded-full bg-surface-2">
+      <div className="mt-2.5 h-4 overflow-hidden border-2 border-line bg-surface-2">
         {/* scaleX thay vì width: chạy trên GPU, không bắt trình duyệt tính lại bố cục mỗi 100ms. */}
         <div
           className={`h-full w-full origin-left transition-transform duration-100 ease-linear ${
-            urgent ? 'bg-wrong' : 'bg-linear-to-r from-primary to-math'
+            urgent ? 'bg-wrong' : 'bg-accent'
           }`}
           style={{ transform: `scaleX(${ratio})` }}
         />

@@ -15,29 +15,32 @@ Web 4 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người** (đ
 
 <table>
   <tr>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/home.png" alt="Trang chủ: chọn tên và vào lượt của trò BTC đang mở" />
-      <p align="center"><b>Trang chủ</b> — người chơi chỉ nhập tên; trò nào được chơi là do BTC quyết</p>
+    <td width="25%" valign="top" align="center">
+      <img src="docs/screenshots/home.png" alt="Trang chủ: nhập tên và vào lượt của trò BTC đang mở" /><br />
+      <b>Trang chủ</b><br />người chơi chỉ nhập tên
     </td>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/play.png" alt="Màn hình đang chơi với đồng hồ đếm ngược" />
-      <p align="center"><b>Đang chơi</b> — một đồng hồ chung cho cả lượt</p>
+    <td width="25%" valign="top" align="center">
+      <img src="docs/screenshots/lobby.png" alt="Phòng chờ với mã lượt và danh sách người chơi" /><br />
+      <b>Phòng chờ</b><br />cập nhật realtime
     </td>
-  </tr>
-  <tr>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/dashboard.png" alt="Bảng hạng của đúng nhóm vừa chơi" />
-      <p align="center"><b>Bảng hạng</b> — hiện ngay khi hết giờ, chỉ của đúng nhóm đó</p>
+    <td width="25%" valign="top" align="center">
+      <img src="docs/screenshots/play.png" alt="Màn hình đang chơi Tính nhanh" /><br />
+      <b>Đang chơi</b><br />một đồng hồ chung cả lượt
     </td>
-    <td width="50%" valign="top">
-      <img src="docs/screenshots/admin.png" alt="Trang quản trị: chọn trò, chỉnh số người, tạo lượt, in mã QR" />
-      <p align="center"><b>Quản trị</b> — chọn trò đang mở, chỉnh số người, in mã QR</p>
+    <td width="25%" valign="top" align="center">
+      <img src="docs/screenshots/dashboard.png" alt="Bảng hạng của đúng nhóm vừa chơi" /><br />
+      <b>Bảng hạng</b><br />hiện ngay khi hết giờ
     </td>
   </tr>
 </table>
 
-> Thiếu ảnh nào thì GitHub hiện ô vỡ — xem `docs/screenshots/README.md` để biết
-> cần chụp gì, đặt tên ra sao.
+<img src="docs/screenshots/admin.png" alt="Trang quản trị: chọn trò, chỉnh số người, tạo lượt, in mã QR" width="100%" />
+
+<p align="center"><b>Trang quản trị</b> — chọn trò đang mở, chỉnh số người mỗi lượt, tạo lượt, in mã QR</p>
+
+> Ảnh do `npm run screenshots` sinh ra: script tự bật server ở cổng riêng, cho
+> vài người chơi giả vào chơi thật rồi chụp lại. Sửa giao diện xong chạy lại một
+> lệnh là có bộ ảnh mới — xem `docs/screenshots/README.md`.
 
 ---
 
@@ -582,10 +585,11 @@ MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 | `npm run dev:web` | Giao diện dev (Vite) |
 | `npm start` | Chạy bản đã build — server phục vụ cả API lẫn web, 1 cổng |
 | `npm run build` | Build cả web và server |
-| `npm test` | 179 unit test — cả 2 workspace (server 143 + web 36) |
+| `npm test` | Toàn bộ unit test — cả 2 workspace |
 | `npm run smoke` | 71 kiểm tra end-to-end — tự bật server ở cổng 8799 rồi tắt |
 | `npm run loadtest` | Load + stress test đường vẽ. `-- --levels 16,32` để đẩy cao hơn |
 | `npm run report:loadtest` | Dựng báo cáo HTML từ JSON của lần đo gần nhất |
+| `npm run screenshots` | Chụp lại bộ ảnh trong README (Playwright, tự bật server riêng) |
 | `npm run prefetch` | Tải model ONNX về `./models` |
 | `npm run check:offline` | Xác nhận model vẫn load được khi không có internet |
 | `npm run eval:model` | Đo accuracy THẬT rồi sinh lại `allowlist.generated.ts` (~35s) |
