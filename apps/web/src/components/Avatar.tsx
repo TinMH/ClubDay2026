@@ -33,7 +33,7 @@ export function Avatar({
   return (
     <span
       aria-hidden="true"
-      className={`grid shrink-0 place-items-center rounded-xl font-display font-extrabold ${toneOf(seed)} ${
+      className={`grid shrink-0 place-items-center rounded-xl font-display font-black ${toneOf(seed)} ${
         size === 'lg' ? 'h-14 w-14 text-2xl' : 'h-10 w-10 text-lg'
       }`}
     >

@@ -6,7 +6,7 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
     <>
       <Backdrop />
       <main
-        className={`mx-auto flex min-h-dvh flex-col gap-5 px-5 py-6 sm:py-10 ${wide ? 'max-w-3xl' : 'max-w-xl'}`}
+        className={`mx-auto flex min-h-dvh flex-col gap-6 px-5 py-7 sm:py-10 ${wide ? 'max-w-3xl' : 'max-w-xl'}`}
       >
         {children}
       </main>
@@ -15,29 +15,22 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
 }
 
 /**
- * Nền trang trí: hai vệt màu, lưới chấm và bốn hình khối nhỏ (tròn, tam giác, vuông,
- * dấu cộng — cùng bộ hình với 4 nút đáp án). Đứng yên: người chơi đang đua giờ,
- * nền không được giành sự chú ý.
+ * Nền: lưới kẻ cứng (xem `.stage-bg`) + bốn khối hình ĐẶC dán lệch góc.
+ *
+ * Bản cũ là mấy hình viền mảnh, mờ 25%, trôi trên hai vệt gradient — thứ nền
+ * "nhẹ nhàng" mà giao diện nào cũng có. Brutalism làm ngược: hình khối đặc, màu
+ * nguyên, đặt nghiêng như dán sticker, và có viền đen để không tan vào nền.
+ *
+ * Vẫn ĐỨNG YÊN: người chơi đang đua giờ, nền không được giành sự chú ý.
  */
 function Backdrop() {
   return (
     <div aria-hidden="true" className="stage-bg pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-      {/* Hai hình ở giữa màn hình: điện thoại hẹp thì đè lên nội dung → chỉ hiện từ sm trở lên. */}
-      <svg viewBox="0 0 40 40" className="absolute left-[7%] top-[9%] hidden h-9 w-9 text-accent/30 sm:block">
-        <circle cx="20" cy="20" r="14" fill="none" stroke="currentColor" strokeWidth="6" />
-      </svg>
-      <svg
-        viewBox="0 0 40 40"
-        className="absolute right-[7%] top-[36%] hidden h-11 w-11 rotate-12 text-draw/25 sm:block"
-      >
-        <path d="M20 5 L36 33 H4 Z" fill="none" stroke="currentColor" strokeWidth="5" strokeLinejoin="round" />
-      </svg>
-      <svg viewBox="0 0 40 40" className="absolute bottom-[16%] left-[4%] h-10 w-10 -rotate-12 text-math/25">
-        <rect x="7" y="7" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="6" />
-      </svg>
-      <svg viewBox="0 0 40 40" className="absolute bottom-[5%] right-[12%] h-8 w-8 text-secondary/30">
-        <path d="M20 6 V34 M6 20 H34" stroke="currentColor" strokeWidth="7" strokeLinecap="round" />
-      </svg>
+      {/* Hai khối ở giữa màn hình: điện thoại hẹp thì đè lên nội dung → chỉ hiện từ sm trở lên. */}
+      <span className="absolute left-[6%] top-[8%] hidden h-10 w-10 -rotate-6 border-[3px] border-ink bg-accent sm:block" />
+      <span className="absolute right-[6%] top-[34%] hidden h-12 w-12 rotate-12 border-[3px] border-ink bg-draw sm:block" />
+      <span className="absolute bottom-[15%] left-[3%] h-11 w-11 rotate-3 border-[3px] border-ink bg-math" />
+      <span className="absolute bottom-[6%] right-[10%] h-9 w-9 -rotate-12 border-[3px] border-ink bg-memory" />
     </div>
   );
 }

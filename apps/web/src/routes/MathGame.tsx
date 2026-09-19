@@ -138,7 +138,7 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
         key={index}
         className={`card px-4 py-10 text-center ${lastResult === 'wrong' ? 'animate-shake' : 'animate-pop'}`}
       >
-        <p className="break-words font-display text-5xl font-extrabold leading-none tabular-nums sm:text-7xl">
+        <p className="break-words font-display text-5xl font-black leading-none tabular-nums sm:text-7xl">
           {question.prompt}
         </p>
       </div>
@@ -147,30 +147,28 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
         <div className="flex items-center gap-3 rounded-2xl border-2 border-line bg-surface px-3 py-2.5">
           <Hash aria-hidden="true" className="h-5 w-5 shrink-0 text-secondary" />
           <div className="leading-tight">
-            <p className="text-xs text-muted">Câu</p>
-            <p className="font-display text-xl font-extrabold tabular-nums">{index + 1}</p>
+            <p className="text-xs font-bold uppercase text-muted">Câu</p>
+            <p className="font-display text-xl font-black tabular-nums">{index + 1}</p>
           </div>
         </div>
         <div
-          className={`flex items-center gap-3 rounded-2xl border-2 px-3 py-2.5 transition-colors ${
-            streak > 0 ? 'border-warn/60 bg-warn/10' : 'border-line bg-surface'
+          className={`flex items-center gap-3 border-2 px-3 py-2.5 transition-colors ${
+            streak > 0 ? 'border-line bg-warn text-ink' : 'border-line bg-surface'
           }`}
         >
           <Flame
             aria-hidden="true"
-            className={`h-5 w-5 shrink-0 ${streak > 0 ? 'text-warn' : 'text-muted'}`}
+            className={`h-5 w-5 shrink-0 ${streak > 0 ? 'text-ink' : 'text-muted'}`}
             fill={streak > 0 ? 'currentColor' : 'none'}
           />
           <div className="min-w-0 leading-tight">
-            <p className="text-xs text-muted">Chuỗi đúng</p>
+            <p className={`text-xs font-bold uppercase ${streak > 0 ? '' : 'text-muted'}`}>Chuỗi đúng</p>
             <p className="flex flex-wrap items-baseline gap-x-1.5">
-              <span
-                className={`font-display text-xl font-extrabold tabular-nums ${streak > 0 ? 'text-warn' : ''}`}
-              >
-                {streak}
-              </span>
+              <span className="font-display text-xl font-black tabular-nums">{streak}</span>
               {bestStreak > 0 && (
-                <span className="text-xs text-muted">tốt nhất {bestStreak}</span>
+                <span className={`text-xs ${streak > 0 ? '' : 'text-muted'}`}>
+                  tốt nhất {bestStreak}
+                </span>
               )}
             </p>
           </div>

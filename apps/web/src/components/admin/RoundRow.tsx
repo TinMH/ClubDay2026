@@ -12,8 +12,8 @@ import { GAME_LABEL, type RoundStatus, type RoundSummary } from '../../lib/types
  * chơi thì viền vàng, xong rồi thì chìm xuống nhường chỗ.
  */
 const ROW: Record<RoundStatus, string> = {
-  lobby: 'border-secondary/70',
-  playing: 'border-accent/70',
+  lobby: 'border-secondary',
+  playing: 'border-accent',
   done: 'opacity-70',
 };
 
@@ -31,7 +31,7 @@ export function RoundRow({ round: r, busy, onStart, onSkip, onQr }: RoundRowProp
 
   return (
     <li
-      className={`card flex flex-wrap items-center gap-3 p-3 ${ROW[r.status]} ${
+      className={`card-row flex flex-wrap items-center gap-3 p-4 ${ROW[r.status]} ${
         r.live ? '' : 'opacity-50'
       }`}
     >

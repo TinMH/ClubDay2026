@@ -43,6 +43,8 @@ export function Admin() {
   const [rounds, setRounds] = useState<RoundSummary[]>([]);
   /** Trò đang mở — chỉ MỘT trò tại một thời điểm, do màn hình này quyết định. */
   const [activeGame, setActiveGame] = useState<GameKind | null>(null);
+  /** Trò mở gần đây nhất — cái mà nút "Mở lại" sẽ mở. */
+  const [lastGame, setLastGame] = useState<GameKind>('math');
   /** Sức chứa từng trò. Khởi đầu từ .env của server, BTC chỉnh ngay tại đây. */
   const [maxPlayers, setMaxPlayers] = useState<Record<GameKind, number> | null>(null);
   const [error, setError] = useState('');
@@ -61,6 +63,7 @@ export function Admin() {
       const res = await api.listRounds(token);
       setRounds(res.rounds);
       setActiveGame(res.activeGame);
+      setLastGame(res.lastGame);
       setMaxPlayers(res.maxPlayers);
       setError('');
     } catch (err) {
@@ -135,7 +138,7 @@ export function Admin() {
         <div className="flex items-center gap-3">
           <DscLogo size="sm" className="shrink-0" />
           <div>
-            <h1 className="font-display text-2xl font-extrabold leading-none">Quản trị</h1>
+            <h1 className="font-display text-2xl font-black uppercase tracking-tight leading-none">Quản trị</h1>
             <p className="mt-1 text-sm text-muted">Tạo lượt, bắt đầu, in mã QR</p>
           </div>
         </div>
@@ -171,11 +174,13 @@ export function Admin() {
 
       <ActiveGamePanel
         activeGame={activeGame}
+        lastGame={lastGame}
         disabled={busy || !token}
         onClose={() => void act(() => api.setActiveGame(null, token))}
+        onReopen={() => void act(() => api.setActiveGame(lastGame, token))}
       />
 
-      <section className="grid gap-3 sm:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2">
         {GAMES.map((g) => (
           <GameTile
             key={g}
@@ -197,7 +202,7 @@ export function Admin() {
 
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-display text-lg font-bold">
+          <h2 className="font-display text-lg font-black uppercase tracking-tight">
             Lượt gần đây
             {rounds.length > 0 && (
               <span className="ml-2 font-sans text-sm font-normal text-muted">
@@ -232,7 +237,7 @@ export function Admin() {
         {rounds.length === 0 ? (
           <p className="card p-6 text-center text-muted">Chưa có lượt nào.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="space-y-3">
             {shown.map((r) => (
               <RoundRow
                 key={r.roundId}

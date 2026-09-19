@@ -10,7 +10,7 @@ export function GameError({ message }: { message: string }) {
   return (
     <p
       role="alert"
-      className="card flex items-center justify-center gap-2 border-wrong/60 bg-wrong/10 p-4 text-wrong"
+      className="card flex items-center justify-center gap-2 bg-wrong p-4 font-bold text-ink"
     >
       <TriangleAlert aria-hidden="true" className="h-5 w-5 shrink-0" />
       {message}
@@ -23,7 +23,7 @@ export function RoundOverCard({ title, detail }: { title: string; detail: string
   return (
     <div className="card p-8 text-center">
       <Trophy aria-hidden="true" className="mx-auto h-10 w-10 text-accent" />
-      <p className="mt-3 font-display text-2xl font-extrabold">{title}</p>
+      <p className="mt-3 font-display text-2xl font-black uppercase tracking-tight">{title}</p>
       <p className="mt-1 text-sm text-muted">{detail}</p>
     </div>
   );

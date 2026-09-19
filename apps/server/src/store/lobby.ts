@@ -83,20 +83,29 @@ export function join(name: string, opts: { roundId?: string } = {}, now = Date.n
 // ─────────────── chọn game đang mở ───────────────
 
 /**
- * BTC chọn trò sẽ chơi ở thời điểm này (`null` = tạm đóng, không ai vào được).
+ * BTC chọn trò sẽ chơi ở thời điểm này. `null` = TẠM ĐÓNG.
  *
- * Đổi trò thì mọi lượt CHỜ của trò cũ bị bỏ luôn: nếu để nguyên, người đã quét QR
- * vào đó sẽ đứng mãi ở phòng chờ của một trò không còn được bắt đầu nữa.
- * Lượt đang CHƠI thì không đụng tới — cứ để họ chơi hết giờ.
+ * ĐỔI SANG TRÒ KHÁC thì mọi lượt CHỜ của trò cũ bị bỏ: để nguyên thì người đã
+ * quét QR vào đó đứng mãi ở phòng chờ của một trò không còn được chơi nữa.
+ *
+ * TẠM ĐÓNG thì KHÔNG bỏ lượt nào. Đóng nghĩa là "thôi nhận người mới" — `join`
+ * chặn ở chốt `getActiveGame()` — chứ không phải "huỷ hết". BTC bấm tạm đóng để
+ * giải lao hoặc để phát biểu; huỷ luôn lượt đang có ba người đứng chờ là đuổi
+ * đúng những người đã chịu xếp hàng. Họ vẫn chơi được: BTC bấm BẮT ĐẦU bình
+ * thường, vì bắt đầu không phụ thuộc trò nào đang mở.
+ *
+ * Lượt đang CHƠI không bao giờ bị đụng tới — cứ để họ chơi hết giờ.
  *
  * @returns các lượt vừa bị đóng.
  */
 export function selectActiveGame(game: GameKind | null, now = Date.now()): Round[] {
   setActiveGame(game);
+  if (game === null) return [];
+
   const closed: Round[] = [];
   for (const round of allRounds()) {
     if (round.live === false || round.status !== 'lobby') continue;
-    if (game !== null && round.game === game) continue;
+    if (round.game === game) continue;
     skipRound(round.id, now);
     closed.push(round);
   }

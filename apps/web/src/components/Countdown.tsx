@@ -12,7 +12,7 @@ export function Countdown({ endsAt, total }: { endsAt: number | null; total: num
   const urgent = remaining > 0 && remaining <= 10_000;
 
   return (
-    <div className={`card px-4 py-3 transition-colors ${urgent ? 'border-wrong/70' : ''}`}>
+    <div className={`card px-4 py-3 transition-colors ${urgent ? 'border-wrong' : ''}`}>
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-sm font-medium text-muted">
           <Timer aria-hidden="true" className={`h-5 w-5 ${urgent ? 'text-wrong' : 'text-secondary'}`} />
@@ -28,7 +28,7 @@ export function Countdown({ endsAt, total }: { endsAt: number | null; total: num
       <div className="mt-2.5 h-3 overflow-hidden rounded-full bg-surface-2">
         {/* scaleX thay vì width: chạy trên GPU, không bắt trình duyệt tính lại bố cục mỗi 100ms. */}
         <div
-          className={`h-full w-full origin-left rounded-full transition-transform duration-100 ease-linear ${
+          className={`h-full w-full origin-left transition-transform duration-100 ease-linear ${
             urgent ? 'bg-wrong' : 'bg-linear-to-r from-primary to-math'
           }`}
           style={{ transform: `scaleX(${ratio})` }}

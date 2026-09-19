@@ -80,10 +80,10 @@ export function Dashboard() {
             lượt <span className="font-mono font-bold text-fg">{roundId}</span>
           </span>
         </div>
-        <span className="mx-auto mt-6 grid h-16 w-16 -rotate-6 place-items-center rounded-2xl bg-accent text-ink shadow-[0_5px_0_var(--color-accent-deep)]">
+        <span className="mx-auto mt-6 grid h-16 w-16 -rotate-6 place-items-center rounded-2xl bg-accent text-ink shadow-[6px_6px_0_var(--color-edge)]">
           <Trophy aria-hidden="true" className="h-9 w-9" />
         </span>
-        <h1 className="mt-4 font-display text-4xl font-extrabold">
+        <h1 className="mt-4 font-display text-4xl font-black uppercase tracking-tight">
           {stillPlaying ? 'Đang thi đấu…' : 'Kết quả'}
         </h1>
         {stillPlaying && (

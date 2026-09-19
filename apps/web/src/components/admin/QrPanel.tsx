@@ -43,7 +43,7 @@ function QrBlock({
  */
 export function QrPanel({ joinUrl, origin, onZoom }: QrPanelProps) {
   return (
-    <section className={`card p-4 ${joinUrl ? 'border-correct/50 bg-correct/10' : ''}`}>
+    <section className={`card p-4 ${joinUrl ? 'border-correct bg-correct/10' : ''}`}>
       <p className={`flex items-center gap-2 text-sm font-semibold ${joinUrl ? 'text-correct' : ''}`}>
         <QrIcon aria-hidden="true" className="h-5 w-5 shrink-0" />
         {joinUrl ? 'Lượt đang mở — cho người chơi quét mã này:' : 'Mã QR vào chơi'}

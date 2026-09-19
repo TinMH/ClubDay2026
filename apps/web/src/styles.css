@@ -2,42 +2,78 @@
 
 /*
  * Tailwind v4: cấu hình theme ngay trong CSS bằng @theme, KHÔNG cần tailwind.config.js.
- * Mọi biến --color-* ở đây tự sinh ra utility (vd --color-primary -> bg-primary, text-primary).
+ * Mọi biến --color-* ở đây tự sinh ra utility (vd --color-primary -> bg-primary).
  *
- * Hướng thiết kế: "Vibrant & Block-based" + bảng màu Gaming (skill ui-ux-pro-max).
- * Nền tím than, khối màu đậm, nút có "đế" khối đặc bên dưới, chữ to và dày.
+ * ── HƯỚNG THIẾT KẾ: NEO-BRUTALISM (bản nền tối) ──
+ *
+ * Bốn luật, và chúng là lý do file này trông như vậy:
+ *
+ *   1. KHÔNG BO GÓC. Mọi `--radius-*` đều bằng 0, nên `rounded-xl` rải khắp code
+ *      cũng ra góc vuông — không phải đi sửa từng chỗ.
+ *   2. VIỀN TRẮNG DÀY 3px, đục hoàn toàn. Viền là thứ dựng nên hình khối ở đây,
+ *      không phải bóng mờ hay nền chuyển sắc.
+ *   3. BÓNG ĐỔ ĐẶC, LỆCH CHÉO, không blur. `6px 6px 0` — một khối trắng nằm sau
+ *      khối chính. Bấm xuống thì khối trượt vào đúng chỗ bóng.
+ *   4. MÀU PHẲNG, RỰC, không gradient. Nền gần đen để màu neon nảy hẳn lên.
+ *
+ * Thứ bị CỐ Ý bỏ so với bản cũ: gradient nền, quầng sáng, bo góc lớn, và font bo
+ * tròn (Baloo 2). Đó chính là mấy thứ làm giao diện trông mềm và chung chung.
  */
 @theme {
-  --color-ink: #0f0f23;          /* nền chính — cũng là màu chữ trên khối màu sáng */
-  --color-surface: #1e1c35;      /* nền thẻ */
-  --color-surface-2: #2a2748;    /* nền lồng trong thẻ, ô nhập */
-  --color-line: #3d3666;         /* viền */
-  --color-edge: #08081a;         /* "đế" khối của thẻ và nút trung tính */
+  /* Nền gần đen, KHÔNG phải tím than — để màu neon là thứ duy nhất có sắc. */
+  --color-ink: #0d0d10;
+  --color-surface: #16161c;
+  --color-surface-2: #21212a;
+  /* VIỀN và BÓNG đều trắng đục: hai thứ dựng nên toàn bộ hình khối của giao diện. */
+  --color-line: #ffffff;
+  --color-edge: #ffffff;
 
-  --color-fg: #f4f3ff;           /* chữ chính */
-  --color-muted: #a5a3c8;        /* chữ phụ — ≥ 5.9:1 trên mọi nền ở trên */
+  --color-fg: #ffffff;
+  --color-muted: #9e9eb3;
 
-  --color-primary: #7c3aed;      /* tím — hành động chính */
-  --color-primary-deep: #4c1d95;
-  --color-secondary: #a78bfa;    /* tím nhạt — nhấn phụ */
-  --color-accent: #fbbf24;       /* vàng — nút vào chơi, người dẫn đầu */
-  --color-accent-deep: #b45309;
+  --color-primary: #7c3aed;
+  --color-primary-deep: #ffffff;
+  --color-secondary: #a78bfa;
+  --color-accent: #ffe234;
+  --color-accent-deep: #ffffff;
 
-  --color-correct: #22c55e;      /* đáp án đúng */
-  --color-correct-deep: #15803d;
-  --color-wrong: #f43f5e;        /* đáp án sai */
-  --color-warn: #f59e0b;         /* cảnh báo */
+  --color-correct: #00e07a;
+  --color-wrong: #ff3b5c;
+  --color-warn: #ff8a00;
+  --color-correct-deep: #ffffff;
 
-  --color-math: #22d3ee;         /* màu nhận diện Tính nhanh */
-  --color-draw: #f472b6;         /* màu nhận diện Vẽ hình nhanh */
-  --color-memory: #a3e635;       /* màu nhận diện Nhớ nhanh */
-  --color-spot: #f97316;         /* màu nhận diện Ô khác màu */
-  --color-silver: #cbd5e1;       /* bục hạng 2 */
-  --color-bronze: #fb923c;       /* bục hạng 3 */
+  --color-math: #22d3ee;
+  --color-draw: #ff4d9d;
+  --color-memory: #a3e635;
+  --color-spot: #ff6b2c;
+  --color-silver: #d4d4e0;
+  --color-bronze: #ff8a00;
 
-  /* Font tự host (xem main.tsx) — cả hai đều có đủ dấu tiếng Việt. */
+  /*
+   * GÓC VUÔNG TOÀN CỤC.
+   *
+   * Tailwind v4 lấy bán kính từ mấy biến này, nên đặt hết về 0 là mọi
+   * `rounded-lg` / `rounded-2xl` sẵn có trong code đều thành vuông. Muốn quay lại
+   * kiểu bo tròn thì sửa đúng chỗ này, không phải sửa 200 chỗ dùng.
+   */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+
+  /*
+   * MỘT họ chữ duy nhất: Be Vietnam Pro, weight 400→900.
+   *
+   * Bản cũ dùng Baloo 2 cho tiêu đề — chữ bo tròn, mũm mĩm, đúng thứ brutalism
+   * không bao giờ dùng. Be Vietnam Pro nặng tới 900, và quan trọng hơn: nó được
+   * thiết kế cho tiếng Việt nên dấu không vỡ ở cỡ lớn.
+   */
   --font-sans: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Baloo 2 Variable', 'Be Vietnam Pro', system-ui, sans-serif;
+  --font-display: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
 
   --animate-pop: pop 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-rise: rise 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -48,14 +84,14 @@
   --animate-toast: toast 1200ms cubic-bezier(0.22, 1, 0.36, 1) both;
 
   @keyframes toast {
-    0% { opacity: 0; transform: translateX(24px) scale(0.96); }
-    12% { opacity: 1; transform: translateX(0) scale(1); }
-    82% { opacity: 1; transform: translateX(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-6px) scale(1); }
+    0% { opacity: 0; transform: translateX(24px); }
+    12% { opacity: 1; transform: translateX(0); }
+    82% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateY(-6px); }
   }
 
   @keyframes pop {
-    from { opacity: 0; transform: scale(0.92); }
+    from { opacity: 0; transform: scale(0.96); }
     to { opacity: 1; transform: scale(1); }
   }
   @keyframes rise {
@@ -106,9 +142,9 @@ body {
 
 @layer components {
   /*
-   * Nút khối: "đế" là box-shadow đặc bên dưới, bấm xuống thì nút lún vào đế.
-   * Chỉ dùng transform + box-shadow nên không đẩy bố cục xung quanh.
-   * Đổi màu bằng --btn-bg / --btn-fg / --btn-edge (xem các biến thể bên dưới).
+   * Nút khối: viền trắng dày + một khối bóng đặc lệch chéo phía sau. Bấm xuống thì
+   * nút trượt đúng vào chỗ bóng — không có gì mờ đi, không có gì nhoè.
+   * Đổi màu bằng --btn-bg / --btn-fg / --btn-edge.
    */
   .btn {
     --btn-bg: var(--color-surface-2);
@@ -122,131 +158,157 @@ body {
     gap: 0.5rem;
     min-height: 3rem;
     padding: 0.75rem 1.25rem;
-    border-radius: 1rem;
+    border: 3px solid var(--color-line);
+    border-radius: 0;
     background: var(--btn-bg);
     color: var(--btn-fg);
     font-family: var(--font-display);
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: 0.01em;
     line-height: 1.1;
-    box-shadow: 0 var(--lift) 0 var(--btn-edge);
+    box-shadow: var(--lift) var(--lift) 0 var(--btn-edge);
     transition:
-      transform 90ms ease-out,
-      box-shadow 90ms ease-out,
-      filter 150ms ease-out,
-      opacity 150ms ease-out;
+      transform 70ms linear,
+      box-shadow 70ms linear,
+      background-color 120ms linear;
     cursor: pointer;
     touch-action: manipulation;
     user-select: none;
   }
   .btn:active:not(:disabled),
   .btn[aria-pressed='true'] {
-    transform: translateY(var(--lift));
+    transform: translate(var(--lift), var(--lift));
     box-shadow: 0 0 0 var(--btn-edge);
   }
-  /* Khoá = chuyển sang khối xám. Làm mờ màu vàng/xanh lá trên nền tối trông như bị bẩn. */
+  /*
+   * Khoá = khối xám, MẤT BÓNG. Mất bóng là mất hẳn chiều sâu, nhìn phát biết bấm
+   * không được — rõ hơn nhiều so với chỉ làm mờ đi.
+   */
   .btn:disabled {
-    --btn-bg: var(--color-surface-2);
+    --btn-bg: var(--color-surface);
     --btn-fg: var(--color-muted);
-    --btn-edge: var(--color-edge);
+    border-color: var(--color-muted);
+    box-shadow: 0 0 0 transparent;
     cursor: not-allowed;
   }
   /* Ô đáp án thì giữ màu và chỉ làm mờ — đổi màu cả 4 ô sau mỗi lần bấm là quá gắt. */
   .btn-tile:disabled {
     --btn-fg: var(--color-ink);
-    opacity: 0.4;
+    border-color: var(--color-line);
+    opacity: 0.45;
   }
   /* Ô đáp án vừa bấm vẫn khoá, nhưng phải sáng rõ để người chơi thấy mình đã chọn gì. */
   .btn[aria-pressed='true']:disabled {
     cursor: default;
     opacity: 1;
   }
+  /* Rê chuột: khối nhấc lên, bóng dài ra. Không đổi độ sáng — brutalism không nhoè. */
   @media (hover: hover) {
     .btn:hover:not(:disabled) {
-      filter: brightness(1.1);
+      transform: translate(-1px, -1px);
+      box-shadow: calc(var(--lift) + 1px) calc(var(--lift) + 1px) 0 var(--btn-edge);
     }
   }
 
   .btn-primary {
     --btn-bg: var(--color-primary);
     --btn-fg: #fff;
-    --btn-edge: var(--color-primary-deep);
   }
   .btn-accent {
     --btn-bg: var(--color-accent);
     --btn-fg: var(--color-ink);
-    --btn-edge: var(--color-accent-deep);
   }
   .btn-correct {
     --btn-bg: var(--color-correct);
     --btn-fg: var(--color-ink);
-    --btn-edge: var(--color-correct-deep);
   }
   .btn-ghost {
     --btn-bg: var(--color-surface);
-    border: 2px solid var(--color-line);
   }
   .btn-tile {
     --btn-fg: var(--color-ink);
-    --lift: 5px;
-    border-radius: 1.25rem;
-    font-weight: 800;
+    --lift: 6px;
+    font-weight: 900;
   }
   .btn-sm {
     --lift: 3px;
     min-height: 2.75rem;
     padding: 0.5rem 0.9rem;
-    border-radius: 0.8rem;
+    border-width: 2px;
     font-size: 0.9rem;
   }
   .btn-lg {
-    --lift: 6px;
+    --lift: 7px;
     min-height: 4rem;
-    border-radius: 1.25rem;
     font-size: 1.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   .card {
     background: var(--color-surface);
+    border: 3px solid var(--color-line);
+    border-radius: 0;
+    box-shadow: 6px 6px 0 var(--color-edge);
+  }
+
+  /*
+   * Thẻ trong DANH SÁCH DÀI (dòng lượt ở /admin): viền và bóng mỏng hơn.
+   *
+   * Xếp chồng chục thẻ thì bóng 6px của thẻ trên gần chạm viền thẻ dưới, và cả
+   * danh sách thành một mảng trắng nhoè. 4px vừa đủ để còn thấy chiều sâu.
+   */
+  .card-row {
+    background: var(--color-surface);
     border: 2px solid var(--color-line);
-    border-radius: 1.5rem;
-    box-shadow: 0 5px 0 var(--color-edge);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 var(--color-edge);
   }
 
   .field {
     width: 100%;
     min-height: 3.5rem;
     padding: 0.85rem 1rem;
-    border: 2px solid var(--color-line);
-    border-radius: 1rem;
+    border: 3px solid var(--color-line);
+    border-radius: 0;
     background: var(--color-surface-2);
     color: var(--color-fg);
     font-size: 1.125rem;
+    box-shadow: 4px 4px 0 var(--color-edge);
     transition:
-      border-color 150ms ease-out,
-      box-shadow 150ms ease-out;
+      border-color 120ms linear,
+      box-shadow 120ms linear;
   }
   .field::placeholder {
     color: var(--color-muted);
   }
   .field:focus-visible {
     outline: none;
-    border-color: var(--color-secondary);
-    box-shadow: 0 0 0 4px rgb(167 139 250 / 0.3);
+    border-color: var(--color-accent);
+    box-shadow: 4px 4px 0 var(--color-accent);
   }
 
-  /* Nền trang trí của Shell: hai vệt màu + lưới chấm. */
+  /*
+   * Nền trang: lưới kẻ cứng, KHÔNG gradient.
+   *
+   * Brutalism phô cấu trúc ra ngoài thay vì giấu nó sau một lớp chuyển sắc — nên
+   * nền ở đây là một tấm giấy kẻ ô, và nó đứng yên.
+   */
   .stage-bg {
-    background:
-      radial-gradient(38rem 26rem at 100% 0%, rgb(124 58 237 / 0.32), transparent 65%),
-      radial-gradient(34rem 26rem at 0% 100%, rgb(34 211 238 / 0.13), transparent 65%),
-      radial-gradient(rgb(255 255 255 / 0.055) 1px, transparent 1.5px) 0 0 / 22px 22px;
+    background-color: var(--color-ink);
+    background-image:
+      linear-gradient(to right, rgb(255 255 255 / 0.05) 2px, transparent 2px),
+      linear-gradient(to bottom, rgb(255 255 255 / 0.05) 2px, transparent 2px);
+    background-size: 56px 56px;
   }
 
-  /* Tờ giấy vẽ: nền sáng, lưới chấm mờ để dễ canh tỉ lệ. */
+  /* Tờ giấy vẽ: trắng phẳng, kẻ ô cứng để dễ canh tỉ lệ. */
   .paper {
-    background-color: #fdfcff;
-    background-image: radial-gradient(#d9d5f0 1.2px, transparent 1.6px);
-    background-size: 22px 22px;
+    background-color: #ffffff;
+    background-image:
+      linear-gradient(to right, rgb(0 0 0 / 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(0 0 0 / 0.08) 1px, transparent 1px);
+    background-size: 28px 28px;
   }
 }
 
@@ -266,8 +328,6 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  /* Thông báo kết thúc ở opacity 0 → rút ngắn là biến mất luôn. Bỏ hẳn animation:
-     thông báo đứng yên, hết giờ thì React gỡ ra. */
   .animate-toast {
     animation: none !important;
   }

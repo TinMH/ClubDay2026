@@ -41,19 +41,38 @@ function WaitingLine({ game, data }: { game: GameKind; data: OpenRounds | null }
 
   const room = data.open[game];
   const max = data.max[game];
-  // Hai trường hợp khác nhau bên dưới (chưa có lượt nào / BTC đã tạo lượt nhưng
-  // chưa ai vào) nhưng với người chơi thì kết quả y hệt: họ là người đầu tiên.
-  // Nói theo thứ họ thấy được, đừng nói "mở lượt mới" vì lượt có thể đã có sẵn.
-  if (!room || room.players === 0) {
+
+  // Chưa có lượt nào → chưa có mã để hiện, và người chơi là người đầu tiên.
+  if (!room) {
     return <p className="mt-2 h-5 text-xs text-muted">chưa có ai — bạn vào là người đầu tiên</p>;
   }
 
   const left = max - room.players;
   return (
-    <p className="mt-2 flex h-5 items-center gap-1.5 text-xs font-semibold text-secondary">
-      <Users aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-      {room.players}/{max} đang chờ
-      {left > 0 && <span className="font-normal text-muted">· còn {left} nữa</span>}
+    <p className="mt-2 flex min-h-5 flex-wrap items-center gap-x-1.5 text-xs font-semibold text-secondary">
+      {/*
+        MÃ LƯỢT, hiện ngay ở đây.
+        BTC hô "lượt CP9ESB" hoặc chỉ vào mã trên màn hình máy họ; người chơi phải
+        đối chiếu được mình sắp vào đúng lượt đó. Mã vốn đã có sẵn trong
+        `/api/rounds/open`, chỉ là trước giờ không ai hiện ra.
+      */}
+      <span className="border-2 border-line bg-surface-2 px-1.5 font-mono font-black tracking-wider text-fg">
+        {room.roundId}
+      </span>
+      {/*
+        Lượt vừa tạo mà chưa ai vào thì nói lời MỜI, không đọc ra con số 0: "0/8
+        đang chờ" trông như chỗ này vắng, còn "bạn vào là người đầu tiên" là lý do
+        để bước tới.
+      */}
+      {room.players === 0 ? (
+        <span className="font-normal text-muted">chưa có ai — bạn vào là người đầu tiên</span>
+      ) : (
+        <>
+          <Users aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+          {room.players}/{max} đang chờ
+          {left > 0 && <span className="font-normal text-muted">· còn {left} nữa</span>}
+        </>
+      )}
     </p>
   );
 }
@@ -86,10 +105,37 @@ export function Home() {
   const ready = name.trim().length > 0 && !closed;
 
   /**
+   * Cấu hình: trò BTC đang mở, và SỨC CHỨA TỪNG TRÒ.
+   *
+   * Chạy ở CẢ HAI cách vào. Trước đây nó nằm chung với vòng lấy số người chờ —
+   * mà vòng đó bị tắt ở Cách B, nên vào bằng `/r/<mã>` thì sức chứa không bao
+   * giờ được nạp và màn hình kẹt ở con số mặc định.
+   */
+  useEffect(() => {
+    let alive = true;
+    const tick = async () => {
+      try {
+        const cfg = await api.config();
+        if (!alive) return;
+        setActiveGame(cfg.activeGame);
+        setMaxPlayers(cfg.maxPlayers);
+      } catch {
+        /* mất mạng một nhịp thì giữ số cũ — không xoá đi làm màn hình nhảy */
+      }
+    };
+    void tick();
+    const t = setInterval(() => void tick(), 3_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, []);
+
+  /**
    * Số người đang chờ, cập nhật mỗi 2 giây.
    *
    * Đây là thứ giữ cho luồng người KHÔNG bị xẻ đôi: thấy "3/5 đang chờ" thì
-   * người mới có lý do dồn vào lượt đó thay vì mở lượt thứ hai, nên đủ 5 nhanh
+   * người mới có lý do dồn vào lượt đó thay vì mở lượt thứ hai, nên đủ chỗ nhanh
    * hơn và booth ít thời gian chết. Cũng làm việc chờ có nghĩa nên ít ai bỏ đi.
    *
    * Không cần ở Cách B: game và lượt đã do URL quyết định.
@@ -99,14 +145,10 @@ export function Home() {
     let alive = true;
     const tick = async () => {
       try {
-        // Cùng một nhịp: trò BTC đang mở (có thể đổi giữa chừng) và số người chờ.
-        const [cfg, res] = await Promise.all([api.config(), api.openRounds()]);
-        if (!alive) return;
-        setActiveGame(cfg.activeGame);
-        setMaxPlayers(cfg.maxPlayers);
-        setWaiting(res);
+        const res = await api.openRounds();
+        if (alive) setWaiting(res);
       } catch {
-        /* mất mạng một nhịp thì giữ số cũ — không xoá đi làm màn hình nhảy */
+        /* giữ số cũ */
       }
     };
     void tick();
@@ -137,13 +179,12 @@ export function Home() {
     <Shell>
       <header className="animate-rise pt-4 text-center">
         <DscLogo />
-        <h1 className="mt-6 font-display text-6xl font-extrabold leading-none tracking-tight">
+        <h1 className="mt-6 font-display text-6xl font-black leading-none tracking-tight">
           Club<span className="text-accent">Day</span>
         </h1>
         <p className="mt-3 flex items-center justify-center gap-1.5 text-muted">
           <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0 text-secondary" />
-          Mini game CLB · tối đa{' '}
-          {activeGame && maxPlayers ? maxPlayers[activeGame] : DEFAULT_MAX_PLAYERS} người một lượt
+          Mini game CLB · chơi theo lượt, xong là có bảng hạng ngay
         </p>
       </header>
 
@@ -182,16 +223,18 @@ export function Home() {
                   </span>
                   {open && !roundId && (
                     <span
-                      className={`rounded-full border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${chip}`}
+                      className={`border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${chip}`}
                     >
                       Đang mở
                     </span>
                   )}
                 </div>
-                <p className="mt-3 font-display text-lg font-bold leading-tight">{GAME_LABEL[g]}</p>
+                <p className="mt-3 font-display text-lg font-black uppercase tracking-tight leading-tight">{GAME_LABEL[g]}</p>
                 <p className="mt-1 text-xs text-muted">
-                  {DURATION_MS[g] / 1000} giây · {blurb}
+                  {DURATION_MS[g] / 1000} giây · tối đa{' '}
+                  {maxPlayers?.[g] ?? DEFAULT_MAX_PLAYERS} người
                 </p>
+                <p className="mt-0.5 text-xs text-muted">{blurb}</p>
                 {!roundId &&
                   (open ? (
                     <WaitingLine game={g} data={waiting} />
@@ -213,7 +256,7 @@ export function Home() {
         style={{ animationDelay: '220ms' }}
       >
         {roundId && (
-          <p className="rounded-xl border-2 border-secondary/40 bg-secondary/10 px-3 py-2 text-center text-sm">
+          <p className="rounded-xl border-2 border-secondary bg-secondary/10 px-3 py-2 text-center text-sm">
             Bạn đang vào lượt{' '}
             <span className="font-mono font-bold tracking-wider text-secondary">{roundId}</span>
           </p>

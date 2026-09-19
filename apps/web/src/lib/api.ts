@@ -65,6 +65,8 @@ export const api = {
   listRounds: (token: string) =>
     get<{
       activeGame: GameKind | null;
+      /** Trò mở gần đây nhất — dùng cho nút "Mở lại" khi đang tạm đóng. */
+      lastGame: GameKind;
       maxPlayers: Record<GameKind, number>;
       rounds: RoundSummary[];
     }>('/api/admin/rounds', token),

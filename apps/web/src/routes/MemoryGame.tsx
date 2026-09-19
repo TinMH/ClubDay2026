@@ -184,25 +184,25 @@ export function MemoryGame({ roundId, playerId, state }: GameProps) {
       <div
         aria-live="polite"
         className={`card flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
-          watching ? 'border-memory/60 bg-memory/10' : 'border-accent/60 bg-accent/10'
+          watching ? 'border-line bg-memory text-ink' : 'border-line bg-accent text-ink'
         }`}
       >
-        <p className="flex items-center gap-2 font-display text-lg font-extrabold">
+        <p className="flex items-center gap-2 font-display text-lg font-black uppercase">
           {watching ? (
             <>
-              <Eye aria-hidden="true" className="h-5 w-5 shrink-0 text-memory" />
+              <Eye aria-hidden="true" className="h-5 w-5 shrink-0" />
               Nhìn kỹ nhé…
             </>
           ) : (
             <>
-              <Hand aria-hidden="true" className="h-5 w-5 shrink-0 text-accent" />
+              <Hand aria-hidden="true" className="h-5 w-5 shrink-0" />
               Lặp lại đi!
             </>
           )}
         </p>
         <p className="shrink-0 text-right leading-tight">
-          <span className="block text-xs text-muted">Cấp</span>
-          <span className="block font-display text-2xl font-extrabold tabular-nums">{level}</span>
+          <span className="block text-xs font-bold uppercase">Cấp</span>
+          <span className="block font-display text-2xl font-black uppercase tracking-tight tabular-nums">{level}</span>
         </p>
       </div>
 
