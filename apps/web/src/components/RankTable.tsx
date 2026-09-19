@@ -13,14 +13,21 @@ const PODIUM = [
   { place: 'col-start-3', block: 'h-24 border-bronze/50 bg-bronze/10', badge: 'bg-bronze text-ink' },
 ] as const;
 
-/** Hai dòng chi tiết dưới tên: kết quả + thời gian hoàn thành. */
+/**
+ * Hai dòng chi tiết dưới tên: kết quả + thời gian hoàn thành.
+ *
+ * Chỉ VẼ HÌNH có khái niệm "giải được / không" (`solved`); mọi trò còn lại đếm
+ * đúng–sai. Điều kiện phải bắt theo trò đặc biệt chứ không liệt kê trò thường —
+ * liệt kê thì thêm trò mới là nó lặng lẽ rơi vào nhánh `solved`, và cả bảng hạng
+ * ghi "chưa giải" cho tất cả mọi người.
+ */
 function details(r: DashboardRow, game: GameKind): [string, string] {
   const what =
-    game === 'math'
-      ? `${r.correct} đúng${r.wrong > 0 ? ` · ${r.wrong} sai` : ''}`
-      : r.solved
+    game === 'draw'
+      ? r.solved
         ? 'đã giải'
-        : 'chưa giải';
+        : 'chưa giải'
+      : `${r.correct} đúng${r.wrong > 0 ? ` · ${r.wrong} sai` : ''}`;
   return [what, formatSeconds(r.msToFinish)];
 }
 

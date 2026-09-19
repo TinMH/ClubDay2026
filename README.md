@@ -1,12 +1,13 @@
 # ClubDay
 
-Web 3 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người**, chơi xong hiện dashboard của đúng nhóm đó.
+Web 4 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người**, chơi xong hiện dashboard của đúng nhóm đó.
 
 | Game | Thời lượng | Cách chơi |
 |---|---|---|
 | **Tính nhanh** | 90 giây | Chọn 1 trong 4 đáp án. **Điểm = chuỗi đúng dài nhất** |
 | **Vẽ hình nhanh** | 15 giây | Vẽ theo từ khoá rồi **bấm NỘP BÀI** để AI chấm — hết giờ thì tự nộp |
 | **Nhớ nhanh** | 60 giây | Nhìn chuỗi ô nháy sáng rồi lặp lại. **Điểm = cấp cao nhất vượt được** |
+| **Ô khác màu** | 45 giây | Tìm ô lệch màu trong lưới. Mỗi cấp lưới dày thêm và màu sát nhau hơn. **Điểm = cấp cao nhất vượt được** |
 
 ---
 
@@ -84,7 +85,8 @@ ClubDay/
 │   │   │   │   ├── admin-guard.ts ✅ 🔒 xác thực header x-admin-token
 │   │   │   │   ├── math.ts        ✅ 🅰️ API Tính nhanh (đã xong)
 │   │   │   │   ├── draw.ts        ✅ 🅱️ API Vẽ (đã xong)
-│   │   │   │   └── memory.ts      ✅ 🅲 API Nhớ nhanh (đã xong)
+│   │   │   │   ├── memory.ts      ✅ 🅲 API Nhớ nhanh (đã xong)
+│   │   │   │   └── spot.ts        ✅ 🅳 API Ô khác màu (đã xong)
 │   │   │   │
 │   │   │   ├── services/          ── NGHIỆP VỤ: không biết gì về HTTP
 │   │   │   │   ├── math-gen.ts    ✅ 🅰️ sinh câu hỏi (PRNG seed, chống trùng liền kề)
@@ -95,7 +97,9 @@ ClubDay/
 │   │   │   │   ├── allowlist.generated.ts ✅ 🅱️ SINH TỰ ĐỘNG — đừng sửa tay
 │   │   │   │   ├── draw-session.ts✅ 🅱️ trọng tài Vẽ (đồng hồ, spam, seq, chấm điểm)
 │   │   │   │   ├── memory-gen.ts  ✅ 🅲 sinh chuỗi ô (PRNG seed, chặn 3 ô trùng liền)
-│   │   │   │   └── memory-session.ts ✅ 🅲 trọng tài Nhớ nhanh (đồng hồ, spam, chống bot)
+│   │   │   │   ├── memory-session.ts ✅ 🅲 trọng tài Nhớ nhanh (đồng hồ, spam, chống bot)
+│   │   │   │   ├── spot-gen.ts    ✅ 🅳 sinh bàn Ô khác màu (lệch ĐỘ SÁNG, không lệch tông)
+│   │   │   │   └── spot-session.ts ✅ 🅳 trọng tài Ô khác màu
 │   │   │   │
 │   │   │   └── lib/               ── tiện ích thuần
 │   │   │       ├── prng.ts        ✅ 🔒 mulberry32 (dùng chung 2 track)
@@ -119,7 +123,8 @@ ClubDay/
 │       │   │   ├── Admin.tsx      ✅ 🔒 màn hình BTC (tạo lượt, bắt đầu, mã QR)
 │       │   │   ├── MathGame.tsx   ✅ 🅰️ màn hình Tính nhanh (đã xong)
 │       │   │   ├── DrawGame.tsx   ✅ 🅱️ màn hình Vẽ (frame = gợi ý, nút NỘP BÀI)
-│       │   │   └── MemoryGame.tsx ✅ 🅲 màn hình Nhớ nhanh (xem chuỗi → lặp lại)
+│       │   │   ├── MemoryGame.tsx ✅ 🅲 màn hình Nhớ nhanh (xem chuỗi → lặp lại)
+│       │   │   └── SpotGame.tsx   ✅ 🅳 màn hình Ô khác màu (tìm ô lệch màu)
 │       │   ├── components/
 │       │   │   ├── Shell.tsx      ✅ 🔒 khung màn hình
 │       │   │   ├── Countdown.tsx  ✅ 🔒 đồng hồ + thanh tiến độ
@@ -312,12 +317,13 @@ xem hết n ô đã, mà xem hết mất `n × 600ms`. Bot nhận chuỗi rồi 
 | 🅱️ Track B — Vẽ hình (`raster`, `classifier`, `labels`, `draw-session`) | ✅ **XONG** — đã merge `main` |
 | 🅱️ **Nộp bài** — nút NỘP BÀI + tự nộp khi hết giờ | ✅ **XONG** trên nhánh `feat/draw-submit` |
 | 🅲 Track C — Nhớ nhanh (`memory-gen`, `memory-session`, `MemoryPad`) | ✅ **XONG** |
+| 🅳 Track D — Ô khác màu (`spot-gen`, `spot-session`, `SpotGrid`) | ✅ **XONG** |
 | Tích hợp + load test + diễn tập | ⬜ Wave 3 |
 
 Chạy kiểm tra bất cứ lúc nào:
 
 ```bash
-npm test       # 215 unit test — nền tảng + 3 track (164 server + 51 web)
+npm test       # 247 unit test — nền tảng + 4 track (187 server + 60 web)
 npm run smoke  # 86 kiểm tra end-to-end (tự bật server rồi tắt, có nạp model thật)
                # ⏱ chậm hơn trước ~20s: có kiểm tra phải chờ hết 15 giây thật của lượt Vẽ
 ```
@@ -476,7 +482,7 @@ Tắt server: `Ctrl+C` — server tự lưu snapshot trước khi thoát.
 | Bước | Ai | Làm gì |
 |---|---|---|
 | 1 | BTC | Mở `/admin`, dán `ADMIN_TOKEN` vào ô trên cùng (lưu vào máy, chỉ nhập một lần) |
-| 2 | BTC | Bấm **+ Lượt Tính nhanh** / **+ Lượt Vẽ hình** / **+ Lượt Nhớ nhanh** → trò đó thành **trò đang mở**, hiện mã 6 ký tự kèm **mã QR** để quét |
+| 2 | BTC | Bấm **+ Lượt Tính nhanh** / **+ Lượt Vẽ hình** / **+ Lượt Nhớ nhanh** / **+ Lượt Ô khác màu** → trò đó thành **trò đang mở**, hiện mã 6 ký tự kèm **mã QR** để quét |
 | 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → nhập tên → vào phòng chờ của **trò BTC đang mở** |
 | 4 | | Tối đa **5 người**. Người thứ 6 bị chặn và báo "chờ lượt sau" |
 | 5 | BTC | Bấm **BẮT ĐẦU** ở `/admin` (màn hình phòng chờ KHÔNG có nút này) |

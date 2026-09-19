@@ -1,4 +1,4 @@
-import { Brain, Brush, Calculator, type LucideIcon } from 'lucide-react';
+import { Brain, Brush, Calculator, Grid3x3, type LucideIcon } from 'lucide-react';
 import type { GameKind } from './types';
 
 /**
@@ -35,5 +35,12 @@ export const GAME_THEME: Record<
     tile: 'bg-memory text-ink',
     active: 'border-memory bg-memory/10 ring-4 ring-memory/25',
     blurb: 'nhớ rồi lặp lại chuỗi ô',
+  },
+  spot: {
+    icon: Grid3x3,
+    chip: 'border-spot/40 bg-spot/10 text-spot',
+    tile: 'bg-spot text-ink',
+    active: 'border-spot bg-spot/10 ring-4 ring-spot/25',
+    blurb: 'tìm ô lệch màu trong lưới',
   },
 };

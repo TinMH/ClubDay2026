@@ -3,7 +3,7 @@
  * Phase F sở hữu — hai track chỉ đọc.
  */
 /** Phải khớp GAME_KINDS ở server (apps/server/src/store/types.ts). */
-export const GAME_KINDS = ['math', 'draw', 'memory'] as const;
+export const GAME_KINDS = ['math', 'draw', 'memory', 'spot'] as const;
 export type GameKind = (typeof GAME_KINDS)[number];
 export type RoundStatus = 'lobby' | 'playing' | 'done';
 
@@ -60,6 +60,7 @@ export const GAME_LABEL: Record<GameKind, string> = {
   math: 'Tính nhanh',
   draw: 'Vẽ hình nhanh',
   memory: 'Nhớ nhanh',
+  spot: 'Ô khác màu',
 };
 
 /**
@@ -75,6 +76,7 @@ export const SCORE_LABEL: Record<GameKind, string> = {
   math: 'Chuỗi dài nhất',
   draw: 'Điểm',
   memory: 'Cấp cao nhất',
+  spot: 'Cấp cao nhất',
 };
 
 /** Phải khớp với server (apps/server/src/store/types.ts). */
@@ -84,6 +86,7 @@ export const DURATION_MS: Record<GameKind, number> = {
   math: 90_000,
   draw: 15_000,
   memory: 60_000,
+  spot: 45_000,
 };
 
 // ── Nhớ nhanh: hằng số CHIA CHUNG với server ──

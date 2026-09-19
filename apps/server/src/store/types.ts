@@ -11,6 +11,9 @@
  *   - `committed`, `commitReason`, `committedAt`   (TRACK B — chấm bài lúc NỘP)
  *   - `level`, `levelSentAt`, `lastReplayAt`       (TRACK C — Nhớ nhanh)
  *   - `sequence` trên `Round`                      (TRACK C — chuỗi ô cần nhớ)
+ *
+ * TRACK D (Ô khác màu) KHÔNG thêm field nào: nó dùng lại `level` và `lastReplayAt`
+ * đúng nghĩa cũ, còn bàn chơi thì suy ra được từ mã lượt + cấp nên không cần lưu.
  */
 
 /**
@@ -20,7 +23,7 @@
  * lưới chọn game ở trang chủ) đều đọc mảng này. Thêm game mới là thêm đúng một
  * phần tử ở đây, không phải đi sửa năm chỗ rời rạc rồi quên mất một chỗ.
  */
-export const GAME_KINDS = ['math', 'draw', 'memory'] as const;
+export const GAME_KINDS = ['math', 'draw', 'memory', 'spot'] as const;
 export type GameKind = (typeof GAME_KINDS)[number];
 export type RoundStatus = 'lobby' | 'playing' | 'done';
 
@@ -90,9 +93,11 @@ export interface Player {
   /** ⏱ Thời điểm SERVER chấm bài. */
   committedAt: number | null;
 
-  // ── TRACK C dùng (Nhớ nhanh) ──
+  // ── TRACK C & D dùng (Nhớ nhanh, Ô khác màu) ──
   /**
-   * Cấp ĐANG chơi = độ dài chuỗi phải lặp lại lúc này (1-based).
+   * Cấp ĐANG chơi (1-based).
+   *
+   * Nhớ nhanh: độ dài chuỗi phải lặp lại. Ô khác màu: độ khó của bàn chơi.
    *
    * Giữ riêng khỏi `score` vì `score` là cấp CAO NHẤT đã vượt: lặp sai thì cấp
    * hiện tại về 1 nhưng kỷ lục vẫn còn — cùng triết lý với `streak` của Tính nhanh.
@@ -106,7 +111,7 @@ export interface Player {
    * Trả lời sớm hơn quãng đó nghĩa là không hề xem — xem services/memory-session.ts.
    */
   levelSentAt: number;
-  /** ⏱ Server ghi mỗi lần nhận một lượt lặp — dùng chống spam. */
+  /** ⏱ Server ghi mỗi lần nhận một lượt lặp / một cú chạm — dùng chống spam. */
   lastReplayAt: number;
 }
 
@@ -146,12 +151,23 @@ export const DURATION_MS: Record<GameKind, number> = {
   // Đủ để người giỏi lên tới cấp 8–10, mà vẫn ngắn hơn Tính nhanh để vòng quay
   // 5 người ở booth không bị chậm lại.
   memory: 60_000,
+  // Mỗi cấp chỉ mất 1–3 giây nên 45s đã đủ tới cấp 12–15. Ngắn có chủ đích: đây
+  // là trò quay vòng nhanh nhất, để hàng chờ ở booth không ứ lại.
+  spot: 45_000,
 };
 
 /** Giới hạn tần suất do SERVER đo (không tin client). */
 export const MIN_ANSWER_GAP_MS = 250;
 export const MIN_FRAME_GAP_MS = 1_000;
 export const MIN_REPLAY_GAP_MS = 250;
+/**
+ * Khoảng cách tối thiểu giữa hai cú chạm ở Ô khác màu.
+ *
+ * Người thật còn phải quét mắt tìm ô lệch màu; 150ms là đã nhanh hơn cả thời gian
+ * phản xạ chạm của người bình thường (~250ms). Nhanh hơn nữa gần như chắc chắn là
+ * script đọc màu từ DOM — xem ghi chú ở services/spot-session.ts.
+ */
+export const MIN_SPOT_GAP_MS = 150;
 
 // ── Nhớ nhanh: hằng số CHIA CHUNG server ↔ client ──
 //
@@ -164,9 +180,18 @@ export const MEMORY_PAD_COUNT = 4;
 /** Một ô sáng 400ms + tối 200ms. Nhanh hơn thì mắt không kịp tách hai ô liền nhau. */
 export const MEMORY_STEP_MS = 600;
 
+// ── Ô khác màu: hằng số CHIA CHUNG server ↔ client ──
+//
+// Bản sao ở apps/web/src/lib/types.ts phải khớp.
+
+/** Cạnh lưới nhỏ nhất (2×2) và lớn nhất (6×6 = 36 ô — nhỏ hơn nữa thì ngón tay không trúng). */
+export const SPOT_MIN_SIZE = 2;
+export const SPOT_MAX_SIZE = 6;
+
 /** Tên hiển thị của từng game — dùng chung ở lobby và admin. */
 export const GAME_LABEL: Record<GameKind, string> = {
   math: 'Tính nhanh',
   draw: 'Vẽ hình nhanh',
   memory: 'Nhớ nhanh',
+  spot: 'Ô khác màu',
 };

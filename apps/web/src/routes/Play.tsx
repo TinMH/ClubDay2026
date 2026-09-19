@@ -10,6 +10,7 @@ import { ConnectionPill, GameChip, Spinner } from '../components/Chips';
 import { MathGame } from './MathGame'; // TRACK A
 import { DrawGame } from './DrawGame'; // TRACK B
 import { MemoryGame } from './MemoryGame'; // TRACK C
+import { SpotGame } from './SpotGame'; // TRACK D
 import {
   DURATION_MS,
   SCORE_LABEL,
@@ -29,6 +30,7 @@ const SCREENS: Record<GameKind, (props: GameProps) => ReactElement> = {
   math: MathGame,
   draw: DrawGame,
   memory: MemoryGame,
+  spot: SpotGame,
 };
 
 /**
