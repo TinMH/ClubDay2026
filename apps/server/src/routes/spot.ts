@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { findPlayer } from '../store/store.js';
+import { locatePlayer, statusFor } from './track.js';
 import { currentBoard, submitPick } from '../services/spot-session.js';
 import { SPOT_MAX_SIZE } from '../store/types.js';
 
@@ -18,23 +18,6 @@ const PickBody = z.object({
   // Cố ý KHÔNG có `correct` hay `score`: server tự chấm.
 });
 
-/** Mã lỗi nghiệp vụ → HTTP status. */
-const CODE_STATUS: Record<string, number> = {
-  NOT_PLAYING: 409,
-  TIME_UP: 409,
-  BAD_LEVEL: 400,
-  TOO_FAST: 429,
-};
-
-/** Tra người chơi và xác nhận họ thuộc ĐÚNG lượt này (không thì trả null). */
-function locate(roundId: string, playerId: string) {
-  const found = findPlayer(playerId);
-  if (!found) return null;
-  if (found.round.id.toUpperCase() !== roundId.toUpperCase()) return null;
-  if (found.round.game !== 'spot') return null;
-  return found;
-}
-
 export async function spotRoutes(app: FastifyInstance): Promise<void> {
   /**
    * Bàn chơi của cấp đang chơi.
@@ -45,7 +28,7 @@ export async function spotRoutes(app: FastifyInstance): Promise<void> {
     const { playerId } = req.query as { playerId?: string };
     if (!playerId) return reply.code(400).send({ error: 'BAD_REQUEST' });
 
-    const located = locate(id, playerId);
+    const located = locatePlayer(id, playerId, 'spot');
     if (!located) return reply.code(404).send({ error: 'NOT_FOUND' });
 
     const { round, player } = located;
@@ -68,7 +51,7 @@ export async function spotRoutes(app: FastifyInstance): Promise<void> {
     const parsed = PickBody.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'BAD_REQUEST' });
 
-    const located = locate(id, parsed.data.playerId);
+    const located = locatePlayer(id, parsed.data.playerId, 'spot');
     if (!located) return reply.code(404).send({ error: 'NOT_FOUND' });
 
     const { round, player } = located;
@@ -77,7 +60,7 @@ export async function spotRoutes(app: FastifyInstance): Promise<void> {
 
     if (!outcome.ok) {
       return reply
-        .code(CODE_STATUS[outcome.code] ?? 400)
+        .code(statusFor(outcome.code))
         .send({ error: outcome.code, score: player.score, serverNow: now });
     }
 
