@@ -7,6 +7,7 @@ import { buildSignupUrl } from '../lib/signup';
 import { useRoundStream } from '../lib/sse';
 import { Shell } from '../components/Shell';
 import { RankTable } from '../components/RankTable';
+import { ClubLinks } from '../components/ClubLinks';
 import { GameChip, Spinner, WaitDots } from '../components/Chips';
 import { DscLogo } from '../components/Logo';
 import type { DashboardRow, GameKind, RoundState } from '../lib/types';
@@ -112,12 +113,18 @@ export function Dashboard() {
         </a>
       )}
 
+      {/*
+        Dưới nút đăng ký, trên nút về trang chủ: ai chưa sẵn sàng điền form thì
+        vẫn còn một cửa nhẹ hơn để giữ liên lạc với CLB.
+      */}
+      <ClubLinks className={signupUrl ? 'mt-3' : 'mt-auto'} />
+
       <button
         onClick={() => {
           clearSession();
           navigate('/');
         }}
-        className={`btn btn-ghost w-full ${signupUrl ? 'mt-3' : 'mt-auto'}`}
+        className="btn btn-ghost mt-3 w-full"
       >
         <House aria-hidden="true" className="h-5 w-5" />
         Về trang chủ

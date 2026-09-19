@@ -14,6 +14,7 @@ import { saveSession } from '../lib/session';
 import { GAME_THEME } from '../lib/game-theme';
 import { DEFAULT_MAX_PLAYERS, DURATION_MS, GAME_KINDS, GAME_LABEL, type GameKind } from '../lib/types';
 import { Shell } from '../components/Shell';
+import { ClubLinks } from '../components/ClubLinks';
 import { DscLogo } from '../components/Logo';
 
 const MESSAGES: Record<string, string> = {
@@ -266,7 +267,9 @@ export function Home() {
         )}
       </form>
 
-      <footer className="mt-auto text-center">
+      <ClubLinks className="mt-auto" />
+
+      <footer className="text-center">
         <Link
           to="/admin"
           className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-sm text-muted transition-colors hover:text-fg"
