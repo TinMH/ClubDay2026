@@ -323,7 +323,7 @@ xem hết n ô đã, mà xem hết mất `n × 600ms`. Bot nhận chuỗi rồi 
 Chạy kiểm tra bất cứ lúc nào:
 
 ```bash
-npm test       # 247 unit test — nền tảng + 4 track (187 server + 60 web)
+npm test       # 255 unit test — nền tảng + 4 track (193 server + 62 web)
 npm run smoke  # 86 kiểm tra end-to-end (tự bật server rồi tắt, có nạp model thật)
                # ⏱ chậm hơn trước ~20s: có kiểm tra phải chờ hết 15 giây thật của lượt Vẽ
 ```

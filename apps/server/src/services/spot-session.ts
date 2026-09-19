@@ -30,9 +30,32 @@ export type PickOutcome =
   | { ok: true; correct: boolean; score: number; level: number; board: SpotBoard }
   | { ok: false; code: 'NOT_PLAYING' | 'TIME_UP' | 'BAD_LEVEL' | 'TOO_FAST' };
 
+/**
+ * Seed của bàn người chơi đang nhìn.
+ *
+ * Gồm ba thứ, thiếu cái nào cũng hỏng một kiểu:
+ *   - mã lượt      → mỗi lượt một bộ đề khác nhau
+ *   - id người chơi → 5 người ngồi sát nhau ở booth KHÔNG thấy cùng một vị trí,
+ *                     nên liếc màn hình bên cạnh chẳng được gì. Ở đây đó là kiểu
+ *                     gian lận dễ nhất, dễ hơn mở DevTools nhiều.
+ *   - số lần đã chạm → trượt rồi về cấp 1 thì gặp bàn MỚI. Thiếu nó thì ô lệch
+ *                     nằm nguyên chỗ cũ, và người vừa trượt ở cấp 8 bấm lại một
+ *                     mạch 7 cấp đầu từ trí nhớ chứ không phải nhìn.
+ *
+ * Độ khó KHÔNG nằm trong seed: cỡ lưới và độ lệch màu vẫn do `level` quyết định
+ * (xem spot-gen.ts), nên hai người cùng cấp luôn gặp bài khó y như nhau — chỉ
+ * khác chỗ đặt và tông màu.
+ *
+ * Vẫn không lưu gì: cả ba thành phần đều đã có sẵn trong `round` và `player`,
+ * nên server tính lại đúng bàn đó bất cứ lúc nào để chấm.
+ */
+function boardSeed(round: Round, player: Player): number {
+  return seedFromRoundId(`${round.id}:${player.id}:${player.correct + player.wrong}`);
+}
+
 /** Bàn chơi của cấp người chơi đang ở. */
 export function currentBoard(round: Round, player: Player): SpotBoard {
-  return generateBoard(seedFromRoundId(round.id), player.level);
+  return generateBoard(boardSeed(round, player), player.level);
 }
 
 /**

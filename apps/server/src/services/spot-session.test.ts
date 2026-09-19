@@ -17,6 +17,12 @@ function setup(): { round: Round; player: Player } {
   return { round, player };
 }
 
+/** Chữ ký của một bàn — đủ để biết hai bàn có giống hệt nhau không. */
+const sig = (round: Round, player: Player): string => {
+  const b = currentBoard(round, player);
+  return `${b.size}:${b.oddIndex}:${b.base}:${b.odd}`;
+};
+
 /** Ô đúng của cấp người chơi đang ở — theo SERVER. */
 const oddOf = (round: Round, player: Player): number => currentBoard(round, player).oddIndex;
 
@@ -122,6 +128,81 @@ describe('spot-session — chấm điểm', () => {
     const res = submitPick(round, player, 1, 0, T0 + STEP);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('NOT_PLAYING');
+  });
+
+  it('trượt rồi về cấp 1 thì gặp bàn MỚI, không phải bàn cấp 1 lúc đầu', () => {
+    // Nếu bàn chỉ phụ thuộc (mã lượt, cấp) thì ô lệch nằm nguyên chỗ cũ, và người
+    // vừa trượt ở cấp cao bấm lại mấy cấp đầu từ trí nhớ chứ không phải nhìn.
+    const { round, player } = setup();
+    const first = sig(round, player);
+
+    let now = T0 + STEP;
+    expect(submitPick(round, player, 1, oddOf(round, player), now).ok).toBe(true);
+    now += STEP;
+    expect(submitPick(round, player, 2, wrongOf(round, player), now).ok).toBe(true);
+
+    expect(player.level).toBe(1);
+    expect(sig(round, player)).not.toBe(first);
+  });
+
+  it('mỗi lần qua cùng một cấp lại là một bàn khác', () => {
+    const { round, player } = setup();
+    const seen = new Set<string>();
+    let now = T0;
+
+    // Qua cấp 1 rồi trượt ở cấp 2 → lại về cấp 1. Lặp vài vòng.
+    for (let i = 0; i < 4; i++) {
+      seen.add(sig(round, player));
+      now += STEP;
+      submitPick(round, player, 1, oddOf(round, player), now);
+      now += STEP;
+      submitPick(round, player, 2, wrongOf(round, player), now);
+    }
+    expect(seen.size).toBe(4);
+  });
+
+  it('cùng lượt, cùng cấp, mỗi người một vị trí (liếc màn hình bên cạnh vô ích)', () => {
+    // Đặt ở cấp 5 (lưới 4×4) chứ không phải cấp 1: lưới cấp 1 chỉ có 4 ô nên hai
+    // người trùng vị trí là chuyện thường, test sẽ chập chờn chứ không sai thật.
+    const { round, player } = setup();
+    const players = [player, ...['Bình', 'Chi', 'Dũng', 'Em'].map((n) => addPlayer(round, n, T0))];
+    for (const p of players) p.level = 5;
+
+    const boards = players.map((p) => currentBoard(round, p));
+    // Khó thì phải y như nhau — chỉ chỗ đặt mới được khác.
+    expect(new Set(boards.map((b) => b.size)).size).toBe(1);
+    expect(new Set(boards.map((b) => b.oddIndex)).size).toBeGreaterThan(1);
+  });
+
+  it('MÀU cũng đổi mỗi lần chơi lại — không học thuộc được tông màu', () => {
+    // Vị trí đổi mà màu giữ nguyên thì chơi vài lượt là người ta quen mắt với
+    // đúng một cặp màu, và "tìm ô lệch" biến thành "nhớ xem lệch trông thế nào".
+    const { round, player } = setup();
+    const bases = new Set<string>();
+    let now = T0;
+
+    for (let i = 0; i < 6; i++) {
+      bases.add(currentBoard(round, player).base);
+      now += STEP;
+      submitPick(round, player, 1, oddOf(round, player), now);
+      now += STEP;
+      submitPick(round, player, 2, wrongOf(round, player), now); // trượt → về cấp 1
+    }
+    // Không đòi cả 6 khác nhau: tông màu bốc trong 360 độ nên trùng một lần là
+    // chuyện bình thường, đòi tuyệt đối thì test chập chờn chứ không chặt hơn.
+    expect(bases.size).toBeGreaterThanOrEqual(5);
+  });
+
+  it('hai người chơi cùng cấp cũng không cùng tông màu', () => {
+    const { round, player } = setup();
+    const others = ['Bình', 'Chi', 'Dũng', 'Em'].map((n) => addPlayer(round, n, T0));
+    const bases = [player, ...others].map((p) => currentBoard(round, p).base);
+    expect(new Set(bases).size).toBeGreaterThan(1);
+  });
+
+  it('tải lại trang giữa cấp KHÔNG đổi bàn — không có chuyện bốc lại đề', () => {
+    const { round, player } = setup();
+    expect(sig(round, player)).toBe(sig(round, player));
   });
 
   it('ghi mốc thời gian cho bảng hạng', () => {

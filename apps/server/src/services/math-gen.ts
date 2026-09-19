@@ -72,6 +72,9 @@ export function generateQuestions(seed: number, count = QUESTION_COUNT): Questio
 /**
  * Seed tất định từ mã lượt (FNV-1a).
  * Cùng mã lượt → cùng đề bài, nên tra lại được một lượt đã chơi.
+ *
+ * Là hàm băm chuỗi thường, nên dùng được cho cả khoá ghép: Ô khác màu băm
+ * "mã lượt:người chơi:số lần đã chạm" (xem services/spot-session.ts).
  */
 export function seedFromRoundId(roundId: string): number {
   let hash = 2_166_136_261;
