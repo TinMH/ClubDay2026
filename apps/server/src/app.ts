@@ -31,7 +31,10 @@ export interface BuildOptions {
 export async function buildApp(opts: BuildOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logger ?? true });
 
-  await app.register(cors, { origin: true });
+  // Server tự phục vụ luôn bản build của web, nên request thật luôn cùng origin.
+  // `origin: true` phản chiếu MỌI origin — tức bất kỳ trang web nào người chơi
+  // đang mở cũng gọi được API này. Chỉ mở cho dev (Vite chạy ở cổng khác).
+  await app.register(cors, { origin: process.env.NODE_ENV === 'production' ? false : true });
 
   app.get('/api/health', async () => ({
     ok: true,

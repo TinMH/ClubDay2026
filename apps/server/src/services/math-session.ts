@@ -28,7 +28,7 @@ export type AnswerOutcome =
  *   2. Còn trong thời gian — hết giờ thì KHÔNG cộng điểm dù đáp án đúng.
  *   3. Chỉ được trả lời ĐÚNG câu hiện tại của mình (không nhảy câu, không trả lời lại).
  *   4. Không nhanh hơn 250ms/câu — nhanh hơn là bot, đánh cờ.
- *   5. Đáp án đúng lấy từ `round.questions` do server sinh, không từ client.
+ *   5. Đáp án đúng lấy từ `round.math.questions` do server sinh, không từ client.
  */
 export function submitAnswer(
   round: Round,
@@ -46,41 +46,41 @@ export function submitAnswer(
     return { ok: false, code: 'TIME_UP' };
   }
 
-  const questions = round.questions;
+  const questions = round.math.questions;
   if (!questions) return { ok: false, code: 'NOT_PLAYING' };
 
   // Phải đúng câu đang mở. Chặn cả việc nhảy tới câu dễ và trả lời lại câu cũ.
-  if (idx !== player.qIndex) return { ok: false, code: 'BAD_INDEX' };
+  if (idx !== player.math.qIndex) return { ok: false, code: 'BAD_INDEX' };
 
   const current = questions[idx];
   if (!current) return { ok: false, code: 'BAD_INDEX' };
 
-  if (tooFast(player.lastAnswerAt, now, MIN_ANSWER_GAP_MS)) {
+  if (tooFast(player.lastActionAt, now, MIN_ANSWER_GAP_MS)) {
     player.flagged = true;
     return { ok: false, code: 'TOO_FAST' };
   }
 
   const correct = current.answer === value;
 
-  player.lastAnswerAt = now;
-  player.qIndex = idx + 1;
+  player.lastActionAt = now;
+  player.math.qIndex = idx + 1;
 
   if (correct) {
     player.correct += 1;
-    player.streak += 1;
+    player.math.streak += 1;
     // Điểm là chuỗi DÀI NHẤT, nên chỉ nhích lên khi chuỗi hiện tại vượt kỷ lục.
-    if (player.streak > player.score) player.score = player.streak;
+    if (player.math.streak > player.score) player.score = player.math.streak;
   } else {
     player.wrong += 1;
-    player.streak = 0; // chuỗi đứt; `score` giữ nguyên kỷ lục cũ
+    player.math.streak = 0; // chuỗi đứt; `score` giữ nguyên kỷ lục cũ
   }
 
-  const next = questions[player.qIndex] ?? null;
+  const next = questions[player.math.qIndex] ?? null;
   if (!next) player.finished = true; // hết đề
   else syncRoundStatus(round, now);
 
   touch(round); // đẩy điểm mới cho mọi client đang xem
-  return { ok: true, correct, score: player.score, question: next, index: player.qIndex };
+  return { ok: true, correct, score: player.score, question: next, index: player.math.qIndex };
 }
 
 /**
@@ -88,5 +88,5 @@ export function submitAnswer(
  * Dùng khi vào lượt lần đầu và khi tải lại trang giữa chừng.
  */
 export function currentQuestion(round: Round, player: Player): Question | null {
-  return round.questions?.[player.qIndex] ?? null;
+  return round.math.questions?.[player.math.qIndex] ?? null;
 }

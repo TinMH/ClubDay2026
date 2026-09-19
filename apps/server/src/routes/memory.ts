@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { locatePlayer, statusFor } from './track.js';
 import { registerStartHook } from '../store/lobby.js';
-import { findPlayer } from '../store/store.js';
 import { seedFromRoundId } from '../services/math-gen.js';
 import { generateSequence } from '../services/memory-gen.js';
 import { currentSequence, submitReplay } from '../services/memory-session.js';
@@ -21,28 +21,11 @@ const ReplayBody = z.object({
   // Cố ý KHÔNG có `score`: server tự chấm.
 });
 
-/** Mã lỗi nghiệp vụ → HTTP status. */
-const CODE_STATUS: Record<string, number> = {
-  NOT_PLAYING: 409,
-  TIME_UP: 409,
-  BAD_LEVEL: 400,
-  TOO_FAST: 429,
-};
-
-/** Tra người chơi và xác nhận họ thuộc ĐÚNG lượt này (không thì trả null). */
-function locate(roundId: string, playerId: string) {
-  const found = findPlayer(playerId);
-  if (!found) return null;
-  if (found.round.id.toUpperCase() !== roundId.toUpperCase()) return null;
-  if (found.round.game !== 'memory') return null;
-  return found;
-}
-
 export async function memoryRoutes(app: FastifyInstance): Promise<void> {
   // Chạy khi BTC bấm BẮT ĐẦU — sinh chuỗi một lần cho cả lượt.
   registerStartHook('memory', (round) => {
-    if (!round.sequence) {
-      round.sequence = generateSequence(seedFromRoundId(round.id));
+    if (!round.memory.sequence) {
+      round.memory.sequence = generateSequence(seedFromRoundId(round.id));
     }
   });
 
@@ -55,7 +38,7 @@ export async function memoryRoutes(app: FastifyInstance): Promise<void> {
     const { playerId } = req.query as { playerId?: string };
     if (!playerId) return reply.code(400).send({ error: 'BAD_REQUEST' });
 
-    const located = locate(id, playerId);
+    const located = locatePlayer(id, playerId, 'memory');
     if (!located) return reply.code(404).send({ error: 'NOT_FOUND' });
 
     const { round, player } = located;
@@ -63,7 +46,7 @@ export async function memoryRoutes(app: FastifyInstance): Promise<void> {
     return {
       roundId: round.id,
       status: round.status,
-      level: player.level,
+      level: player.memory.level,
       sequence: currentSequence(round, player, now),
       pads: MEMORY_PAD_COUNT,
       stepMs: MEMORY_STEP_MS,
@@ -81,7 +64,7 @@ export async function memoryRoutes(app: FastifyInstance): Promise<void> {
     const parsed = ReplayBody.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'BAD_REQUEST' });
 
-    const located = locate(id, parsed.data.playerId);
+    const located = locatePlayer(id, parsed.data.playerId, 'memory');
     if (!located) return reply.code(404).send({ error: 'NOT_FOUND' });
 
     const { round, player } = located;
@@ -90,7 +73,7 @@ export async function memoryRoutes(app: FastifyInstance): Promise<void> {
 
     if (!outcome.ok) {
       return reply
-        .code(CODE_STATUS[outcome.code] ?? 400)
+        .code(statusFor(outcome.code))
         .send({ error: outcome.code, score: player.score, serverNow: now });
     }
 

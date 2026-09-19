@@ -23,9 +23,9 @@ describe('dashboard', () => {
     const pb = round.players.get(b)!;
     const pc = round.players.get(c)!;
 
-    pa.score = 3; pa.lastAnswerAt = 20_000;
-    pb.score = 7; pb.lastAnswerAt = 25_000;
-    pc.score = 1; pc.lastAnswerAt = 15_000;
+    pa.score = 3; pa.lastActionAt = 20_000;
+    pb.score = 7; pb.lastActionAt = 25_000;
+    pc.score = 1; pc.lastActionAt = 15_000;
 
     const rows = dashboard(round);
     expect(rows.map((r) => r.score)).toEqual([7, 3, 1]);
@@ -42,9 +42,9 @@ describe('dashboard', () => {
     const pc = round.players.get(c)!;
 
     pa.score = pb.score = pc.score = 5;
-    pa.lastAnswerAt = 50_000; // chậm nhất
-    pb.lastAnswerAt = 30_000; // nhanh nhất
-    pc.lastAnswerAt = 40_000;
+    pa.lastActionAt = 50_000; // chậm nhất
+    pb.lastActionAt = 30_000; // nhanh nhất
+    pc.lastActionAt = 40_000;
 
     const rows = dashboard(round);
     expect(rows.map((r) => r.name)).toEqual(['B', 'C', 'A']);
@@ -57,8 +57,8 @@ describe('dashboard', () => {
 
     const pa = round.players.get(a)!;
     const pb = round.players.get(b)!;
-    pa.score = 5; pa.lastAnswerAt = 0; // chưa làm gì
-    pb.score = 5; pb.lastAnswerAt = 99_000;
+    pa.score = 5; pa.lastActionAt = 0; // chưa làm gì
+    pb.score = 5; pb.lastActionAt = 99_000;
 
     const rows = dashboard(round);
     expect(rows[0]?.name).toBe('B');
@@ -70,8 +70,8 @@ describe('dashboard', () => {
     const [a, b] = ids;
     if (!a || !b) throw new Error('thiếu id');
 
-    round.players.get(a)!.lastAnswerAt = 25_000; // startedAt = 10_000
-    round.players.get(b)!.lastAnswerAt = 0;
+    round.players.get(a)!.lastActionAt = 25_000; // startedAt = 10_000
+    round.players.get(b)!.lastActionAt = 0;
 
     const rows = dashboard(round);
     const rowA = rows.find((r) => r.name === 'A');
@@ -80,15 +80,15 @@ describe('dashboard', () => {
     expect(rowB?.msToFinish).toBeNull(); // chưa xong → không bịa số
   });
 
-  it('B: solvedAt được ưu tiên hơn lastAnswerAt', () => {
+  it('B: solvedAt được ưu tiên hơn lastActionAt', () => {
     const { round, ids } = setup();
     const [a] = ids;
     if (!a) throw new Error('thiếu id');
 
     const pa = round.players.get(a)!;
-    pa.solved = true;
-    pa.solvedAt = 12_000;
-    pa.lastAnswerAt = 30_000;
+    pa.draw.solved = true;
+    pa.draw.solvedAt = 12_000;
+    pa.lastActionAt = 30_000;
 
     const rows = dashboard(round);
     expect(rows[0]?.msToFinish).toBe(2_000); // dùng solvedAt
@@ -108,9 +108,9 @@ describe('dashboard', () => {
 
     pa.score = pb.score = 5; // cùng chuỗi dài nhất
     pa.correct = 9;
-    pa.lastAnswerAt = 50_000; // nhiều câu đúng nhưng "xong" muộn nhất
+    pa.lastActionAt = 50_000; // nhiều câu đúng nhưng "xong" muộn nhất
     pb.correct = 4;
-    pb.lastAnswerAt = 30_000; // ít câu đúng hơn, xong sớm hơn
+    pb.lastActionAt = 30_000; // ít câu đúng hơn, xong sớm hơn
 
     const rows = dashboard(round);
     // setup() tạo 3 người; C không được cấu hình nên đứng cuối. Điều cần khẳng
@@ -131,11 +131,11 @@ describe('dashboard', () => {
 
     pa.score = pb.score = 140;
     pa.correct = 99; // rác với game Vẽ — không được ảnh hưởng gì
-    pa.solved = true;
-    pa.solvedAt = 20_000;
+    pa.draw.solved = true;
+    pa.draw.solvedAt = 20_000;
     pb.correct = 0;
-    pb.solved = true;
-    pb.solvedAt = 14_000; // giải sớm hơn
+    pb.draw.solved = true;
+    pb.draw.solvedAt = 14_000; // giải sớm hơn
 
     const rows = dashboard(round);
     expect(rows.map((r) => r.name)).toEqual(['B', 'A']);

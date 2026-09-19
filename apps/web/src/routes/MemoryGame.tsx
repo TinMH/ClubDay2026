@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CircleCheck, CircleX, Eye, Hand, Trophy, TriangleAlert } from 'lucide-react';
+import { CircleCheck, CircleX, Eye, Hand } from 'lucide-react';
 import { MemoryPad } from '../components/MemoryPad';
 import { Spinner } from '../components/Chips';
+import { GameError, RoundOverCard } from '../components/GameStatus';
+import { classifyGameError } from '../lib/game-errors';
 import { Toast, ToastRegion, useToast } from '../components/Toast';
-import { ApiError } from '../lib/api';
 import { memoryApi } from '../lib/api-memory';
 import { MEMORY_LIT_MS, MEMORY_STEP_MS, type GameProps } from '../lib/types';
 
@@ -117,17 +118,15 @@ export function MemoryGame({ roundId, playerId, state }: GameProps) {
         nextTimer.current = window.setTimeout(() => show(res.level, res.sequence), RESULT_PAUSE_MS);
       }
     } catch (err) {
-      if (err instanceof ApiError) {
+      switch (classifyGameError(err)) {
         // Hết giờ hoặc lượt đã đóng: SSE sẽ chuyển sang bảng hạng.
-        if (err.code === 'TIME_UP' || err.code === 'NOT_PLAYING') {
+        case 'over':
           setRoundOver(true);
           return;
-        }
-        // Lệch cấp hoặc bị chặn vì quá nhanh: hỏi lại server rồi xem lại chuỗi.
-        if (err.code === 'BAD_LEVEL' || err.code === 'TOO_FAST') {
+        // Lệch với server (sai cấp, hoặc bị chặn vì quá nhanh): hỏi lại nó.
+        case 'retry':
           reload().catch(() => setError('Mất kết nối với máy chủ.'));
           return;
-        }
       }
       setError('Có lỗi khi gửi kết quả, thử lại.');
     }
@@ -146,26 +145,10 @@ export function MemoryGame({ roundId, playerId, state }: GameProps) {
 
   if (loading) return <Spinner label="Đang lấy chuỗi…" />;
 
-  if (error) {
-    return (
-      <p
-        role="alert"
-        className="card flex items-center justify-center gap-2 border-wrong/60 bg-wrong/10 p-4 text-wrong"
-      >
-        <TriangleAlert aria-hidden="true" className="h-5 w-5 shrink-0" />
-        {error}
-      </p>
-    );
-  }
+  if (error) return <GameError message={error} />;
 
   if (roundOver) {
-    return (
-      <div className="card p-8 text-center">
-        <Trophy aria-hidden="true" className="mx-auto h-10 w-10 text-accent" />
-        <p className="mt-3 font-display text-2xl font-extrabold">Hết giờ!</p>
-        <p className="mt-1 text-sm text-muted">Cấp cao nhất của bạn: {best}</p>
-      </div>
-    );
+    return <RoundOverCard title="Hết giờ!" detail={`Cấp cao nhất của bạn: ${best}`} />;
   }
 
   const watching = phase === 'watch';

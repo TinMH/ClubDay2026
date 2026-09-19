@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import { locatePlayer, statusFor } from './track.js';
 import { registerHealth } from '../lib/health.js';
 import { registerEndHook, registerStartHook } from '../store/lobby.js';
-import { findPlayer } from '../store/store.js';
 import { classify, loadModel, modelState } from '../services/classifier.js';
 import {
   SUBMIT_GRACE_MS,
@@ -55,26 +55,9 @@ const SubmitBody = z.object({
   strokes: Strokes.optional(),
 });
 
-const CODE_STATUS: Record<string, number> = {
-  NOT_PLAYING: 409,
-  TIME_UP: 409,
-  TOO_FAST: 429,
-  SEQUENCE: 409,
-  NO_TARGET: 500,
-};
-
 /** Kèm tên tiếng Việt để client hiện được "AI nghĩ: con mèo 62%". */
 function publicTop(top: { label: string; score: number }[]): unknown[] {
   return top.map((p) => ({ label: p.label, labelVi: labelVi(p.label), score: p.score }));
-}
-
-/** Tra người chơi và xác nhận họ thuộc ĐÚNG lượt này (không thì trả null). */
-function locate(roundId: string, playerId: string) {
-  const found = findPlayer(playerId);
-  if (!found) return null;
-  if (found.round.id.toUpperCase() !== roundId.toUpperCase()) return null;
-  if (found.round.game !== 'draw') return null;
-  return found;
 }
 
 /** Tổng số điểm vượt trần thì chặn — zod chỉ giới hạn được từng nét. */
@@ -88,7 +71,7 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
   // BTC bấm BẮT ĐẦU → chọn từ khoá. Cả 5 người trong lượt vẽ CÙNG một hình, nếu
   // mỗi người một hình thì không so điểm được nữa.
   registerStartHook('draw', (round) => {
-    round.target = pickTarget(round.id);
+    round.draw.target = pickTarget(round.id);
   });
 
   // Hết giờ → TỰ NỘP cho những ai chưa bấm nút.
@@ -117,11 +100,17 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
   // Nạp model ở NỀN ngay khi khởi động, KHÔNG chờ: server phải listen được ngay
   // lập tức, còn model cần ~700ms cộng warmup. Từ lúc bật server tới lúc người
   // chơi đầu tiên bấm BẮT ĐẦU luôn dài hơn thế rất nhiều.
-  void loadModel().catch((err: unknown) => {
-    app.log.error(
-      `Không nạp được model nhận diện: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  });
+  //
+  // Trừ lúc chạy test: `buildApp()` ở đó chỉ để gọi thử route, mà nạp model thì
+  // đụng mạng, tải hàng chục MB và làm bộ test phụ thuộc internet. Test nào cần
+  // chấm hình thì truyền classifier giả vào thẳng service (xem draw-session.test.ts).
+  if (process.env.NODE_ENV !== 'test') {
+    void loadModel().catch((err: unknown) => {
+      app.log.error(
+        `Không nạp được model nhận diện: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    });
+  }
 
   /**
    * Nhận một frame vẽ và trả về GỢI Ý.
@@ -136,7 +125,7 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
     const parsed = FrameBody.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'BAD_REQUEST' });
 
-    const located = locate(id, parsed.data.playerId);
+    const located = locatePlayer(id, parsed.data.playerId, 'draw');
     if (!located) return reply.code(404).send({ error: 'NOT_FOUND' });
 
     if (tooManyPoints(parsed.data.strokes)) {
@@ -163,10 +152,10 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
     }
 
     if (!outcome.ok) {
-      return reply.code(CODE_STATUS[outcome.code] ?? 400).send({
+      return reply.code(statusFor(outcome.code)).send({
         error: outcome.code,
         score: player.score,
-        committed: player.committed,
+        committed: player.draw.committed,
         serverNow: now,
       });
     }
@@ -197,7 +186,7 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
     const parsed = SubmitBody.safeParse(req.body);
     if (!parsed.success) return reply.code(400).send({ error: 'BAD_REQUEST' });
 
-    const located = locate(id, parsed.data.playerId);
+    const located = locatePlayer(id, parsed.data.playerId, 'draw');
     if (!located) return reply.code(404).send({ error: 'NOT_FOUND' });
 
     const { strokes } = parsed.data;
@@ -224,10 +213,10 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
     }
 
     if (!outcome.ok) {
-      return reply.code(CODE_STATUS[outcome.code] ?? 400).send({
+      return reply.code(statusFor(outcome.code)).send({
         error: outcome.code,
         score: player.score,
-        committed: player.committed,
+        committed: player.draw.committed,
         serverNow: now,
       });
     }

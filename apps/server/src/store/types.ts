@@ -1,31 +1,29 @@
 /**
- * HỢP ĐỒNG ĐÓNG BĂNG — Phase F sở hữu, hai track CHỈ ĐỌC.
+ * Kiểu trong RAM của server: một lượt và những người chơi trong đó.
  *
- * File này chứa đủ field cho CẢ HAI game. Nếu bạn thấy cần thêm field,
- * dừng lại và nhắn người kia: đó là dấu hiệu hợp đồng thiếu.
- * Chi tiết: .hermes/plans/2026-09-12_201457-clubday-split-2-tracks.md
+ * MỖI TRACK SỞ HỮU MỘT TÚI RIÊNG (`player.math`, `player.draw`, …) thay vì đổ
+ * hết field vào một `Player` phẳng. Bản phẳng cũ khiến hai chuyện xảy ra:
+ *   - đọc `Player` không biết field nào thuộc game nào, phải tra ngược ra
+ *     service mới hiểu `seq` hay `qIndex` là của ai;
+ *   - thêm game thứ tư thì nó DÙNG KÉ `level` và `lastReplayAt` của Nhớ nhanh,
+ *     vì thêm field thứ mười lăm vào một kiểu phẳng trông còn tệ hơn. Hai game
+ *     không liên quan chia chung một field là bẫy đặt sẵn cho người sửa sau.
  *
- * ĐÃ MỞ MỘT LẦN, theo đúng cách hợp đồng cho phép — CHỈ thêm field mới, không đổi
- * nghĩa field cũ, nên track còn lại không phải sửa gì:
- *   - `streak`                                     (TRACK A — điểm là chuỗi đúng dài nhất)
- *   - `committed`, `commitReason`, `committedAt`   (TRACK B — chấm bài lúc NỘP)
- *   - `level`, `levelSentAt`, `lastReplayAt`       (TRACK C — Nhớ nhanh)
- *   - `sequence` trên `Round`                      (TRACK C — chuỗi ô cần nhớ)
- *
- * TRACK D (Ô khác màu) KHÔNG thêm field nào: nó dùng lại `level` và `lastReplayAt`
- * đúng nghĩa cũ, còn bàn chơi thì suy ra được từ mã lượt + cấp nên không cần lưu.
+ * Bốn túi LUÔN có mặt (không optional): mỗi lượt chỉ chạy một game nên ba túi
+ * kia chỉ tốn vài chục byte cho mỗi người chơi, đổi lại không chỗ nào phải viết
+ * `?.` hay kiểm tra null cho một thứ chắc chắn tồn tại.
  */
 
 /**
- * Danh sách game — NGUỒN SỰ THẬT DUY NHẤT.
+ * Danh sách game, thời lượng, nhãn và mọi hằng số CHIA CHUNG với web nằm ở
+ * `@clubday/contract` — MỘT nguồn sự thật cho cả hai app, thay cho hai bản chép
+ * tay chỉ được canh bằng comment "phải khớp".
  *
- * Mọi nơi cần duyệt qua "tất cả các game" (route `/api/rounds/open`, zod enum,
- * lưới chọn game ở trang chủ) đều đọc mảng này. Thêm game mới là thêm đúng một
- * phần tử ở đây, không phải đi sửa năm chỗ rời rạc rồi quên mất một chỗ.
+ * Tái xuất ở đây để mọi `import … from './types.js'` sẵn có vẫn chạy.
  */
-export const GAME_KINDS = ['math', 'draw', 'memory', 'spot'] as const;
-export type GameKind = (typeof GAME_KINDS)[number];
-export type RoundStatus = 'lobby' | 'playing' | 'done';
+export * from '@clubday/contract';
+
+import type { GameKind, RoundStatus } from '@clubday/contract';
 
 export interface Question {
   prompt: string;
@@ -37,27 +35,8 @@ export interface Prediction {
   score: number;
 }
 
-export interface Player {
-  id: string;
-  name: string;
-  joinedAt: number;
-  /**
-   * Số mà BẢNG HẠNG xếp theo — mỗi game một công thức, và đây là chỗ duy nhất
-   * `dashboard.ts` đọc để so:
-   *   - Tính nhanh: CHUỖI ĐÚNG DÀI NHẤT (không phải tổng số câu đúng).
-   *   - Vẽ hình:  150 − số giây đã dùng.
-   *   - Nhớ nhanh: CẤP CAO NHẤT đã vượt (chuỗi dài nhất lặp đúng).
-   * Đổi công thức của một game là đổi luôn thứ tự bảng hạng của game đó.
-   */
-  score: number;
-  flagged: boolean;
-  /** Cả 2 game set = true khi người chơi xong lượt của mình. */
-  finished: boolean;
-  /** Dùng cho bảng hạng: đúng / sai. TRACK A ghi, track B để 0. */
-  correct: number;
-  wrong: number;
-
-  // ── TRACK A dùng (Tính nhanh) ──
+/** TRACK A — Tính nhanh. */
+export interface MathPlayerState {
   /**
    * Chuỗi đúng LIÊN TIẾP hiện tại. Trả lời sai là về 0 ngay.
    *
@@ -67,10 +46,10 @@ export interface Player {
   streak: number;
   /** Đang ở câu số mấy (0-based). */
   qIndex: number;
-  /** ⏱ Server ghi mỗi lần nhận đáp án — dùng chống spam. */
-  lastAnswerAt: number;
+}
 
-  // ── TRACK B dùng (Vẽ hình) ──
+/** TRACK B — Vẽ hình nhanh. */
+export interface DrawPlayerState {
   /** Số thứ tự frame gần nhất. */
   seq: number;
   /** ⏱ Server ghi mỗi lần nhận frame — dùng chống spam. */
@@ -92,12 +71,12 @@ export interface Player {
   commitReason: 'button' | 'timeout' | null;
   /** ⏱ Thời điểm SERVER chấm bài. */
   committedAt: number | null;
+}
 
-  // ── TRACK C & D dùng (Nhớ nhanh, Ô khác màu) ──
+/** TRACK C — Nhớ nhanh. */
+export interface MemoryPlayerState {
   /**
-   * Cấp ĐANG chơi (1-based).
-   *
-   * Nhớ nhanh: độ dài chuỗi phải lặp lại. Ô khác màu: độ khó của bàn chơi.
+   * Cấp ĐANG chơi (1-based) = độ dài chuỗi phải lặp lại.
    *
    * Giữ riêng khỏi `score` vì `score` là cấp CAO NHẤT đã vượt: lặp sai thì cấp
    * hiện tại về 1 nhưng kỷ lục vẫn còn — cùng triết lý với `streak` của Tính nhanh.
@@ -111,13 +90,56 @@ export interface Player {
    * Trả lời sớm hơn quãng đó nghĩa là không hề xem — xem services/memory-session.ts.
    */
   levelSentAt: number;
-  /** ⏱ Server ghi mỗi lần nhận một lượt lặp / một cú chạm — dùng chống spam. */
+  /** ⏱ Server ghi mỗi lần nhận một lượt lặp — dùng chống spam. */
   lastReplayAt: number;
+}
+
+/** TRACK D — Ô khác màu. */
+export interface SpotPlayerState {
+  /** Cấp ĐANG chơi (1-based) = độ khó của bàn: lưới dày thêm, màu sát nhau hơn. */
+  level: number;
+  /** ⏱ Server ghi mỗi lần nhận một cú chạm — dùng chống spam. */
+  lastPickAt: number;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  joinedAt: number;
+  /**
+   * Số mà BẢNG HẠNG xếp theo — mỗi game một công thức, và đây là chỗ duy nhất
+   * `dashboard.ts` đọc để so:
+   *   - Tính nhanh:  CHUỖI ĐÚNG DÀI NHẤT (không phải tổng số câu đúng).
+   *   - Vẽ hình:     150 − số giây đã dùng.
+   *   - Nhớ nhanh:   CẤP CAO NHẤT đã vượt (chuỗi dài nhất lặp đúng).
+   *   - Ô khác màu:  CẤP CAO NHẤT đã vượt.
+   * Đổi công thức của một game là đổi luôn thứ tự bảng hạng của game đó.
+   */
+  score: number;
+  flagged: boolean;
+  /** Mọi game set = true khi người chơi xong lượt của mình. */
+  finished: boolean;
+  /** Dùng cho bảng hạng: đúng / sai. Game Vẽ để 0. */
+  correct: number;
+  wrong: number;
+  /**
+   * ⏱ Lần cuối người này LÀM ĐƯỢC MỘT VIỆC được tính (trả lời, lặp chuỗi, chạm ô).
+   *
+   * Bảng hạng dùng nó làm mốc "xong lúc nào" khi bằng điểm. Tên cũ là
+   * `lastAnswerAt` — đúng với Tính nhanh, sai với ba game còn lại.
+   */
+  lastActionAt: number;
+
+  // Mỗi game một túi. Xem ghi chú đầu file về việc vì sao không để phẳng.
+  math: MathPlayerState;
+  draw: DrawPlayerState;
+  memory: MemoryPlayerState;
+  spot: SpotPlayerState;
 }
 
 export interface Round {
   id: string;
-  /** ⭐ Quyết định Play.tsx render MathGame hay DrawGame. */
+  /** ⭐ Quyết định Play.tsx render màn hình của game nào. */
   game: GameKind;
   status: RoundStatus;
   createdAt: number;
@@ -133,52 +155,23 @@ export interface Round {
    * 5/5 thì tụt xuống 5/3 và hai người bỗng thành thừa.
    */
   maxPlayers: number;
-  /** TRACK A: sinh sẵn khi bắt đầu lượt. */
-  questions: Question[] | null;
+  /** TRACK A: đề bài, sinh sẵn khi bắt đầu lượt. */
+  math: { questions: Question[] | null };
   /** TRACK B: từ khoá cần vẽ. */
-  target: { id: string; labelVi: string } | null;
+  draw: { target: { id: string; labelVi: string } | null };
   /**
    * TRACK C: chuỗi ô cần nhớ, sinh sẵn khi bắt đầu lượt.
    *
    * Cấp n = n phần tử ĐẦU của chuỗi này, nên lên cấp chỉ là nối thêm đúng một ô
-   * vào chuỗi cũ — giống trò Simon. Cả lượt dùng CHUNG một chuỗi để 5 người gặp
-   * đúng một đề bài.
+   * vào chuỗi cũ — giống trò Simon. Cả lượt dùng CHUNG một chuỗi để mọi người
+   * gặp đúng một đề bài.
    */
-  sequence: number[] | null;
+  memory: { sequence: number[] | null };
   /** Tăng mỗi lần lượt đổi → SSE phát khi version đổi. */
   version: number;
   /** false = lượt khôi phục từ snapshot sau khi server restart. */
   live?: boolean;
 }
-
-/**
- * Số người MẶC ĐỊNH mỗi lượt, dùng khi `.env` không nói gì khác.
- *
- * Con số thật của một lượt nằm ở `Round.maxPlayers` — BTC đặt riêng cho từng trò
- * qua biến môi trường (xem config.ts). Đừng dùng hằng số này để kiểm tra lượt đã
- * đầy chưa: lượt nào cũng mang theo giới hạn của chính nó.
- */
-export const MAX_PLAYERS = 5;
-
-/**
- * Trần cứng cho cấu hình.
- *
- * Trên 20 người một lượt thì phòng chờ tràn màn hình điện thoại, bảng hạng thành
- * một danh sách dài vô nghĩa, và với game Vẽ thì mỗi frame là một lần chạy model
- * — 20 người đã là chỗ máy BTC bắt đầu hụt hơi (xem scripts/load-test.mjs).
- */
-export const MAX_PLAYERS_CAP = 20;
-
-export const DURATION_MS: Record<GameKind, number> = {
-  math: 90_000,
-  draw: 15_000,
-  // Đủ để người giỏi lên tới cấp 8–10, mà vẫn ngắn hơn Tính nhanh để vòng quay
-  // 5 người ở booth không bị chậm lại.
-  memory: 60_000,
-  // Mỗi cấp chỉ mất 1–3 giây nên 45s đã đủ tới cấp 12–15. Ngắn có chủ đích: đây
-  // là trò quay vòng nhanh nhất, để hàng chờ ở booth không ứ lại.
-  spot: 45_000,
-};
 
 /** Giới hạn tần suất do SERVER đo (không tin client). */
 export const MIN_ANSWER_GAP_MS = 250;
@@ -192,30 +185,3 @@ export const MIN_REPLAY_GAP_MS = 250;
  * script đọc màu từ DOM — xem ghi chú ở services/spot-session.ts.
  */
 export const MIN_SPOT_GAP_MS = 150;
-
-// ── Nhớ nhanh: hằng số CHIA CHUNG server ↔ client ──
-//
-// Client phát lại chuỗi đúng theo `MEMORY_STEP_MS`, còn server dựa vào chính con
-// số đó để biết một lượt lặp có kịp xem hay không. Hai bên lệch nhau là chốt
-// chống bot bắt nhầm người thật — bản sao ở apps/web/src/lib/types.ts phải khớp.
-
-/** Số ô trên bàn chơi. 4 ô vừa một lưới 2×2 to bằng ngón tay trên điện thoại. */
-export const MEMORY_PAD_COUNT = 4;
-/** Một ô sáng 400ms + tối 200ms. Nhanh hơn thì mắt không kịp tách hai ô liền nhau. */
-export const MEMORY_STEP_MS = 600;
-
-// ── Ô khác màu: hằng số CHIA CHUNG server ↔ client ──
-//
-// Bản sao ở apps/web/src/lib/types.ts phải khớp.
-
-/** Cạnh lưới nhỏ nhất (2×2) và lớn nhất (6×6 = 36 ô — nhỏ hơn nữa thì ngón tay không trúng). */
-export const SPOT_MIN_SIZE = 2;
-export const SPOT_MAX_SIZE = 6;
-
-/** Tên hiển thị của từng game — dùng chung ở lobby và admin. */
-export const GAME_LABEL: Record<GameKind, string> = {
-  math: 'Tính nhanh',
-  draw: 'Vẽ hình nhanh',
-  memory: 'Nhớ nhanh',
-  spot: 'Ô khác màu',
-};

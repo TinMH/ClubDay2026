@@ -13,6 +13,37 @@ interface SerializedRound extends Omit<Round, 'players'> {
   players: Player[];
 }
 
+/**
+ * Điền mặc định cho những túi mà file snapshot không có.
+ *
+ * Snapshot là JSON thô đổ thẳng vào kiểu `Player`; thiếu một túi mà cứ nhận thì
+ * kiểu đó thành lời nói dối, và chỗ đọc nó sau này nổ vì `undefined`.
+ *
+ * KHÔNG dịch ngược hình dạng phẳng đời trước (`p.streak`, `p.solved`, …). Lượt
+ * khôi phục luôn bị đánh dấu `done` + `live: false` — nó chỉ để xem lại điểm, mà
+ * điểm thì nằm ở `score` / `correct` / `wrong` ở cấp ngoài cùng và không đổi chỗ.
+ * Viết cả một lớp dịch cho một lần deploy duy nhất là nuôi code chết.
+ */
+function restorePlayer(raw: Player): Player {
+  return {
+    ...raw,
+    lastActionAt: raw.lastActionAt ?? 0,
+    math: raw.math ?? { streak: 0, qIndex: 0 },
+    draw: raw.draw ?? {
+      seq: 0,
+      lastFrameAt: 0,
+      solved: false,
+      solvedAt: null,
+      lastGuess: null,
+      committed: false,
+      commitReason: null,
+      committedAt: null,
+    },
+    memory: raw.memory ?? { level: 1, levelSentAt: 0, lastReplayAt: 0 },
+    spot: raw.spot ?? { level: 1, lastPickAt: 0 },
+  };
+}
+
 export function saveSnapshot(file: string): number {
   const rounds: SerializedRound[] = allRounds().map((r) => ({
     ...r,
@@ -30,20 +61,7 @@ export function loadSnapshot(file: string, now = Date.now()): number {
     let count = 0;
     for (const r of parsed.rounds ?? []) {
       const players = new Map<string, Player>();
-      for (const p of r.players) {
-        // Field thêm sau thì snapshot cũ không có. Điền mặc định NGAY TẠI ĐÂY: chỗ
-        // này spread JSON thẳng vào kiểu `Player`, không điền thì kiểu đó thành lời
-        // nói dối và người đọc sau phải tự đoán `undefined` nghĩa là gì.
-        players.set(p.id, {
-          ...p,
-          committed: p.committed ?? false,
-          commitReason: p.commitReason ?? null,
-          committedAt: p.committedAt ?? null,
-          level: p.level ?? 1,
-          levelSentAt: p.levelSentAt ?? 0,
-          lastReplayAt: p.lastReplayAt ?? 0,
-        });
-      }
+      for (const p of r.players) players.set(p.id, restorePlayer(p));
       // Đồng hồ của lượt cũ đã trôi qua → không thể tiếp tục, chỉ giữ để xem kết quả.
       restoreRound({
         ...r,
@@ -51,7 +69,9 @@ export function loadSnapshot(file: string, now = Date.now()): number {
         // Snapshot cũ không có field này — lượt khôi phục chỉ để xem lại kết quả
         // nên con số chỉ dùng cho hiển thị.
         maxPlayers: r.maxPlayers ?? MAX_PLAYERS,
-        sequence: r.sequence ?? null,
+        math: r.math ?? { questions: null },
+        draw: r.draw ?? { target: null },
+        memory: r.memory ?? { sequence: null },
         status: 'done',
         endsAt: r.endsAt ?? now,
         live: false,

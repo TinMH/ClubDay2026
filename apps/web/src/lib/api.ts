@@ -1,59 +1,13 @@
+import { getJson as get, postJson as json, request } from './http';
 import type { DashboardRow, GameKind, RoundState, RoundSummary } from './types';
 
-// ── bù lệch đồng hồ ──
-// Máy người chơi có thể lệch giờ so với server. Mọi response đều mang `serverNow`,
-// nên ta tính offset một lần rồi quy đổi. Nhờ vậy đồng hồ đếm ngược luôn khớp server.
-let clockOffset = 0;
-
-export function serverNow(): number {
-  return Date.now() + clockOffset;
-}
-
-export function syncClock(serverTime: number): void {
-  clockOffset = serverTime - Date.now();
-}
-
-export class ApiError extends Error {
-  constructor(
-    readonly code: string,
-    readonly status: number,
-  ) {
-    super(code);
-    this.name = 'ApiError';
-  }
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init);
-  const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : null;
-
-  if (!res.ok) {
-    const code =
-      data && typeof data === 'object' && 'error' in data
-        ? String((data as { error: unknown }).error)
-        : 'HTTP_ERROR';
-    throw new ApiError(code, res.status);
-  }
-
-  // Mọi payload từ server đều có serverNow → đồng bộ lại đồng hồ.
-  if (data && typeof data === 'object' && 'serverNow' in data) {
-    syncClock(Number((data as { serverNow: unknown }).serverNow));
-  }
-  return data as T;
-}
-
-const json = (body: unknown, token?: string): RequestInit => ({
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    ...(token ? { 'x-admin-token': token } : {}),
-  },
-  body: JSON.stringify(body),
-});
-
-const get = <T>(path: string, token?: string): Promise<T> =>
-  request<T>(path, token ? { headers: { 'x-admin-token': token } } : undefined);
+/**
+ * Phần gọi HTTP nằm ở `lib/http.ts` và dùng chung cho mọi file api-*.
+ *
+ * Tái xuất ở đây vì màn hình nào cũng đang `import { ApiError } from '../lib/api'`
+ * — đổi hết đường import chỉ để dịch chỗ một class là churn không đổi lấy gì.
+ */
+export { ApiError, serverNow, syncClock } from './http';
 
 export interface ClientConfig {
   signupFormUrl: string;

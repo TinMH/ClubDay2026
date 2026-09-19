@@ -1,0 +1,31 @@
+name: CI
+
+# Chạy trên mọi push và mọi PR vào main. Mục đích hẹp và rõ: không để một thay
+# đổi làm hỏng test hoặc build mà không ai biết cho tới ngày sự kiện.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Khớp "engines" ở package.json và Dockerfile (node:22-bookworm-slim).
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # KHÔNG tải model nhận diện ở CI: nó nặng hàng chục MB và cần mạng tới
+      # HuggingFace. Test chấm hình dùng classifier giả (xem draw-session.test.ts),
+      # còn `buildApp()` bỏ qua bước nạp model khi NODE_ENV=test (routes/draw.ts).
+      - run: npm test
+
+      # Build luôn: lỗi kiểu chỉ lộ ra ở `tsc -b` của web sẽ bị bắt tại đây thay
+      # vì lúc deploy.
+      - run: npm run build

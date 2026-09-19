@@ -18,8 +18,8 @@ import {
 // ─────────────── hook khi bắt đầu lượt ───────────────
 //
 // Mỗi track tự đăng ký phần chuẩn bị của mình, nên KHÔNG track nào phải sửa file này:
-//   TRACK A:  registerStartHook('math', (round, now) => { round.questions = generateQuestions(...) })
-//   TRACK B:  registerStartHook('draw', (round) => { round.target = pickTarget() })
+//   TRACK A:  registerStartHook('math', (round, now) => { round.math.questions = generateQuestions(...) })
+//   TRACK B:  registerStartHook('draw', (round) => { round.draw.target = pickTarget() })
 type StartHook = (round: Round, now: number) => void;
 const startHooks = new Map<GameKind, StartHook>();
 

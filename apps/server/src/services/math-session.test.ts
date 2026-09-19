@@ -10,7 +10,7 @@ const DURATION = 90_000;
 function setup(questionCount = 10): { round: Round; player: Player } {
   const round = createRound('math', T0);
   const player = addPlayer(round, 'An', T0);
-  round.questions = generateQuestions(42, questionCount);
+  round.math.questions = generateQuestions(42, questionCount);
   round.startedAt = T0;
   round.endsAt = T0 + DURATION;
   round.status = 'playing';
@@ -18,7 +18,7 @@ function setup(questionCount = 10): { round: Round; player: Player } {
 }
 
 /** Đáp án đúng của câu thứ i — theo server, không theo client. */
-const truth = (round: Round, i: number): number => round.questions?.[i]?.answer ?? Number.NaN;
+const truth = (round: Round, i: number): number => round.math.questions?.[i]?.answer ?? Number.NaN;
 
 describe('math-session — chấm điểm', () => {
   beforeEach(() => resetAll());
@@ -48,9 +48,9 @@ describe('math-session — chấm điểm', () => {
     expect(res.ok).toBe(true);
     if (res.ok) {
       expect(res.index).toBe(1);
-      expect(res.question?.prompt).toBe(round.questions?.[1]?.prompt);
+      expect(res.question?.prompt).toBe(round.math.questions?.[1]?.prompt);
     }
-    expect(player.qIndex).toBe(1);
+    expect(player.math.qIndex).toBe(1);
   });
 
   it('hết đề thì đánh dấu finished và không còn câu nào', () => {
@@ -114,7 +114,7 @@ describe('math-session — CHỐNG GIAN LẬN', () => {
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('BAD_INDEX');
     expect(player.score).toBe(0);
-    expect(player.qIndex).toBe(0);
+    expect(player.math.qIndex).toBe(0);
   });
 
   it('KHÔNG cho trả lời lại câu cũ', () => {
@@ -162,7 +162,7 @@ describe('math-session — CHỐNG GIAN LẬN', () => {
 
   it('lượt chưa có đề thì từ chối, không crash', () => {
     const { round, player } = setup();
-    round.questions = null;
+    round.math.questions = null;
     const res = submitAnswer(round, player, 0, 5, T0 + 1_000);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('NOT_PLAYING');
@@ -174,9 +174,9 @@ describe('math-session — currentQuestion', () => {
 
   it('trả về câu hỏi đang mở của người chơi', () => {
     const { round, player } = setup();
-    expect(currentQuestion(round, player)?.prompt).toBe(round.questions?.[0]?.prompt);
+    expect(currentQuestion(round, player)?.prompt).toBe(round.math.questions?.[0]?.prompt);
     submitAnswer(round, player, 0, truth(round, 0), T0 + 1_000);
-    expect(currentQuestion(round, player)?.prompt).toBe(round.questions?.[1]?.prompt);
+    expect(currentQuestion(round, player)?.prompt).toBe(round.math.questions?.[1]?.prompt);
   });
 
   it('hết đề thì trả null', () => {
@@ -194,7 +194,7 @@ describe('math-session — ĐIỂM LÀ CHUỖI DÀI NHẤT, không phải tổng
    * nguyên hợp lệ, chỉ là sai.
    */
   function answer(round: Round, player: Player, right: boolean, at: number): void {
-    const idx = player.qIndex;
+    const idx = player.math.qIndex;
     const value = right ? truth(round, idx) : truth(round, idx) + 1_000;
     const res = submitAnswer(round, player, idx, value, at);
     if (!res.ok) throw new Error(`câu ${idx} bị từ chối: ${res.code}`);
@@ -207,7 +207,7 @@ describe('math-session — ĐIỂM LÀ CHUỖI DÀI NHẤT, không phải tổng
       answer(round, player, true, t);
       t += 300;
     }
-    expect(player.streak).toBe(3);
+    expect(player.math.streak).toBe(3);
     expect(player.score).toBe(3);
   });
 
@@ -232,10 +232,10 @@ describe('math-session — ĐIỂM LÀ CHUỖI DÀI NHẤT, không phải tổng
     t += 300;
     answer(round, player, true, t);
     t += 300;
-    expect(player.streak).toBe(2);
+    expect(player.math.streak).toBe(2);
 
     answer(round, player, false, t);
-    expect(player.streak).toBe(0);
+    expect(player.math.streak).toBe(0);
   });
 
   it('sai KHÔNG lấy đi chuỗi dài nhất đã lập', () => {
@@ -245,7 +245,7 @@ describe('math-session — ĐIỂM LÀ CHUỖI DÀI NHẤT, không phải tổng
       answer(round, player, right, t);
       t += 300;
     }
-    expect(player.streak).toBe(0);
+    expect(player.math.streak).toBe(0);
     expect(player.score).toBe(3); // ⬅ kỷ lục cũ vẫn còn
   });
 
@@ -257,7 +257,7 @@ describe('math-session — ĐIỂM LÀ CHUỖI DÀI NHẤT, không phải tổng
       answer(round, player, right, t);
       t += 300;
     }
-    expect(player.streak).toBe(2);
+    expect(player.math.streak).toBe(2);
     expect(player.score).toBe(3);
   });
 
@@ -269,7 +269,7 @@ describe('math-session — ĐIỂM LÀ CHUỖI DÀI NHẤT, không phải tổng
       t += 300;
     }
     expect(player.score).toBe(0);
-    expect(player.streak).toBe(0);
+    expect(player.math.streak).toBe(0);
   });
 
   it('hết giờ giữa chuỗi thì kỷ lục đã lập vẫn được tính', () => {
@@ -282,7 +282,7 @@ describe('math-session — ĐIỂM LÀ CHUỖI DÀI NHẤT, không phải tổng
     expect(player.score).toBe(4);
 
     // Câu tiếp theo rơi vào sau mốc hết giờ → bị chặn, điểm không đổi.
-    const late = submitAnswer(round, player, player.qIndex, truth(round, player.qIndex), T0 + DURATION + 1);
+    const late = submitAnswer(round, player, player.math.qIndex, truth(round, player.math.qIndex), T0 + DURATION + 1);
     expect(late.ok).toBe(false);
     expect(player.score).toBe(4);
   });

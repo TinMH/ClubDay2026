@@ -59,14 +59,14 @@ describe('spot-session — chấm điểm', () => {
       expect(submitPick(round, player, level, oddOf(round, player), now).ok).toBe(true);
     }
     expect(player.score).toBe(3);
-    expect(player.level).toBe(4);
+    expect(player.spot.level).toBe(4);
 
     now += STEP;
     const res = submitPick(round, player, 4, wrongOf(round, player), now);
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.correct).toBe(false);
 
-    expect(player.level).toBe(1); // làm lại từ đầu
+    expect(player.spot.level).toBe(1); // làm lại từ đầu
     expect(player.score).toBe(3); // kỷ lục không bị lấy đi
     expect(player.wrong).toBe(1);
   });
@@ -141,7 +141,7 @@ describe('spot-session — chấm điểm', () => {
     now += STEP;
     expect(submitPick(round, player, 2, wrongOf(round, player), now).ok).toBe(true);
 
-    expect(player.level).toBe(1);
+    expect(player.spot.level).toBe(1);
     expect(sig(round, player)).not.toBe(first);
   });
 
@@ -166,7 +166,7 @@ describe('spot-session — chấm điểm', () => {
     // người trùng vị trí là chuyện thường, test sẽ chập chờn chứ không sai thật.
     const { round, player } = setup();
     const players = [player, ...['Bình', 'Chi', 'Dũng', 'Em'].map((n) => addPlayer(round, n, T0))];
-    for (const p of players) p.level = 5;
+    for (const p of players) p.spot.level = 5;
 
     const boards = players.map((p) => currentBoard(round, p));
     // Khó thì phải y như nhau — chỉ chỗ đặt mới được khác.
@@ -208,6 +208,6 @@ describe('spot-session — chấm điểm', () => {
   it('ghi mốc thời gian cho bảng hạng', () => {
     const { round, player } = setup();
     submitPick(round, player, 1, oddOf(round, player), T0 + STEP);
-    expect(player.lastAnswerAt).toBe(T0 + STEP);
+    expect(player.lastActionAt).toBe(T0 + STEP);
   });
 });
