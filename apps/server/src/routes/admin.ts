@@ -16,6 +16,11 @@ import { requireAdmin } from './admin-guard.js';
 const CreateBody = z.object({ game: z.enum(GAME_KINDS) });
 /** `game: null` = tạm đóng, không ai vào lượt mới được. */
 const ActiveGameBody = z.object({ game: z.enum(GAME_KINDS).nullable() });
+/**
+ * Xoá sạch là thao tác KHÔNG hoàn tác được: mọi lượt và mọi điểm biến mất.
+ * Bắt gõ đúng một chuỗi để nó không thể xảy ra vì một cú bấm nhầm.
+ */
+const ResetBody = z.object({ confirm: z.literal('XOA-HET') });
 const MaxPlayersBody = z.object({
   game: z.enum(GAME_KINDS),
   value: z.number().int().min(1).max(MAX_PLAYERS_CAP),
@@ -83,8 +88,15 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     return { ok: true, state: toRoundState(result.round) };
   });
 
-  /** Xoá sạch mọi lượt — dùng khi thử nghiệm, KHÔNG dùng giữa sự kiện. */
-  app.post('/api/admin/reset', async () => {
+  /**
+   * Xoá sạch mọi lượt — dùng khi thử nghiệm, KHÔNG dùng giữa sự kiện.
+   *
+   * Đòi `{ "confirm": "XOA-HET" }`: chỉ có token thôi thì một request gõ nhầm
+   * giữa sự kiện là mất hết kết quả của cả buổi, và không có đường lấy lại.
+   */
+  app.post('/api/admin/reset', async (req, reply) => {
+    const parsed = ResetBody.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'CONFIRM_REQUIRED' });
     resetAll();
     return { ok: true };
   });
