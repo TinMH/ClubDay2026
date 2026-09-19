@@ -135,7 +135,7 @@ export function Admin() {
         <div className="flex items-center gap-3">
           <DscLogo size="sm" className="shrink-0" />
           <div>
-            <h1 className="font-display text-2xl font-extrabold leading-none">Quản trị</h1>
+            <h1 className="font-display text-2xl font-black uppercase tracking-tight leading-none">Quản trị</h1>
             <p className="mt-1 text-sm text-muted">Tạo lượt, bắt đầu, in mã QR</p>
           </div>
         </div>
@@ -197,7 +197,7 @@ export function Admin() {
 
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-display text-lg font-bold">
+          <h2 className="font-display text-lg font-black uppercase tracking-tight">
             Lượt gần đây
             {rounds.length > 0 && (
               <span className="ml-2 font-sans text-sm font-normal text-muted">

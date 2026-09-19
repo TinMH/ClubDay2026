@@ -35,7 +35,7 @@ export function ActiveGamePanel({ activeGame, disabled, onClose }: ActiveGamePan
       <div className="min-w-0">
         <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted">Trò đang mở</p>
         <p
-          className={`font-display text-2xl font-extrabold leading-tight ${
+          className={`font-display text-2xl font-black uppercase tracking-tight leading-tight ${
             activeGame ? '' : 'text-muted'
           }`}
         >

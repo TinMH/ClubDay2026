@@ -95,9 +95,9 @@ export function Play() {
           <GameChip game={state.game} />
           {!connected && <ConnectionPill connected={false} offlineLabel="Mất kết nối…" />}
         </div>
-        <div className="shrink-0 rounded-2xl border-2 border-accent/50 bg-accent/10 px-3 py-1.5 text-right">
-          <span className="block text-xs font-medium text-muted">{SCORE_LABEL[state.game]}</span>
-          <span className="block font-display text-2xl font-extrabold leading-none tabular-nums text-accent">
+        <div className="shrink-0 border-[3px] border-line bg-accent px-3 py-1.5 text-right text-ink shadow-[4px_4px_0_var(--color-edge)]">
+          <span className="block text-xs font-bold uppercase">{SCORE_LABEL[state.game]}</span>
+          <span className="block font-display text-2xl font-black uppercase tracking-tight leading-none tabular-nums text-accent">
             {me?.score ?? 0}
           </span>
         </div>
@@ -106,7 +106,7 @@ export function Play() {
       <Countdown endsAt={state.endsAt} total={DURATION_MS[state.game]} />
 
       {!playerId ? (
-        <div role="alert" className="card border-warn/50 bg-warn/10 p-4 text-sm">
+        <div role="alert" className="card border-warn bg-warn/10 p-4 text-sm">
           <p className="flex gap-2">
             <TriangleAlert aria-hidden="true" className="h-5 w-5 shrink-0 text-warn" />
             Bạn chưa tham gia lượt này (hoặc đã mở nhầm link). Hãy vào từ trang chủ để tính điểm.

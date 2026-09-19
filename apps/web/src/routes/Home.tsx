@@ -137,7 +137,7 @@ export function Home() {
     <Shell>
       <header className="animate-rise pt-4 text-center">
         <DscLogo />
-        <h1 className="mt-6 font-display text-6xl font-extrabold leading-none tracking-tight">
+        <h1 className="mt-6 font-display text-6xl font-black leading-none tracking-tight">
           Club<span className="text-accent">Day</span>
         </h1>
         <p className="mt-3 flex items-center justify-center gap-1.5 text-muted">
@@ -182,13 +182,13 @@ export function Home() {
                   </span>
                   {open && !roundId && (
                     <span
-                      className={`rounded-full border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${chip}`}
+                      className={`border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${chip}`}
                     >
                       Đang mở
                     </span>
                   )}
                 </div>
-                <p className="mt-3 font-display text-lg font-bold leading-tight">{GAME_LABEL[g]}</p>
+                <p className="mt-3 font-display text-lg font-black uppercase tracking-tight leading-tight">{GAME_LABEL[g]}</p>
                 <p className="mt-1 text-xs text-muted">
                   {DURATION_MS[g] / 1000} giây · {blurb}
                 </p>
@@ -213,7 +213,7 @@ export function Home() {
         style={{ animationDelay: '220ms' }}
       >
         {roundId && (
-          <p className="rounded-xl border-2 border-secondary/40 bg-secondary/10 px-3 py-2 text-center text-sm">
+          <p className="rounded-xl border-2 border-secondary bg-secondary/10 px-3 py-2 text-center text-sm">
             Bạn đang vào lượt{' '}
             <span className="font-mono font-bold tracking-wider text-secondary">{roundId}</span>
           </p>

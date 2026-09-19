@@ -8,9 +8,9 @@ import { Avatar } from './Avatar';
  * grid — thứ tự trong DOM vẫn là 1-2-3 cho trình đọc màn hình.
  */
 const PODIUM = [
-  { place: 'col-start-2', block: 'h-36 border-accent/70 bg-accent/15', badge: 'bg-accent text-ink' },
-  { place: 'col-start-1', block: 'h-28 border-silver/50 bg-silver/10', badge: 'bg-silver text-ink' },
-  { place: 'col-start-3', block: 'h-24 border-bronze/50 bg-bronze/10', badge: 'bg-bronze text-ink' },
+  { place: 'col-start-2', block: 'h-36 border-line bg-accent text-ink', badge: 'bg-ink text-accent' },
+  { place: 'col-start-1', block: 'h-28 border-silver bg-surface', badge: 'bg-silver text-ink' },
+  { place: 'col-start-3', block: 'h-24 border-bronze bg-surface', badge: 'bg-bronze text-ink' },
 ] as const;
 
 /**
@@ -67,11 +67,11 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
                 className={`mt-2 flex w-full flex-col items-center rounded-t-2xl border-2 border-b-0 pt-2 ${p.block}`}
               >
                 <span
-                  className={`grid h-7 w-7 place-items-center rounded-full font-display text-sm font-extrabold ${p.badge}`}
+                  className={`grid h-7 w-7 place-items-center font-display text-sm font-black ${p.badge}`}
                 >
                   {r.rank}
                 </span>
-                <span className="mt-1 font-display text-3xl font-extrabold leading-none tabular-nums">
+                <span className="mt-1 font-display text-3xl font-black leading-none tabular-nums">
                   {r.score}
                 </span>
                 {/* Con số này mỗi game một nghĩa — không ghi rõ thì Tính nhanh trông
@@ -93,7 +93,7 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
                 className="card flex animate-rise items-center gap-3 p-3"
                 style={{ animationDelay: `${270 + i * 70}ms` }}
               >
-                <span className="w-6 shrink-0 text-center font-display text-lg font-extrabold tabular-nums text-muted">
+                <span className="w-6 shrink-0 text-center font-display text-lg font-black uppercase tabular-nums text-muted">
                   {r.rank}
                 </span>
                 <Avatar name={r.name} seed={r.playerId} />
@@ -104,7 +104,7 @@ export function RankTable({ rows, game }: { rows: DashboardRow[]; game: GameKind
                   </span>
                 </span>
                 <span className="shrink-0 text-right">
-                  <span className="block font-display text-2xl font-extrabold leading-none tabular-nums">
+                  <span className="block font-display text-2xl font-black uppercase tracking-tight leading-none tabular-nums">
                     {r.score}
                   </span>
                   <span className="block text-xs text-muted">{SCORE_LABEL[game]}</span>

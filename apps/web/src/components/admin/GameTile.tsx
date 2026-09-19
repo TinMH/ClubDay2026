@@ -40,12 +40,12 @@ export function GameTile({
           <Icon aria-hidden="true" className="h-6 w-6" />
         </span>
         <span className="min-w-0">
-          <span className="flex flex-wrap items-center gap-1 font-display text-lg font-bold">
+          <span className="flex flex-wrap items-center gap-1 font-display text-lg font-black uppercase tracking-tight">
             <Plus aria-hidden="true" className="h-5 w-5" />
             Lượt {GAME_LABEL[game]}
             {active && (
               <span
-                className={`rounded-full border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${chip}`}
+                className={`border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${chip}`}
               >
                 Đang mở
               </span>
@@ -77,7 +77,7 @@ export function GameTile({
           <span
             aria-labelledby={`cap-${game}`}
             role="status"
-            className="w-8 text-center font-display text-xl font-extrabold tabular-nums"
+            className="w-8 text-center font-display text-xl font-black tabular-nums"
           >
             {maxPlayers}
           </span>

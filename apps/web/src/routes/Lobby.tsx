@@ -72,7 +72,7 @@ export function Lobby() {
             <span
               key={i}
               aria-hidden="true"
-              className="grid h-14 w-11 place-items-center rounded-xl border-2 border-line bg-surface font-mono text-3xl font-bold shadow-[0_4px_0_var(--color-edge)]"
+              className="grid h-14 w-11 place-items-center rounded-xl border-[3px] border-line bg-surface font-mono text-3xl font-bold shadow-[4px_4px_0_var(--color-edge)]"
             >
               {ch}
             </span>
@@ -82,11 +82,11 @@ export function Lobby() {
 
       <section className="card p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          <h2 className="flex items-center gap-2 font-display text-lg font-black uppercase tracking-tight">
             <Users aria-hidden="true" className="h-5 w-5 text-secondary" />
             Người chơi
           </h2>
-          <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-sm font-bold tabular-nums">
+          <span className="bg-surface-2 px-2.5 py-0.5 text-sm font-bold tabular-nums">
             {players.length}/{maxPlayers}
           </span>
         </div>
@@ -97,7 +97,7 @@ export function Lobby() {
                 <Avatar name={p.name} seed={p.id} />
                 <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
                 {p.id === session?.playerId && (
-                  <span className="shrink-0 rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-white">
+                  <span className="shrink-0 bg-primary px-2.5 py-0.5 text-xs font-bold text-white">
                     Bạn
                   </span>
                 )}

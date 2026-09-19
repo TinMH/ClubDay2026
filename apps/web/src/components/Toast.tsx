@@ -48,8 +48,8 @@ export function ToastRegion({ children }: { children: ReactNode }) {
 }
 
 const TONE = {
-  correct: 'bg-correct text-ink shadow-[0_4px_0_var(--color-correct-deep)]',
-  wrong: 'bg-wrong text-ink shadow-[0_4px_0_#9f1239]',
+  correct: 'bg-correct text-ink shadow-[4px_4px_0_var(--color-edge)]',
+  wrong: 'bg-wrong text-ink shadow-[4px_4px_0_var(--color-edge)]',
 } as const;
 
 export function Toast({
@@ -70,7 +70,7 @@ export function Toast({
     >
       <span aria-hidden="true">{icon}</span>
       <span className="leading-tight">
-        <span className="block font-display text-lg font-extrabold">{title}</span>
+        <span className="block font-display text-lg font-black uppercase">{title}</span>
         {detail && <span className="block text-xs font-semibold opacity-80">{detail}</span>}
       </span>
     </div>

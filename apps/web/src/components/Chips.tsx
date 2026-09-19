@@ -7,7 +7,7 @@ export function GameChip({ game }: { game: GameKind }) {
   const { icon: Icon, chip } = GAME_THEME[game];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border-2 px-3 py-1 text-sm font-bold ${chip}`}
+      className={`inline-flex items-center gap-1.5 border-2 px-3 py-1 text-sm font-bold ${chip}`}
     >
       <Icon aria-hidden="true" className="h-4 w-4" />
       {GAME_LABEL[game]}
@@ -26,8 +26,8 @@ export function ConnectionPill({
   return (
     <span
       role="status"
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
-        connected ? 'bg-correct/15 text-correct' : 'bg-warn/15 text-warn'
+      className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold ${
+        connected ? 'border-2 border-correct text-correct' : 'border-2 border-warn text-warn'
       }`}
     >
       {connected ? (
@@ -51,11 +51,11 @@ export function ConnectionPill({
 const STATUS: Record<RoundStatus, { label: string; cls: string; icon: LucideIcon }> = {
   lobby: {
     label: 'Đang chờ',
-    cls: 'border-secondary bg-secondary/25 text-secondary',
+    cls: 'border-line bg-secondary text-ink',
     icon: Hourglass,
   },
-  playing: { label: 'Đang chơi', cls: 'border-accent bg-accent text-ink', icon: Play },
-  done: { label: 'Đã xong', cls: 'border-line bg-surface-2 text-muted', icon: Check },
+  playing: { label: 'Đang chơi', cls: 'border-line bg-accent text-ink', icon: Play },
+  done: { label: 'Đã xong', cls: 'border-muted bg-surface-2 text-muted', icon: Check },
 };
 
 /** Trạng thái lượt, dịch sang tiếng Việt. */
@@ -63,7 +63,7 @@ export function StatusBadge({ status }: { status: RoundStatus }) {
   const { label, cls, icon: Icon } = STATUS[status];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border-2 px-2.5 py-0.5 text-xs font-bold ${cls}`}
+      className={`inline-flex items-center gap-1 border-2 px-2.5 py-0.5 text-xs font-bold ${cls}`}
     >
       <Icon
         aria-hidden="true"

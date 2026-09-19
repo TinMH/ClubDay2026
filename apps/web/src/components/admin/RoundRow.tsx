@@ -12,8 +12,8 @@ import { GAME_LABEL, type RoundStatus, type RoundSummary } from '../../lib/types
  * chơi thì viền vàng, xong rồi thì chìm xuống nhường chỗ.
  */
 const ROW: Record<RoundStatus, string> = {
-  lobby: 'border-secondary/70',
-  playing: 'border-accent/70',
+  lobby: 'border-secondary',
+  playing: 'border-accent',
   done: 'opacity-70',
 };
 

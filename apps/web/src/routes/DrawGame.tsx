@@ -210,12 +210,13 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
 
   return (
     <div className="space-y-4">
-      <div className="animate-pop rounded-3xl border-2 border-draw/50 bg-draw/10 px-4 py-4 text-center shadow-[0_5px_0_var(--color-edge)]">
-        <p className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-[0.2em] text-draw">
+      {/* Khối màu ĐẶC, chữ đen: từ khoá là thứ duy nhất người chơi cần đọc trong 15 giây. */}
+      <div className="animate-pop border-[3px] border-line bg-draw px-4 py-4 text-center text-ink shadow-[6px_6px_0_var(--color-edge)]">
+        <p className="flex items-center justify-center gap-1.5 text-xs font-black uppercase tracking-[0.2em]">
           <Pencil aria-hidden="true" className="h-4 w-4" />
           Hãy vẽ
         </p>
-        <p className="mt-1 font-display text-4xl font-extrabold leading-tight sm:text-5xl">
+        <p className="mt-1 font-display text-4xl font-black uppercase leading-tight tracking-tight sm:text-5xl">
           {target.labelVi}
         </p>
       </div>
@@ -227,18 +228,17 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
           <div className="flex items-stretch gap-2">
             <p
               className={`flex min-h-12 min-w-0 flex-1 items-center gap-2 rounded-2xl border-2 px-3 py-2 text-sm transition-colors ${
-                hint ? 'border-correct/60 bg-correct/10' : 'border-line bg-surface'
+                hint ? 'border-correct bg-correct text-ink' : 'border-line bg-surface'
               }`}
             >
               <Sparkles
                 aria-hidden="true"
-                className={`h-5 w-5 shrink-0 ${hint ? 'text-correct' : 'text-secondary'}`}
+                className={`h-5 w-5 shrink-0 ${hint ? 'text-ink' : 'text-secondary'}`}
               />
-              <span className="min-w-0 text-muted">
+              <span className={`min-w-0 ${hint ? 'text-ink' : 'text-muted'}`}>
                 {hint ? (
                   <>
-                    AI đã nhận ra{' '}
-                    <span className="font-semibold text-correct">{target.labelVi}</span> — nộp
+                    AI đã nhận ra <span className="font-black">{target.labelVi}</span> — nộp
                     được rồi!
                   </>
                 ) : guess ? (
@@ -265,7 +265,7 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
 
           <div
             ref={wrapperRef}
-            className="h-[42vh] min-h-[240px] w-full overflow-hidden rounded-3xl border-4 border-line shadow-[0_5px_0_var(--color-edge)]"
+            className="h-[42vh] min-h-[240px] w-full overflow-hidden rounded-3xl border-4 border-line shadow-[6px_6px_0_var(--color-edge)]"
           >
             <DrawCanvas
               ref={canvasRef}
@@ -330,9 +330,9 @@ function ResultPanel({ commit, fallbackScore }: { commit: Commit | null; fallbac
   if (!commit) {
     return (
       <ResultCard tone="neutral" icon={<CircleCheck className="h-8 w-8" />}>
-        <p className="font-display text-2xl font-extrabold">Bài đã nộp</p>
+        <p className="font-display text-2xl font-black uppercase tracking-tight">Bài đã nộp</p>
         <p className="mt-2 text-lg">
-          <span className="font-display text-4xl font-extrabold tabular-nums">{fallbackScore}</span> điểm
+          <span className="font-display text-4xl font-black uppercase tracking-tight tabular-nums">{fallbackScore}</span> điểm
         </p>
         <p className="mt-1 text-sm text-muted">Chờ những người khác vẽ xong…</p>
       </ResultCard>
@@ -344,9 +344,9 @@ function ResultPanel({ commit, fallbackScore }: { commit: Commit | null; fallbac
   if (!commit.matched) {
     return (
       <ResultCard tone="wrong" icon={<CircleX className="h-8 w-8" />}>
-        <p className="font-display text-2xl font-extrabold text-wrong">AI không nhận ra hình này</p>
+        <p className="font-display text-2xl font-black uppercase tracking-tight text-wrong">AI không nhận ra hình này</p>
         <p className="mt-2 text-lg">
-          <span className="font-display text-4xl font-extrabold tabular-nums">0</span> điểm
+          <span className="font-display text-4xl font-black uppercase tracking-tight tabular-nums">0</span> điểm
         </p>
         <p className="mt-1 text-sm text-muted">{auto}Chờ những người khác vẽ xong…</p>
       </ResultCard>
@@ -355,13 +355,13 @@ function ResultPanel({ commit, fallbackScore }: { commit: Commit | null; fallbac
 
   return (
     <ResultCard tone="correct" icon={<PartyPopper className="h-8 w-8" />}>
-      <p className="font-display text-2xl font-extrabold text-correct">AI đã nhận ra!</p>
+      <p className="font-display text-2xl font-black uppercase tracking-tight text-correct">AI đã nhận ra!</p>
       <p className="mt-2 flex items-baseline justify-center gap-1 text-lg">
-        +<span className="font-display text-5xl font-extrabold tabular-nums text-correct">{commit.score}</span>{' '}
+        +<span className="font-display text-5xl font-black tabular-nums text-correct">{commit.score}</span>{' '}
         điểm
       </p>
       <p className="mt-1">
-        <span className="rounded-full bg-surface-2 px-2.5 py-0.5 text-sm tabular-nums text-muted">
+        <span className="bg-surface-2 px-2.5 py-0.5 text-sm tabular-nums text-muted">
           {commit.seconds} giây
         </span>
       </p>
@@ -372,8 +372,8 @@ function ResultPanel({ commit, fallbackScore }: { commit: Commit | null; fallbac
 
 const RESULT_TONE = {
   neutral: { card: 'border-line bg-surface', badge: 'bg-secondary text-ink' },
-  wrong: { card: 'border-wrong/60 bg-wrong/10', badge: 'bg-wrong text-ink' },
-  correct: { card: 'border-correct/70 bg-correct/10', badge: 'bg-correct text-ink' },
+  wrong: { card: 'border-wrong bg-surface', badge: 'bg-wrong text-ink' },
+  correct: { card: 'border-correct bg-surface', badge: 'bg-correct text-ink' },
 } as const;
 
 function ResultCard({
@@ -388,7 +388,7 @@ function ResultCard({
   const t = RESULT_TONE[tone];
   return (
     <div
-      className={`animate-pop rounded-3xl border-2 px-4 py-7 text-center shadow-[0_5px_0_var(--color-edge)] ${t.card}`}
+      className={`animate-pop rounded-3xl border-2 px-4 py-7 text-center shadow-[6px_6px_0_var(--color-edge)] ${t.card}`}
     >
       <span
         aria-hidden="true"

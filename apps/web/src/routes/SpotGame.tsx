@@ -164,14 +164,14 @@ export function SpotGame({ roundId, playerId, state }: GameProps) {
           ))}
       </ToastRegion>
 
-      <div className="card flex items-center justify-between gap-3 border-spot/60 bg-spot/10 px-4 py-3">
-        <p className="flex items-center gap-2 font-display text-lg font-extrabold">
-          <Eye aria-hidden="true" className="h-5 w-5 shrink-0 text-spot" />
+      <div className="card flex items-center justify-between gap-3 bg-spot px-4 py-3 text-ink">
+        <p className="flex items-center gap-2 font-display text-lg font-black uppercase">
+          <Eye aria-hidden="true" className="h-5 w-5 shrink-0" />
           Tìm ô khác màu
         </p>
         <p className="shrink-0 text-right leading-tight">
-          <span className="block text-xs text-muted">Cấp</span>
-          <span className="block font-display text-2xl font-extrabold tabular-nums">{level}</span>
+          <span className="block text-xs font-bold uppercase">Cấp</span>
+          <span className="block font-display text-2xl font-black uppercase tracking-tight tabular-nums">{level}</span>
         </p>
       </div>
 

@@ -191,13 +191,26 @@ Muốn thêm màu hay token mới thì thêm biến `--color-*` vào khối đó
 thường (`bg-primary`, `text-muted`, …). Hạn chế viết CSS rời; chỉ viết tay khi thật cần
 (ví dụ `touch-action: none` cho canvas vẽ).
 
-Phong cách "Vibrant & Block-based" (nền tím than, khối màu đậm, nút có đế khối). Vài class
-dùng chung khai báo trong `@layer components` của `styles.css`: `.btn` (+ `btn-primary`,
-`btn-accent`, `btn-correct`, `btn-ghost`, `btn-sm`, `btn-lg`), `.card`, `.field`. Mỗi game có
-màu nhận diện riêng (`math` xanh cyan, `draw` hồng) — xem `lib/game-theme.ts`.
+Phong cách **neo-brutalism, bản nền tối**. Bốn luật, và chúng giải thích gần như mọi dòng
+trong `styles.css`:
 
-Font **Baloo 2** (tiêu đề, con số) + **Be Vietnam Pro** (nội dung) được **tự host** qua
-`@fontsource` — không dùng Google Fonts CDN vì ngày sự kiện có thể không có internet.
+1. **Không bo góc** — mọi `--radius-*` đặt về 0, nên `rounded-xl` rải khắp code cũng ra góc
+   vuông. Muốn quay lại kiểu bo tròn thì sửa đúng chỗ đó, không phải sửa 200 chỗ dùng.
+2. **Viền trắng dày 3px**, đục hoàn toàn — viền là thứ dựng nên hình khối, không phải bóng mờ.
+3. **Bóng đổ đặc, lệch chéo** (`6px 6px 0`), không blur. Bấm xuống thì khối trượt vào chỗ bóng.
+   Khối vốn đã trắng (logo, mã QR) thì bóng đổi sang màu vàng, vì bóng trắng sau lưng nó
+   không ai thấy.
+4. **Màu phẳng, rực**, không gradient. Nền gần đen để màu neon nảy hẳn lên.
+
+Class dùng chung khai báo trong `@layer components` của `styles.css`: `.btn` (+ `btn-primary`,
+`btn-accent`, `btn-correct`, `btn-ghost`, `btn-sm`, `btn-lg`), `.card`, `.field`, `.stage-bg`.
+Mỗi game có màu nhận diện riêng (`math` cyan, `draw` hồng, `memory` lime, `spot` cam) — xem
+`lib/game-theme.ts`.
+
+Một họ chữ duy nhất: **Be Vietnam Pro** 400→900 (tiêu đề dùng 800/900), **tự host** qua
+`@fontsource` — không dùng Google Fonts CDN vì ngày sự kiện có thể không có internet. Bản cũ
+dùng Baloo 2 cho tiêu đề; chữ bo tròn mũm mĩm là thứ brutalism không bao giờ dùng, và
+Be Vietnam Pro vốn được thiết kế cho tiếng Việt nên dấu không vỡ ở cỡ lớn.
 Icon dùng `lucide-react` (SVG, đóng gói vào bundle), không dùng emoji làm icon.
 
 ### Điểm cắm — cách 2 track nối vào nền tảng mà KHÔNG sửa file 🔒

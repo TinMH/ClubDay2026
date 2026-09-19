@@ -23,14 +23,14 @@ export function QrCode({
   className?: string;
 }) {
   return (
-    <div className={`rounded-2xl bg-white p-3 ${className}`}>
+    <div className={`border-[3px] border-line bg-white p-3 shadow-[6px_6px_0_var(--color-accent)] ${className}`}>
       <QRCodeSVG
         value={value}
         size={size}
         level="M"
         marginSize={0}
         bgColor="#ffffff"
-        fgColor="#0f0f23"
+        fgColor="#0d0d10"
         // Cho SVG co theo bề ngang màn hình thay vì tràn ra ngoài thẻ.
         className="h-auto w-full"
         style={{ maxWidth: size }}
