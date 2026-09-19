@@ -56,6 +56,31 @@ const ROW: Record<RoundStatus, string> = {
   done: 'opacity-70',
 };
 
+/** Một mã QR kèm link và nút phóng to. */
+function QrBlock({
+  label,
+  value,
+  onZoom,
+}: {
+  label: string;
+  value: string;
+  onZoom: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <QrCode value={value} size={132} className="shrink-0" />
+      <div className="min-w-0">
+        <p className="text-xs font-bold uppercase tracking-wide text-muted">{label}</p>
+        <p className="break-all font-mono text-sm font-bold">{value}</p>
+        <button onClick={onZoom} className="btn btn-ghost btn-sm mt-2">
+          <Maximize2 aria-hidden="true" className="h-4 w-4" />
+          Phóng to
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Màn hình BTC: tạo lượt, xem ai đã vào, bắt đầu / bỏ qua, và in QR.
  * Bảo vệ bằng `x-admin-token` — đặt ADMIN_TOKEN trong .env trước sự kiện.
@@ -284,38 +309,23 @@ export function Admin() {
           {joinUrl ? 'Lượt đang mở — cho người chơi quét mã này:' : 'Mã QR vào chơi'}
         </p>
 
-        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+        {/*
+          Một mã thì trải hết bề ngang thẻ (để trống nửa bên phải trông như hỏng);
+          hai mã thì chia đôi từ `sm` trở lên.
+        */}
+        <div className={`mt-3 grid gap-4 ${joinUrl ? 'sm:grid-cols-2' : ''}`}>
           {joinUrl && (
-            <div className="flex items-center gap-3">
-              <QrCode value={joinUrl} size={132} className="shrink-0" />
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted">Lượt này</p>
-                <p className="break-all font-mono text-sm font-bold">{joinUrl}</p>
-                <button
-                  onClick={() => setZoom({ value: joinUrl, title: 'Lượt đang mở' })}
-                  className="btn btn-ghost btn-sm mt-2"
-                >
-                  <Maximize2 aria-hidden="true" className="h-4 w-4" />
-                  Phóng to
-                </button>
-              </div>
-            </div>
+            <QrBlock
+              label="Lượt này"
+              value={joinUrl}
+              onZoom={() => setZoom({ value: joinUrl, title: 'Lượt đang mở' })}
+            />
           )}
-
-          <div className="flex items-center gap-3">
-            <QrCode value={origin} size={132} className="shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs font-bold uppercase tracking-wide text-muted">Cả sự kiện</p>
-              <p className="break-all font-mono text-sm font-bold">{origin}</p>
-              <button
-                onClick={() => setZoom({ value: origin, title: 'Cả sự kiện' })}
-                className="btn btn-ghost btn-sm mt-2"
-              >
-                <Maximize2 aria-hidden="true" className="h-4 w-4" />
-                Phóng to
-              </button>
-            </div>
-          </div>
+          <QrBlock
+            label="Cả sự kiện"
+            value={origin}
+            onZoom={() => setZoom({ value: origin, title: 'Cả sự kiện' })}
+          />
         </div>
       </section>
 
