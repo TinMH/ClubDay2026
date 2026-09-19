@@ -26,6 +26,13 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [roundOver, setRoundOver] = useState(false);
+  /**
+   * Tăng mỗi khi một câu trả lời KHÔNG được tính (server chặn vì gõ nhanh quá,
+   * hoặc mạng lỗi). `ChoicePad` khoá lại ngay khi người chơi bấm và chỉ mở khi
+   * `resetKey` đổi; mà những lần đó số câu KHÔNG đổi — thiếu con số này thì bàn
+   * đáp án khoá cứng tới hết lượt, chỉ vì một cú bấm sớm 250ms.
+   */
+  const [retry, setRetry] = useState(0);
   /** Thông báo đúng/sai ở góc màn hình — tự tắt, không chiếm chỗ của câu hỏi. */
   const [toast, showToast] = useToast<{ correct: boolean; streak: number }>();
 
@@ -71,8 +78,11 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
       showToast({ correct: res.correct, streak: res.streak });
     } catch (err) {
       if (err instanceof ApiError) {
-        // Gõ nhanh hơn 250ms: bỏ qua im lặng, người chơi chỉ cần gõ lại.
-        if (err.code === 'TOO_FAST') return;
+        // Gõ nhanh hơn 250ms: bỏ qua im lặng, mở lại bàn đáp án để gõ lại.
+        if (err.code === 'TOO_FAST') {
+          setRetry((n) => n + 1);
+          return;
+        }
         // Hết giờ hoặc lượt đã đóng: SSE sẽ chuyển màn hình, không cần báo lỗi.
         if (err.code === 'TIME_UP' || err.code === 'NOT_PLAYING') {
           setRoundOver(true);
@@ -80,6 +90,7 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
         }
       }
       setError('Có lỗi khi gửi đáp án, thử lại.');
+      setRetry((n) => n + 1);
     } finally {
       setBusy(false);
     }
@@ -184,7 +195,7 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
         options={question.options}
         onPick={submit}
         busy={busy}
-        resetKey={index}
+        resetKey={`${index}-${retry}`}
         disabled={!playing}
       />
     </div>
