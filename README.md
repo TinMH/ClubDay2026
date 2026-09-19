@@ -479,12 +479,12 @@ Tắt server: `Ctrl+C` — server tự lưu snapshot trước khi thoát.
 | 2 | BTC | Bấm **+ Lượt Tính nhanh** / **+ Lượt Vẽ hình** / **+ Lượt Nhớ nhanh** → trò đó thành **trò đang mở**, hiện mã 6 ký tự kèm **mã QR** để quét |
 | 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → nhập tên → vào phòng chờ của **trò BTC đang mở** |
 | 4 | | Tối đa **5 người**. Người thứ 6 bị chặn và báo "chờ lượt sau" |
-| 5 | BTC | Bấm **BẮT ĐẦU** — ở `/admin`, hoặc ở `/lobby/<mã>` nếu máy đó đã nhập token |
+| 5 | BTC | Bấm **BẮT ĐẦU** ở `/admin` (màn hình phòng chờ KHÔNG có nút này) |
 | 6 | | Hết giờ tự chuyển sang bảng xếp hạng của đúng 5 người đó |
 
 Vài chi tiết đã cài sẵn:
 - **Mỗi thời điểm chỉ MỘT trò được chơi.** BTC chọn trò ở `/admin`; người chơi không tự chọn — trang chủ chỉ cho vào trò đang mở, trò còn lại hiện mờ "chưa tới lượt". Đổi trò thì mọi lượt đang **chờ** của trò cũ bị bỏ (lượt đang chơi vẫn chơi hết giờ). Nút **Tạm đóng** chặn người vào lượt mới trong lúc giải lao.
-- **Chỉ BTC bắt đầu được lượt.** `POST /api/rounds/:id/start` đòi header `x-admin-token`; gọi thẳng từ DevTools cũng nhận 401. Nút **BẮT ĐẦU** chỉ hiện ở `/lobby` nếu trình duyệt đó đã nhập `ADMIN_TOKEN` ở `/admin` (lưu trong localStorage) — đó chỉ là lối tắt giao diện cho máy BTC.
+- **Chỉ BTC bắt đầu được lượt.** `POST /api/rounds/:id/start` đòi header `x-admin-token`; gọi thẳng từ DevTools cũng nhận 401. Nút **BẮT ĐẦU** chỉ có ở `/admin`; phòng chờ `/lobby/<mã>` là màn hình người chơi nên không có nút nào — nó chỉ báo "đang chờ BTC".
 - Chạy với `NODE_ENV=production` mà **thiếu `ADMIN_TOKEN`** thì mọi thao tác quản trị bị từ chối (503) thay vì mở toang. Ở chế độ dev vẫn cho qua kèm cảnh báo lúc khởi động.
 - Bắt đầu được với **≥ 1 người** — không có timeout tự động, BTC chủ động về nhịp.
 - Bấm **Bỏ qua** ở `/admin` để kết thúc lượt ngay.

@@ -1,22 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { House, Play as PlayIcon, TriangleAlert, Users } from 'lucide-react';
-import { api, ApiError } from '../lib/api';
-import { loadAdminToken, loadSession } from '../lib/session';
+import { House, TriangleAlert, Users } from 'lucide-react';
+import { api } from '../lib/api';
+import { loadSession } from '../lib/session';
 import { useRoundStream } from '../lib/sse';
 import { Shell } from '../components/Shell';
 import { Avatar } from '../components/Avatar';
 import { ConnectionPill, GameChip, WaitDots } from '../components/Chips';
 import { MAX_PLAYERS, type RoundState } from '../lib/types';
 
-/** Phòng chờ: 5 slot, cập nhật realtime. BTC bấm BẮT ĐẦU từ đây hoặc từ /admin. */
+/**
+ * Phòng chờ: 5 slot, cập nhật realtime.
+ *
+ * KHÔNG có nút BẮT ĐẦU ở đây — lượt chỉ được bắt đầu từ `/admin`. Trước đây
+ * màn hình này có một nút tắt cho máy BTC, hiện ra khi trình duyệt từng nhập mã
+ * quản trị; nhưng đây là màn hình người chơi nhìn vào, và một nút BẮT ĐẦU nằm
+ * ngay đó khiến quyền bắt đầu trông như chuyện ai cũng có phần. Quyền thật vẫn
+ * do server giữ (`x-admin-token`), còn màn hình này thì nói đúng một chuyện:
+ * đang chờ BTC.
+ */
 export function Lobby() {
   const { roundId = '' } = useParams<{ roundId: string }>();
   const navigate = useNavigate();
   const [state, setState] = useState<RoundState | null>(null);
   const [error, setError] = useState('');
   const session = loadSession();
-  const adminToken = loadAdminToken();
   const connected = useRoundStream(roundId, setState);
 
   useEffect(() => {
@@ -29,21 +37,6 @@ export function Lobby() {
     if (state.status === 'playing') navigate(`/play/${roundId}`);
     else if (state.status === 'done') navigate(`/dashboard/${roundId}`);
   }, [state, roundId, navigate]);
-
-  async function start() {
-    try {
-      await api.startRound(roundId, adminToken);
-    } catch (err) {
-      const status = err instanceof ApiError ? err.status : 0;
-      setError(
-        status === 401
-          ? 'Sai mã quản trị.'
-          : status === 503
-            ? 'Server chưa đặt ADMIN_TOKEN — xem .env.'
-            : 'Không bắt đầu được.',
-      );
-    }
-  }
 
   const players = state?.players ?? [];
   const slots = Array.from({ length: MAX_PLAYERS }, (_, i) => players[i]);
@@ -125,18 +118,6 @@ export function Lobby() {
         Đang chờ BTC bắt đầu
         <WaitDots />
       </p>
-
-      {/*
-        Lối tắt cho máy BTC: chỉ hiện khi máy này đã nhập mã quản trị ở /admin.
-        Người chơi không thấy nút — và kể cả có gọi thẳng API thì server vẫn
-        đòi `x-admin-token`, nên đây thuần tuý là chuyện giao diện.
-      */}
-      {adminToken && (
-        <button onClick={start} disabled={players.length === 0} className="btn btn-correct btn-lg w-full">
-          <PlayIcon aria-hidden="true" className="h-6 w-6" fill="currentColor" />
-          BẮT ĐẦU ({players.length} người) · BTC
-        </button>
-      )}
 
       {error && (
         <p role="alert" className="flex items-center justify-center gap-2 text-sm text-wrong">
