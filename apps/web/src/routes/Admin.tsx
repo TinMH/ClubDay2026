@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ChevronLeft,
+  ChevronRight,
   Eye,
   House,
   KeyRound,
@@ -36,6 +38,16 @@ const GAMES: readonly GameKind[] = GAME_KINDS;
  * lượt còn bấm BẮT ĐẦU được — phải nổi lên trước: chờ thì viền tím sáng, đang
  * chơi thì viền vàng, xong rồi thì chìm xuống nhường chỗ.
  */
+/**
+ * Số lượt hiện mỗi trang.
+ *
+ * Server trả tối đa 30 lượt gần nhất; đổ hết ra một danh sách thì cuối buổi
+ * phải cuộn qua hai chục dòng đã xong mới thấy được lượt đang chờ. 8 dòng vừa
+ * đủ một màn hình laptop, và lượt mới nhất luôn nằm trang đầu (danh sách đã
+ * sắp theo thời gian tạo, mới nhất trước).
+ */
+const PAGE_SIZE = 8;
+
 const ROW: Record<RoundStatus, string> = {
   lobby: 'border-secondary/70',
   playing: 'border-accent/70',
@@ -53,6 +65,7 @@ export function Admin() {
   const [activeGame, setActiveGame] = useState<GameKind | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [page, setPage] = useState(0);
   const origin = window.location.origin;
 
   const refresh = useCallback(async () => {
@@ -109,6 +122,21 @@ export function Admin() {
       setBusy(false);
     }
   }
+
+  const pageCount = Math.max(1, Math.ceil(rounds.length / PAGE_SIZE));
+  const shown = useMemo(
+    () => rounds.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
+    [rounds, page],
+  );
+
+  /*
+   * Danh sách tự làm mới mỗi 2 giây, nên KHÔNG được nhảy về trang 1 mỗi nhịp —
+   * BTC đang xem trang 3 thì phải ở yên đó. Chỉ kéo lại khi trang hiện tại không
+   * còn tồn tại (vừa bấm Xoá sạch, hoặc lượt cũ bị dọn).
+   */
+  useEffect(() => {
+    if (page > pageCount - 1) setPage(pageCount - 1);
+  }, [page, pageCount]);
 
   const ActiveIcon = activeGame ? GAME_THEME[activeGame].icon : Lock;
 
@@ -250,12 +278,44 @@ export function Admin() {
       )}
 
       <section>
-        <h2 className="mb-3 font-display text-lg font-bold">Lượt gần đây</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-lg font-bold">
+            Lượt gần đây
+            {rounds.length > 0 && (
+              <span className="ml-2 font-sans text-sm font-normal text-muted">
+                {rounds.length} lượt
+              </span>
+            )}
+          </h2>
+          {pageCount > 1 && (
+            <nav aria-label="Phân trang danh sách lượt" className="flex items-center gap-2">
+              <button
+                onClick={() => setPage((n) => n - 1)}
+                disabled={page === 0}
+                aria-label="Trang trước"
+                className="btn btn-ghost btn-sm"
+              >
+                <ChevronLeft aria-hidden="true" className="h-4 w-4" />
+              </button>
+              <span role="status" className="text-sm font-semibold tabular-nums text-muted">
+                Trang {page + 1}/{pageCount}
+              </span>
+              <button
+                onClick={() => setPage((n) => n + 1)}
+                disabled={page >= pageCount - 1}
+                aria-label="Trang sau"
+                className="btn btn-ghost btn-sm"
+              >
+                <ChevronRight aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </nav>
+          )}
+        </div>
         {rounds.length === 0 ? (
           <p className="card p-6 text-center text-muted">Chưa có lượt nào.</p>
         ) : (
           <ul className="space-y-2">
-            {rounds.map((r) => {
+            {shown.map((r) => {
               const { icon: Icon, tile } = GAME_THEME[r.game];
               return (
                 <li
