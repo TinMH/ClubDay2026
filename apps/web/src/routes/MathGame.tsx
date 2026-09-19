@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { CircleCheck, CircleX, Flame, Hash, TriangleAlert, Trophy } from 'lucide-react';
+import { CircleCheck, CircleX, Flame, Hash } from 'lucide-react';
 import { ChoicePad } from '../components/ChoicePad';
 import { Spinner } from '../components/Chips';
+import { GameError, RoundOverCard } from '../components/GameStatus';
+import { classifyGameError } from '../lib/game-errors';
 import { Toast, ToastRegion, useToast } from '../components/Toast';
-import { ApiError } from '../lib/api';
 import { mathApi, type PublicQuestion } from '../lib/api-math';
 import type { GameProps } from '../lib/types';
 
@@ -77,17 +78,15 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
       setLastResult(res.correct ? 'correct' : 'wrong');
       showToast({ correct: res.correct, streak: res.streak });
     } catch (err) {
-      if (err instanceof ApiError) {
-        // Gõ nhanh hơn 250ms: bỏ qua im lặng, mở lại bàn đáp án để gõ lại.
-        if (err.code === 'TOO_FAST') {
-          setRetry((n) => n + 1);
-          return;
-        }
+      switch (classifyGameError(err)) {
         // Hết giờ hoặc lượt đã đóng: SSE sẽ chuyển màn hình, không cần báo lỗi.
-        if (err.code === 'TIME_UP' || err.code === 'NOT_PLAYING') {
+        case 'over':
           setRoundOver(true);
           return;
-        }
+        // Gõ nhanh hơn 250ms: bỏ qua im lặng, mở lại bàn đáp án để gõ lại.
+        case 'retry':
+          setRetry((n) => n + 1);
+          return;
       }
       setError('Có lỗi khi gửi đáp án, thử lại.');
       setRetry((n) => n + 1);
@@ -98,28 +97,15 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
 
   if (loading) return <Spinner label="Đang lấy câu hỏi…" />;
 
-  if (error) {
-    return (
-      <p
-        role="alert"
-        className="card flex items-center justify-center gap-2 border-wrong/60 bg-wrong/10 p-4 text-wrong"
-      >
-        <TriangleAlert aria-hidden="true" className="h-5 w-5 shrink-0" />
-        {error}
-      </p>
-    );
-  }
+  if (error) return <GameError message={error} />;
 
   // Hết đề mà chưa hết giờ — hiếm nhưng vẫn phải xử lý.
   if (!question) {
     return (
-      <div className="card p-8 text-center">
-        <Trophy aria-hidden="true" className="mx-auto h-10 w-10 text-accent" />
-        <p className="mt-3 font-display text-2xl font-extrabold">Hết câu hỏi!</p>
-        <p className="mt-1 text-sm text-muted">
-          {roundOver ? 'Lượt đã kết thúc.' : 'Chờ hết giờ để xem kết quả.'}
-        </p>
-      </div>
+      <RoundOverCard
+        title="Hết câu hỏi!"
+        detail={roundOver ? 'Lượt đã kết thúc.' : 'Chờ hết giờ để xem kết quả.'}
+      />
     );
   }
 

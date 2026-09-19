@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { DrawCanvas, type DrawCanvasHandle } from '../components/DrawCanvas';
 import { ApiError, serverNow } from '../lib/api';
+import { classifyGameError } from '../lib/game-errors';
 import { drawApi, type PublicPrediction } from '../lib/api-draw';
 import { StrokeRecorder } from '../lib/strokes';
 import { useCountdown } from '../lib/useCountdown';
@@ -107,7 +108,7 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
       // Lỗi thì VẪN còn quyền nộp lại — server cũng chưa đánh dấu là đã nộp.
       submittedRef.current = false;
 
-      if (err instanceof ApiError && (err.code === 'TIME_UP' || err.code === 'NOT_PLAYING')) {
+      if (classifyGameError(err) === 'over') {
         // Quá giờ: server đã tự nộp hộ, điểm sẽ hiện ở bảng điểm.
         setError('Hết giờ rồi — điểm sẽ hiện ở bảng điểm.');
         return;
@@ -173,18 +174,15 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
       } catch (err) {
         if (!alive) return;
 
-        if (err instanceof ApiError) {
-          // Gửi hơi sớm: bỏ qua im lặng, tick sau gửi lại. Người chơi không cần biết.
-          if (err.code === 'TOO_FAST') return;
-          // Lượt đã hết hoặc đã đóng: SSE sẽ chuyển màn hình.
-          if (err.code === 'TIME_UP' || err.code === 'NOT_PLAYING') return;
-          // Frame cũ bị chặn: tick sau với seq cao hơn sẽ qua.
-          if (err.code === 'SEQUENCE') return;
-          if (err.code === 'MODEL_UNAVAILABLE') {
-            setError('AI đang khởi động, chờ chút…');
-            return;
-          }
+        // Model chưa sẵn sàng là chuyện riêng của game này, không nằm trong bộ
+        // mã lỗi chung — và người chơi cần biết để khỏi tưởng mình vẽ sai.
+        if (err instanceof ApiError && err.code === 'MODEL_UNAVAILABLE') {
+          setError('AI đang khởi động, chờ chút…');
+          return;
         }
+        // Gửi sớm, frame cũ tới sau, hoặc lượt đã đóng: bỏ qua im lặng — frame
+        // chỉ là gợi ý, mất một nhịp không ảnh hưởng điểm. SSE lo phần chuyển màn.
+        if (classifyGameError(err) !== 'fatal') return;
         setError('Không gửi được nét vẽ, thử lại.');
       } finally {
         inflightRef.current = false;
