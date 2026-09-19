@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useEffect, useState, type ComponentType } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, House, TriangleAlert } from 'lucide-react';
 import { api } from '../lib/api';
@@ -25,8 +25,16 @@ import {
  * Là `Record<GameKind, …>` nên thêm game vào `GAME_KINDS` mà quên khai ở đây là
  * TypeScript báo lỗi ngay — chuỗi if/else thì lặng lẽ rơi vào nhánh cuối và
  * người chơi nhận nhầm game.
+ *
+ * Kiểu là `ComponentType`, và bên dưới nó được render bằng JSX (`<Screen …/>`),
+ * KHÔNG phải gọi như hàm thường. Gọi `SCREENS[game](props)` thì màn hình game
+ * không có fiber riêng: hook của nó bị nối thẳng vào danh sách hook của `Play`.
+ * Mà `Play` có nhánh thoát sớm (chưa có state, lượt còn ở phòng chờ, chưa tham
+ * gia lượt), nên số hook đổi giữa hai lần render → React error #310
+ * "Rendered more hooks than during the previous render", trắng màn hình đúng
+ * lúc lượt vừa bắt đầu.
  */
-const SCREENS: Record<GameKind, (props: GameProps) => ReactElement> = {
+const SCREENS: Record<GameKind, ComponentType<GameProps>> = {
   math: MathGame,
   draw: DrawGame,
   memory: MemoryGame,
@@ -78,7 +86,7 @@ export function Play() {
 
   const playerId = session?.roundId === roundId ? session.playerId : '';
   const me = state.players.find((p) => p.id === playerId);
-  const props: GameProps = { roundId, playerId, state };
+  const Screen = SCREENS[state.game];
 
   return (
     <Shell>
@@ -109,7 +117,7 @@ export function Play() {
           </Link>
         </div>
       ) : (
-        SCREENS[state.game](props)
+        <Screen roundId={roundId} playerId={playerId} state={state} />
       )}
     </Shell>
   );
