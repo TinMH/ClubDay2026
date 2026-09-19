@@ -1,4 +1,4 @@
-import { Clock, Minus, Plus, Users } from 'lucide-react';
+import { Clock, Minus, Plus, Repeat, Users } from 'lucide-react';
 import { GAME_THEME } from '../../lib/game-theme';
 import { DURATION_MS, GAME_LABEL, MAX_PLAYERS_CAP, type GameKind } from '../../lib/types';
 
@@ -88,12 +88,30 @@ export function GameTile({
       </div>
 
       {/*
-        Nút tạo lượt RIÊNG, không phải cả thẻ bấm được như trước: thẻ có sẵn hai
-        nút +/- bên trong, nên một vùng bấm lớn bao quanh chúng là cái bẫy bấm nhầm.
+        NHÃN NÓI ĐÚNG VIỆC NÚT LÀM.
+        Bấm nút này ở một trò chưa mở thì nó ĐỔI TRÒ ĐANG MỞ sang trò đó rồi mới
+        tạo lượt. Bản trước nút nào cũng ghi "Tạo lượt", nên nhìn vào màn hình
+        không có đường nào để đổi trò — trong khi đổi được, chỉ là không ai nói.
+
+        Nút RIÊNG, không phải cả thẻ bấm được: thẻ có sẵn hai nút +/- bên trong,
+        một vùng bấm lớn bao quanh chúng là cái bẫy bấm nhầm.
       */}
-      <button onClick={onCreate} disabled={disabled} className="btn btn-sm w-full">
-        <Plus aria-hidden="true" className="h-5 w-5" />
-        Tạo lượt
+      <button
+        onClick={onCreate}
+        disabled={disabled}
+        className={`btn btn-sm w-full ${active ? '' : 'btn-accent'}`}
+      >
+        {active ? (
+          <>
+            <Plus aria-hidden="true" className="h-5 w-5" />
+            Tạo lượt
+          </>
+        ) : (
+          <>
+            <Repeat aria-hidden="true" className="h-5 w-5" />
+            Đổi sang trò này
+          </>
+        )}
       </button>
     </div>
   );

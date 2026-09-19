@@ -71,7 +71,7 @@ export function ActiveGamePanel({
 
       <p className="w-full text-xs text-muted">
         {activeGame
-          ? 'Người chơi không tự chọn trò — họ chỉ vào được trò đang mở. Tạo lượt cho trò nào thì trò đó được mở, và mọi lượt đang CHỜ của trò trước sẽ bị bỏ.'
+          ? 'Người chơi không tự chọn trò — họ chỉ vào được trò đang mở. Muốn đổi: bấm ĐỔI SANG TRÒ NÀY ở ô bên dưới; mọi lượt đang CHỜ của trò cũ sẽ bị bỏ.'
           : 'Đang không nhận người mới. Lượt đang chờ vẫn còn nguyên và vẫn bấm BẮT ĐẦU được — mở lại hoặc tạo lượt cho một trò bất kỳ bên dưới là chơi tiếp.'}
       </p>
     </section>
