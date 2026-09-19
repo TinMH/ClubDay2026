@@ -1,11 +1,10 @@
 /**
  * TRACK B — client gọi API của game Vẽ hình nhanh.
  *
- * Vì sao không thêm vào `lib/api.ts`? Cùng lý do như `api-math.ts`: file đó là
- * 🔒 nền tảng, Track A cũng cần thêm API của nó — hai track cùng sửa một file là
- * conflict chắc chắn. Mỗi track giữ client riêng.
+ * Giữ riêng khỏi `lib/api.ts` (phần dùng chung của cả app): mỗi track sở hữu
+ * đường dẫn và kiểu dữ liệu của mình. Phần gọi HTTP thì dùng chung ở `lib/http.ts`.
  */
-import { ApiError, syncClock } from './api';
+import { postJson, request } from './http';
 import type { RoundStatus } from './types';
 
 /** Một dự đoán của model, kèm tên tiếng Việt để hiển thị thẳng lên màn hình. */
@@ -44,25 +43,6 @@ export interface SubmitResult {
   seconds: number;
   endsAt: number | null;
   serverNow: number;
-}
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init);
-  const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : null;
-
-  if (!res.ok) {
-    const code =
-      data && typeof data === 'object' && 'error' in data
-        ? String((data as { error: unknown }).error)
-        : 'HTTP_ERROR';
-    throw new ApiError(code, res.status);
-  }
-
-  if (data && typeof data === 'object' && 'serverNow' in data) {
-    syncClock(Number((data as { serverNow: unknown }).serverNow));
-  }
-  return data as T;
 }
 
 export const drawApi = {

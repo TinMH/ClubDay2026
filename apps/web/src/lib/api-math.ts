@@ -5,7 +5,7 @@
  * thêm API của nó — hai track cùng sửa một file là conflict chắc chắn. Mỗi track
  * giữ client riêng, `api.ts` chỉ chứa thứ dùng chung (join / state / dashboard).
  */
-import { ApiError, syncClock } from './api';
+import { postJson, request } from './http';
 import type { RoundStatus } from './types';
 
 /** Câu hỏi server gửi ra — CỐ Ý không có `answer`. */
@@ -44,31 +44,6 @@ export interface AnswerResult {
   question: PublicQuestion | null;
   serverNow: number;
 }
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init);
-  const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : null;
-
-  if (!res.ok) {
-    const code =
-      data && typeof data === 'object' && 'error' in data
-        ? String((data as { error: unknown }).error)
-        : 'HTTP_ERROR';
-    throw new ApiError(code, res.status);
-  }
-
-  if (data && typeof data === 'object' && 'serverNow' in data) {
-    syncClock(Number((data as { serverNow: unknown }).serverNow));
-  }
-  return data as T;
-}
-
-const postJson = (body: unknown): RequestInit => ({
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body),
-});
 
 export const mathApi = {
   /** Câu hỏi đang mở — dùng khi vào lượt và khi tải lại trang giữa chừng. */

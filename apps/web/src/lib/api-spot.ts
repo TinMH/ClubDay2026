@@ -1,10 +1,10 @@
 /**
  * TRACK D — client gọi API của game Ô khác màu.
  *
- * Giữ riêng khỏi `lib/api.ts` (file 🔒 dùng chung) theo đúng cách api-math.ts,
- * api-draw.ts và api-memory.ts đang làm.
- */
-import { ApiError, syncClock } from './api';
+ * Giữ riêng khỏi `lib/api.ts` (phần dùng chung của cả app): mỗi track sở hữu
+ * đường dẫn và kiểu dữ liệu của mình. Phần gọi HTTP thì dùng chung ở `lib/http.ts`.
+*/
+import { postJson, request } from './http';
 import type { RoundStatus } from './types';
 
 export interface SpotBoard {
@@ -41,31 +41,6 @@ export interface PickResult {
   wrongCount: number;
   serverNow: number;
 }
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, init);
-  const text = await res.text();
-  const data: unknown = text ? JSON.parse(text) : null;
-
-  if (!res.ok) {
-    const code =
-      data && typeof data === 'object' && 'error' in data
-        ? String((data as { error: unknown }).error)
-        : 'HTTP_ERROR';
-    throw new ApiError(code, res.status);
-  }
-
-  if (data && typeof data === 'object' && 'serverNow' in data) {
-    syncClock(Number((data as { serverNow: unknown }).serverNow));
-  }
-  return data as T;
-}
-
-const postJson = (body: unknown): RequestInit => ({
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body),
-});
 
 export const spotApi = {
   /** Bàn chơi của cấp đang chơi — dùng khi vào lượt và khi tải lại trang giữa chừng. */
