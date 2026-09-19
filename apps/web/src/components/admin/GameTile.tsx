@@ -1,4 +1,4 @@
-import { Minus, Plus, Users } from 'lucide-react';
+import { Clock, Minus, Plus, Users } from 'lucide-react';
 import { GAME_THEME } from '../../lib/game-theme';
 import { DURATION_MS, GAME_LABEL, MAX_PLAYERS_CAP, type GameKind } from '../../lib/types';
 
@@ -14,10 +14,15 @@ export interface GameTileProps {
 }
 
 /**
- * Một trò ở màn hình BTC: nút tạo lượt, và ô chỉnh sức chứa ngay bên dưới.
+ * Một trò ở màn hình BTC: tên trò, hai thông số, và nút tạo lượt.
  *
- * Hai việc đặt cạnh nhau vì chúng đi liền nhau trong thực tế: BTC nhìn hàng
- * người đang đứng rồi quyết định lượt tới mấy người, xong bấm tạo luôn.
+ * CẮT CHỮ TỚI MỨC CÒN ĐỌC ĐƯỢC. Bản trước viết "Lượt Tính nhanh", "90 giây",
+ * "Số người mỗi lượt" — chữ "Lượt" lặp ở cả bốn ô trong một khu vực vốn đã tên
+ * là "tạo lượt", còn "Số người mỗi lượt" thì nói lại đúng thứ icon người đã nói.
+ * Giờ icon gánh phần nhãn, chữ chỉ còn giữ con số.
+ *
+ * Icon không tự nói được với trình đọc màn hình, nên mỗi con số vẫn kèm một nhãn
+ * `sr-only` đầy đủ. Cắt chữ là cắt phần MẮT đã hiểu, không phải cắt thông tin.
  */
 export function GameTile({
   game,
@@ -27,70 +32,69 @@ export function GameTile({
   onCreate,
   onChangeMaxPlayers,
 }: GameTileProps) {
-  const { icon: Icon, tile, chip, active: activeRing } = GAME_THEME[game];
+  const { icon: Icon, tile, chip, active: activeBlock } = GAME_THEME[game];
+  const seconds = DURATION_MS[game] / 1000;
 
   return (
-    <div className={`card flex flex-col gap-3 p-4 ${active ? activeRing : ''}`}>
-      <button
-        onClick={onCreate}
-        disabled={disabled}
-        className="flex min-w-0 items-center gap-3 text-left"
-      >
-        <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${tile}`}>
+    <div className={`card flex flex-col gap-4 p-5 ${active ? activeBlock : ''}`}>
+      <div className="flex items-start justify-between gap-2">
+        <span className={`grid h-12 w-12 shrink-0 place-items-center ${tile}`}>
           <Icon aria-hidden="true" className="h-6 w-6" />
         </span>
-        <span className="min-w-0">
-          <span className="flex flex-wrap items-center gap-1 font-display text-lg font-black uppercase tracking-tight">
-            <Plus aria-hidden="true" className="h-5 w-5" />
-            Lượt {GAME_LABEL[game]}
-            {active && (
-              <span
-                className={`border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${chip}`}
-              >
-                Đang mở
-              </span>
-            )}
+        {active && (
+          <span
+            className={`border-2 px-2 py-0.5 text-[0.65rem] font-black uppercase tracking-wide ${chip}`}
+          >
+            Đang mở
           </span>
-          <span className="block text-xs text-muted">{DURATION_MS[game] / 1000} giây</span>
-        </span>
-      </button>
+        )}
+      </div>
 
-      {/*
-        Chỉnh sức chứa NGAY Ở ĐÂY, cạnh nút tạo lượt: giữa sự kiện mà phải mở
-        terminal sửa .env rồi khởi động lại server là không xong kịp.
-        Áp cho lượt tạo từ đây về sau — lượt đang chờ giữ nguyên luật của nó.
-      */}
-      <div className="flex items-center justify-between gap-2 border-t-2 border-line pt-3">
-        <span id={`cap-${game}`} className="flex items-center gap-1.5 text-xs text-muted">
-          <Users aria-hidden="true" className="h-4 w-4 shrink-0" />
-          Số người mỗi lượt
+      <h3 className="font-display text-lg font-black uppercase leading-tight">
+        {GAME_LABEL[game]}
+      </h3>
+
+      {/* Hai thông số trên một hàng: thời lượng (đọc thôi) và sức chứa (chỉnh được). */}
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t-2 border-line pt-4">
+        <span className="flex items-center gap-1.5 font-display font-black tabular-nums">
+          <Clock aria-hidden="true" className="h-4 w-4 shrink-0 text-muted" />
+          {seconds}s
+          <span className="sr-only">mỗi lượt</span>
         </span>
+
         <span className="flex shrink-0 items-center gap-1">
+          <Users aria-hidden="true" className="mr-1 h-4 w-4 shrink-0 text-muted" />
           <button
             onClick={() => onChangeMaxPlayers(maxPlayers - 1)}
             disabled={disabled || maxPlayers <= 1}
-            aria-label={`Giảm số người ${GAME_LABEL[game]}`}
+            aria-label={`Giảm số người mỗi lượt ${GAME_LABEL[game]}`}
             className="btn btn-ghost btn-sm px-2"
           >
             <Minus aria-hidden="true" className="h-4 w-4" />
           </button>
-          <span
-            aria-labelledby={`cap-${game}`}
-            role="status"
-            className="w-8 text-center font-display text-xl font-black tabular-nums"
-          >
+          <span role="status" className="w-8 text-center font-display text-xl font-black tabular-nums">
             {maxPlayers}
+            <span className="sr-only"> người mỗi lượt</span>
           </span>
           <button
             onClick={() => onChangeMaxPlayers(maxPlayers + 1)}
             disabled={disabled || maxPlayers >= MAX_PLAYERS_CAP}
-            aria-label={`Tăng số người ${GAME_LABEL[game]}`}
+            aria-label={`Tăng số người mỗi lượt ${GAME_LABEL[game]}`}
             className="btn btn-ghost btn-sm px-2"
           >
             <Plus aria-hidden="true" className="h-4 w-4" />
           </button>
         </span>
       </div>
+
+      {/*
+        Nút tạo lượt RIÊNG, không phải cả thẻ bấm được như trước: thẻ có sẵn hai
+        nút +/- bên trong, nên một vùng bấm lớn bao quanh chúng là cái bẫy bấm nhầm.
+      */}
+      <button onClick={onCreate} disabled={disabled} className="btn btn-sm w-full">
+        <Plus aria-hidden="true" className="h-5 w-5" />
+        Tạo lượt
+      </button>
     </div>
   );
 }

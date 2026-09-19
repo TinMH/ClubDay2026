@@ -144,7 +144,7 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="flex items-center gap-3 rounded-2xl border-[3px] border-line bg-surface px-3 py-2.5">
+        <div className="flex items-center gap-3 rounded-2xl border-2 border-line bg-surface px-3 py-2.5">
           <Hash aria-hidden="true" className="h-5 w-5 shrink-0 text-secondary" />
           <div className="leading-tight">
             <p className="text-xs font-bold uppercase text-muted">Câu</p>
@@ -152,7 +152,7 @@ export function MathGame({ roundId, playerId, state }: GameProps) {
           </div>
         </div>
         <div
-          className={`flex items-center gap-3 border-[3px] px-3 py-2.5 transition-colors ${
+          className={`flex items-center gap-3 border-2 px-3 py-2.5 transition-colors ${
             streak > 0 ? 'border-line bg-warn text-ink' : 'border-line bg-surface'
           }`}
         >

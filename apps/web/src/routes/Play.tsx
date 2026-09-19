@@ -95,7 +95,7 @@ export function Play() {
           <GameChip game={state.game} />
           {!connected && <ConnectionPill connected={false} offlineLabel="Mất kết nối…" />}
         </div>
-        <div className="shrink-0 border-[3px] border-line bg-accent px-3 py-1.5 text-right text-ink shadow-[4px_4px_0_var(--color-edge)]">
+        <div className="shrink-0 border-2 border-line bg-accent px-3 py-1.5 text-right text-ink shadow-[4px_4px_0_var(--color-edge)]">
           <span className="block text-xs font-bold uppercase">{SCORE_LABEL[state.game]}</span>
           <span className="block font-display text-2xl font-black uppercase tracking-tight leading-none tabular-nums text-accent">
             {me?.score ?? 0}

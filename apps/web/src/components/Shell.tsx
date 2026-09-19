@@ -6,7 +6,7 @@ export function Shell({ children, wide = false }: { children: ReactNode; wide?: 
     <>
       <Backdrop />
       <main
-        className={`mx-auto flex min-h-dvh flex-col gap-5 px-5 py-6 sm:py-10 ${wide ? 'max-w-3xl' : 'max-w-xl'}`}
+        className={`mx-auto flex min-h-dvh flex-col gap-6 px-5 py-7 sm:py-10 ${wide ? 'max-w-3xl' : 'max-w-xl'}`}
       >
         {children}
       </main>

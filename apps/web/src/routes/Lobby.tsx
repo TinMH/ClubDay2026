@@ -72,7 +72,7 @@ export function Lobby() {
             <span
               key={i}
               aria-hidden="true"
-              className="grid h-14 w-11 place-items-center rounded-xl border-[3px] border-line bg-surface font-mono text-3xl font-bold shadow-[4px_4px_0_var(--color-edge)]"
+              className="grid h-14 w-11 place-items-center rounded-xl border-2 border-line bg-surface font-mono text-3xl font-bold shadow-[4px_4px_0_var(--color-edge)]"
             >
               {ch}
             </span>
@@ -80,7 +80,7 @@ export function Lobby() {
         </h1>
       </header>
 
-      <section className="card p-4">
+      <section className="card p-5">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="flex items-center gap-2 font-display text-lg font-black uppercase tracking-tight">
             <Users aria-hidden="true" className="h-5 w-5 text-secondary" />
@@ -93,7 +93,7 @@ export function Lobby() {
         <ul className="space-y-2">
           {slots.map((p, i) =>
             p ? (
-              <li key={p.id} className="flex animate-pop items-center gap-3 rounded-2xl bg-surface-2 p-2.5">
+              <li key={p.id} className="flex animate-pop items-center gap-3 border-2 border-line bg-surface-2 p-3">
                 <Avatar name={p.name} seed={p.id} />
                 <span className="min-w-0 flex-1 truncate font-semibold">{p.name}</span>
                 {p.id === session?.playerId && (
@@ -105,7 +105,7 @@ export function Lobby() {
             ) : (
               <li
                 key={`empty-${i}`}
-                className="flex items-center gap-3 rounded-2xl border-2 border-dashed border-line p-2"
+                className="flex items-center gap-3 border-2 border-dashed border-line p-3"
               >
                 <span className="grid h-10 w-10 place-items-center rounded-xl text-sm font-bold tabular-nums text-muted">
                   {i + 1}

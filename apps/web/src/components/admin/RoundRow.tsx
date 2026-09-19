@@ -31,7 +31,7 @@ export function RoundRow({ round: r, busy, onStart, onSkip, onQr }: RoundRowProp
 
   return (
     <li
-      className={`card flex flex-wrap items-center gap-3 p-3 ${ROW[r.status]} ${
+      className={`card-row flex flex-wrap items-center gap-3 p-4 ${ROW[r.status]} ${
         r.live ? '' : 'opacity-50'
       }`}
     >

@@ -211,7 +211,7 @@ export function DrawGame({ roundId, playerId, state }: GameProps) {
   return (
     <div className="space-y-4">
       {/* Khối màu ĐẶC, chữ đen: từ khoá là thứ duy nhất người chơi cần đọc trong 15 giây. */}
-      <div className="animate-pop border-[3px] border-line bg-draw px-4 py-4 text-center text-ink shadow-[6px_6px_0_var(--color-edge)]">
+      <div className="animate-pop border-2 border-line bg-draw px-4 py-4 text-center text-ink shadow-[6px_6px_0_var(--color-edge)]">
         <p className="flex items-center justify-center gap-1.5 text-xs font-black uppercase tracking-[0.2em]">
           <Pencil aria-hidden="true" className="h-4 w-4" />
           Hãy vẽ

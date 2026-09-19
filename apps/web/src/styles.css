@@ -252,6 +252,19 @@ body {
     box-shadow: 6px 6px 0 var(--color-edge);
   }
 
+  /*
+   * Thẻ trong DANH SÁCH DÀI (dòng lượt ở /admin): viền và bóng mỏng hơn.
+   *
+   * Xếp chồng chục thẻ thì bóng 6px của thẻ trên gần chạm viền thẻ dưới, và cả
+   * danh sách thành một mảng trắng nhoè. 4px vừa đủ để còn thấy chiều sâu.
+   */
+  .card-row {
+    background: var(--color-surface);
+    border: 2px solid var(--color-line);
+    border-radius: 0;
+    box-shadow: 4px 4px 0 var(--color-edge);
+  }
+
   .field {
     width: 100%;
     min-height: 3.5rem;
