@@ -11,6 +11,36 @@ Web 4 trò chơi cho sự kiện CLB. Mỗi **lượt tối đa 5 người** (đ
 
 ---
 
+## Giao diện
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/home.png" alt="Trang chủ: chọn tên và vào lượt của trò BTC đang mở" />
+      <p align="center"><b>Trang chủ</b> — người chơi chỉ nhập tên; trò nào được chơi là do BTC quyết</p>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/play.png" alt="Màn hình đang chơi với đồng hồ đếm ngược" />
+      <p align="center"><b>Đang chơi</b> — một đồng hồ chung cho cả lượt</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/dashboard.png" alt="Bảng hạng của đúng nhóm vừa chơi" />
+      <p align="center"><b>Bảng hạng</b> — hiện ngay khi hết giờ, chỉ của đúng nhóm đó</p>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/admin.png" alt="Trang quản trị: chọn trò, chỉnh số người, tạo lượt, in mã QR" />
+      <p align="center"><b>Quản trị</b> — chọn trò đang mở, chỉnh số người, in mã QR</p>
+    </td>
+  </tr>
+</table>
+
+> Thiếu ảnh nào thì GitHub hiện ô vỡ — xem `docs/screenshots/README.md` để biết
+> cần chụp gì, đặt tên ra sao.
+
+---
+
 ## Kiến trúc tổng thể
 
 **Một process Node.js duy nhất** chạy trên máy BTC. Không database, không Docker, không Python, không service trung gian.
