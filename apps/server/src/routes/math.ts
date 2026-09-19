@@ -46,8 +46,8 @@ function publicQuestion(question: Question | null): PublicQuestion | null {
 export async function mathRoutes(app: FastifyInstance): Promise<void> {
   // Chạy khi BTC bấm BẮT ĐẦU — sinh đề một lần cho cả lượt.
   registerStartHook('math', (round) => {
-    if (!round.questions) {
-      round.questions = generateQuestions(seedFromRoundId(round.id));
+    if (!round.math.questions) {
+      round.math.questions = generateQuestions(seedFromRoundId(round.id));
     }
   });
 
@@ -67,10 +67,10 @@ export async function mathRoutes(app: FastifyInstance): Promise<void> {
     return {
       roundId: round.id,
       status: round.status,
-      index: player.qIndex,
+      index: player.math.qIndex,
       question: publicQuestion(currentQuestion(round, player)),
       score: player.score,
-      streak: player.streak,
+      streak: player.math.streak,
       correct: player.correct,
       wrong: player.wrong,
       endsAt: round.endsAt,
@@ -100,7 +100,7 @@ export async function mathRoutes(app: FastifyInstance): Promise<void> {
     return {
       correct: outcome.correct,
       score: outcome.score,
-      streak: player.streak,
+      streak: player.math.streak,
       correctCount: player.correct,
       wrongCount: player.wrong,
       index: outcome.index,

@@ -49,7 +49,7 @@ function countingClassifier(top: Prediction[]): { fn: ClassifyFn; calls: () => n
 function setup(targetId = 'circle'): { round: Round; player: Player } {
   const round = createRound('draw', T0);
   const player = addPlayer(round, 'An', T0);
-  round.target = { id: targetId, labelVi: 'hình tròn' };
+  round.draw.target = { id: targetId, labelVi: 'hình tròn' };
   round.startedAt = T0;
   round.endsAt = T0 + DURATION;
   round.status = 'playing';
@@ -87,10 +87,10 @@ describe('draw-session — frame chỉ là GỢI Ý, không phải kết quả',
     if (res.ok) expect(res.hint).toBe(true);
 
     expect(player.score).toBe(0);
-    expect(player.solved).toBe(false);
-    expect(player.committed).toBe(false);
+    expect(player.draw.solved).toBe(false);
+    expect(player.draw.committed).toBe(false);
     expect(player.finished).toBe(false);
-    expect(player.solvedAt).toBeNull();
+    expect(player.draw.solvedAt).toBeNull();
   });
 
   it('trả top-3 kèm điểm tin cậy để client hiện "AI nghĩ: …"', async () => {
@@ -114,10 +114,10 @@ describe('draw-session — frame chỉ là GỢI Ý, không phải kết quả',
   it('ghi lại dự đoán gần nhất để hiện "AI nghĩ: …"', async () => {
     const { round, player } = setup('circle');
     await previewFrame(round, player, { seq: 1, strokes: circleStrokes() }, T0 + 2_000, fakeClassifier(hit('circle')));
-    expect(player.lastGuess).toEqual({ label: 'circle', score: 0.92 });
+    expect(player.draw.lastGuess).toEqual({ label: 'circle', score: 0.92 });
   });
 
-  it('từ khoá lấy từ server: đổi round.target là đổi cờ gợi ý', async () => {
+  it('từ khoá lấy từ server: đổi round.draw.target là đổi cờ gợi ý', async () => {
     const { round, player } = setup('ladder');
     const res = await previewFrame(
       round,
@@ -155,11 +155,11 @@ describe('draw-session — NỘP BÀI mới sinh ra điểm', () => {
       expect(res.score).toBe(SOLVE_BASE_SCORE - 5);
     }
     expect(player.score).toBe(145);
-    expect(player.solved).toBe(true);
-    expect(player.committed).toBe(true);
-    expect(player.commitReason).toBe('button');
-    expect(player.committedAt).toBe(T0 + 4_500);
-    expect(player.solvedAt).toBe(T0 + 4_500);
+    expect(player.draw.solved).toBe(true);
+    expect(player.draw.committed).toBe(true);
+    expect(player.draw.commitReason).toBe('button');
+    expect(player.draw.committedAt).toBe(T0 + 4_500);
+    expect(player.draw.solvedAt).toBe(T0 + 4_500);
     expect(player.finished).toBe(true);
   });
 
@@ -191,8 +191,8 @@ describe('draw-session — NỘP BÀI mới sinh ra điểm', () => {
     }
     // Điểm 0 nhưng lượt của người này đã xong: canvas phải khoá, không cho nộp lại.
     expect(player.score).toBe(0);
-    expect(player.solved).toBe(false);
-    expect(player.committed).toBe(true);
+    expect(player.draw.solved).toBe(false);
+    expect(player.draw.committed).toBe(true);
     expect(player.finished).toBe(true);
   });
 
@@ -296,9 +296,9 @@ describe('draw-session — TỰ NỘP khi hết giờ', () => {
     );
 
     expect(graded).toBe(1);
-    expect(player.committed).toBe(true);
-    expect(player.commitReason).toBe('timeout');
-    expect(player.solved).toBe(true);
+    expect(player.draw.committed).toBe(true);
+    expect(player.draw.commitReason).toBe('timeout');
+    expect(player.draw.solved).toBe(true);
     // ceil(15.3 giây) = 16 → KẸP ở 15 giây của lượt.
     expect(player.score).toBe(SOLVE_BASE_SCORE - 15);
   });
@@ -318,9 +318,9 @@ describe('draw-session — TỰ NỘP khi hết giờ', () => {
 
     expect(graded).toBe(1); // chỉ Bình
     expect(player.score).toBe(SOLVE_BASE_SCORE - 4);
-    expect(player.commitReason).toBe('button'); // ⬅ không bị đổi thành 'timeout'
+    expect(player.draw.commitReason).toBe('button'); // ⬅ không bị đổi thành 'timeout'
     expect(other.score).toBe(SOLVE_BASE_SCORE - 15);
-    expect(other.commitReason).toBe('timeout');
+    expect(other.draw.commitReason).toBe('timeout');
   });
 
   it('chưa gửi được nét nào → tự nộp 0 điểm, không tốn inference', async () => {
@@ -330,9 +330,9 @@ describe('draw-session — TỰ NỘP khi hết giờ', () => {
     const graded = await finalizeStragglers(round, T0 + DURATION + 300, counter.fn);
 
     expect(graded).toBe(1);
-    expect(player.committed).toBe(true);
+    expect(player.draw.committed).toBe(true);
     expect(player.score).toBe(0);
-    expect(player.commitReason).toBe('timeout');
+    expect(player.draw.commitReason).toBe('timeout');
     expect(counter.calls()).toBe(0); // canvas trống thì không chạy model
   });
 
@@ -350,7 +350,7 @@ describe('draw-session — TỰ NỘP khi hết giờ', () => {
     );
 
     expect(graded).toBe(1);
-    expect(player.committed).toBe(true);
+    expect(player.draw.committed).toBe(true);
     expect(player.score).toBe(SOLVE_BASE_SCORE - 15);
   });
 
@@ -384,7 +384,7 @@ describe('draw-session — CHỐNG GIAN LẬN', () => {
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('TIME_UP');
     expect(player.score).toBe(0);
-    expect(player.committed).toBe(false);
+    expect(player.draw.committed).toBe(false);
   });
 
   it('nộp trong quãng ân hạn → nhận, nhưng số giây KẸP ở độ dài lượt', async () => {
@@ -533,7 +533,7 @@ describe('draw-session — CHỐNG GIAN LẬN', () => {
 
   it('lượt chưa có từ khoá thì từ chối, không crash', async () => {
     const { round, player } = setup('circle');
-    round.target = null;
+    round.draw.target = null;
 
     const p = await previewFrame(round, player, { seq: 1, strokes: circleStrokes() }, T0 + 1_000, fakeClassifier(hit('circle')));
     expect(p.ok).toBe(false);
@@ -582,10 +582,10 @@ describe('draw-session — canvas trống', () => {
   it('canvas trống không xoá dự đoán trước đó', async () => {
     const { round, player } = setup('circle');
     await previewFrame(round, player, { seq: 1, strokes: circleStrokes() }, T0 + 1_000, fakeClassifier(miss()));
-    expect(player.lastGuess?.label).toBe('washing machine');
+    expect(player.draw.lastGuess?.label).toBe('washing machine');
 
     await previewFrame(round, player, { seq: 2, strokes: [] }, T0 + 3_000, fakeClassifier(hit('circle')));
-    expect(player.lastGuess?.label).toBe('washing machine'); // ⬅ giữ nguyên
+    expect(player.draw.lastGuess?.label).toBe('washing machine'); // ⬅ giữ nguyên
   });
 
   it('XOÁ HẾT rồi nộp → 0 điểm, không hồi sinh hình cũ', async () => {
@@ -612,8 +612,8 @@ describe('draw-session — gọi model thật', () => {
     ).rejects.toThrow('MODEL_NOT_LOADED');
 
     expect(player.score).toBe(0);
-    expect(player.solved).toBe(false);
-    expect(player.committed).toBe(false); // ⬅ chưa chấm được thì vẫn còn quyền nộp
+    expect(player.draw.solved).toBe(false);
+    expect(player.draw.committed).toBe(false); // ⬅ chưa chấm được thì vẫn còn quyền nộp
   });
 
   it('model được gọi đúng một lần cho mỗi frame hợp lệ', async () => {

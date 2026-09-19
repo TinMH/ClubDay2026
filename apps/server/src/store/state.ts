@@ -25,8 +25,8 @@ export function toRoundState(round: Round, now = Date.now()): RoundState {
       finished: p.finished,
     })),
   };
-  if (round.game === 'draw' && round.target) {
-    state.target = { id: round.target.id, labelVi: round.target.labelVi };
+  if (round.game === 'draw' && round.draw.target) {
+    state.target = { id: round.draw.target.id, labelVi: round.draw.target.labelVi };
   }
   return state;
 }

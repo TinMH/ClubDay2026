@@ -55,7 +55,7 @@ function boardSeed(round: Round, player: Player): number {
 
 /** Bàn chơi của cấp người chơi đang ở. */
 export function currentBoard(round: Round, player: Player): SpotBoard {
-  return generateBoard(boardSeed(round, player), player.level);
+  return generateBoard(boardSeed(round, player), player.spot.level);
 }
 
 /**
@@ -84,34 +84,34 @@ export function submitPick(
     return { ok: false, code: 'TIME_UP' };
   }
 
-  if (level !== player.level) return { ok: false, code: 'BAD_LEVEL' };
+  if (level !== player.spot.level) return { ok: false, code: 'BAD_LEVEL' };
 
   const board = currentBoard(round, player);
   if (index < 0 || index >= board.size * board.size) return { ok: false, code: 'BAD_LEVEL' };
 
-  if (tooFast(player.lastReplayAt, now, MIN_SPOT_GAP_MS)) {
+  if (tooFast(player.spot.lastPickAt, now, MIN_SPOT_GAP_MS)) {
     player.flagged = true;
     return { ok: false, code: 'TOO_FAST' };
   }
 
   const correct = index === board.oddIndex;
 
-  player.lastReplayAt = now;
-  // Dùng chung với Tính nhanh làm mốc "xong lúc nào" cho bảng hạng (dashboard.ts).
-  player.lastAnswerAt = now;
+  player.spot.lastPickAt = now;
+  // Mốc "xong lúc nào" cho bảng hạng — dùng chung cho mọi game (dashboard.ts).
+  player.lastActionAt = now;
 
   if (correct) {
     player.correct += 1;
     // Điểm là cấp CAO NHẤT đã vượt — chính là cấp vừa qua được.
-    if (player.level > player.score) player.score = player.level;
-    player.level += 1;
+    if (player.spot.level > player.score) player.score = player.spot.level;
+    player.spot.level += 1;
   } else {
     player.wrong += 1;
-    player.level = 1; // làm lại từ đầu; `score` giữ nguyên kỷ lục cũ
+    player.spot.level = 1; // làm lại từ đầu; `score` giữ nguyên kỷ lục cũ
   }
 
   syncRoundStatus(round, now);
   touch(round); // đẩy điểm mới cho mọi client đang xem
 
-  return { ok: true, correct, score: player.score, level: player.level, board: currentBoard(round, player) };
+  return { ok: true, correct, score: player.score, level: player.spot.level, board: currentBoard(round, player) };
 }

@@ -71,7 +71,7 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
   // BTC bấm BẮT ĐẦU → chọn từ khoá. Cả 5 người trong lượt vẽ CÙNG một hình, nếu
   // mỗi người một hình thì không so điểm được nữa.
   registerStartHook('draw', (round) => {
-    round.target = pickTarget(round.id);
+    round.draw.target = pickTarget(round.id);
   });
 
   // Hết giờ → TỰ NỘP cho những ai chưa bấm nút.
@@ -155,7 +155,7 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(statusFor(outcome.code)).send({
         error: outcome.code,
         score: player.score,
-        committed: player.committed,
+        committed: player.draw.committed,
         serverNow: now,
       });
     }
@@ -216,7 +216,7 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(statusFor(outcome.code)).send({
         error: outcome.code,
         score: player.score,
-        committed: player.committed,
+        committed: player.draw.committed,
         serverNow: now,
       });
     }

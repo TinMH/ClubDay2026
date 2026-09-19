@@ -119,7 +119,7 @@ export type CommitOutcome = CommitOk | { ok: false; code: FailCode };
  *   2. Còn trong thời gian — hết giờ thì không nhận frame nữa.
  *   3. Không gửi nhanh hơn 1 frame/giây — để một người không chiếm hết CPU của model.
  *   4. `seq` phải TĂNG DẦN: chặn gửi lại frame cũ.
- *   5. Từ khoá lấy từ `round.target` do server chọn, không bao giờ từ client.
+ *   5. Từ khoá lấy từ `round.draw.target` do server chọn, không bao giờ từ client.
  *
  * Toàn bộ phần kiểm tra chạy ĐỒNG BỘ trước `await classify` — nên hai frame gửi
  * cùng lúc cho cùng một người chơi sẽ bị chốt 3 hoặc 4 chặn, không cùng lọt qua.
@@ -131,7 +131,7 @@ export async function previewFrame(
   now: number,
   classify: ClassifyFn,
 ): Promise<PreviewOutcome> {
-  const target = round.target;
+  const target = round.draw.target;
   if (!target) return { ok: false, code: 'NO_TARGET' };
 
   if (round.status !== 'playing' || player.finished) return { ok: false, code: 'NOT_PLAYING' };
@@ -149,16 +149,16 @@ export async function previewFrame(
   // Mà khoảng cách đo theo GIỜ NHẬN, nên wifi giật một nhịp là hai frame gửi
   // đúng nhịp vẫn tới sát nhau — đánh cờ ở đây là bêu một người chơi thật vì
   // mạng của họ chập, đổi lại không chặn được gì.
-  if (tooFast(player.lastFrameAt, now, MIN_FRAME_GAP_MS)) {
+  if (tooFast(player.draw.lastFrameAt, now, MIN_FRAME_GAP_MS)) {
     return { ok: false, code: 'TOO_FAST' };
   }
 
-  if (frame.seq <= player.seq) return { ok: false, code: 'SEQUENCE' };
+  if (frame.seq <= player.draw.seq) return { ok: false, code: 'SEQUENCE' };
 
   // Từ đây trở đi là đã TIÊU thụ frame: ghi mốc thời gian và seq trước khi
   // `await`, để frame gửi chồng lên không lách được qua chốt 3/4.
-  player.lastFrameAt = now;
-  player.seq = frame.seq;
+  player.draw.lastFrameAt = now;
+  player.draw.seq = frame.seq;
 
   const seconds = secondsSince(round, now);
 
@@ -174,7 +174,7 @@ export async function previewFrame(
   }
 
   const top = await classify(px, 3);
-  if (top[0]) player.lastGuess = top[0];
+  if (top[0]) player.draw.lastGuess = top[0];
 
   return {
     ok: true,
@@ -229,12 +229,12 @@ export function commitDrawing(
   now: number,
   classify: ClassifyFn,
 ): Promise<CommitOutcome> {
-  if (!round.target) return Promise.resolve({ ok: false, code: 'NO_TARGET' });
+  if (!round.draw.target) return Promise.resolve({ ok: false, code: 'NO_TARGET' });
 
   // Đã chấm rồi: trả lại kết quả cũ. Client tự nộp lúc 0 giây rất có thể tới sau
   // khi server đã tự nộp xong — lúc đó câu trả lời phải là "bạn được N điểm",
   // không phải một mã lỗi.
-  if (player.committed) return Promise.resolve(cachedResult(round, player));
+  if (player.draw.committed) return Promise.resolve(cachedResult(round, player));
 
   // Bấm đúp (hoặc mạng chậm bắn lại): hai request cùng lúc cho cùng một người.
   // Cái thứ hai chờ chung kết quả với cái thứ nhất thay vì chấm lại — nếu không
@@ -260,7 +260,7 @@ async function grade(
     return { ok: false, code: 'TIME_UP' };
   }
 
-  const target = round.target;
+  const target = round.draw.target;
   if (!target) return { ok: false, code: 'NO_TARGET' };
 
   // Nộp sau mốc hết giờ = tự nộp. Client không khai được điều này.
@@ -275,16 +275,16 @@ async function grade(
 
   if (!isBlank(px)) {
     top = await classify(px, 3);
-    if (top[0]) player.lastGuess = top[0];
+    if (top[0]) player.draw.lastGuess = top[0];
     matched = accepted(top, target.id);
   }
 
   player.score = matched ? Math.max(0, SOLVE_BASE_SCORE - seconds) : 0;
-  player.solved = matched;
-  player.solvedAt = now;
-  player.committed = true;
-  player.commitReason = reason;
-  player.committedAt = now;
+  player.draw.solved = matched;
+  player.draw.solvedAt = now;
+  player.draw.committed = true;
+  player.draw.commitReason = reason;
+  player.draw.committedAt = now;
   player.finished = true;
 
   snapshots.delete(player.id); // bài đã chấm → không giữ nét vẽ nữa
@@ -308,12 +308,12 @@ function cachedResult(round: Round, player: Player): CommitOk {
   return {
     ok: true,
     already: true,
-    reason: player.commitReason ?? 'button',
-    matched: player.solved,
+    reason: player.draw.commitReason ?? 'button',
+    matched: player.draw.solved,
     // Bài đã chấm rồi thì client không cần top-3 nữa; nhớ được dự đoán đầu là đủ.
-    top: player.lastGuess ? [player.lastGuess] : [],
+    top: player.draw.lastGuess ? [player.draw.lastGuess] : [],
     score: player.score,
-    seconds: secondsSince(round, player.committedAt ?? Date.now()),
+    seconds: secondsSince(round, player.draw.committedAt ?? Date.now()),
     endsAt: round.endsAt,
   };
 }
@@ -334,7 +334,7 @@ export async function finalizeStragglers(
 ): Promise<number> {
   let graded = 0;
   for (const player of round.players.values()) {
-    if (player.committed) continue;
+    if (player.draw.committed) continue;
     const outcome = await commitDrawing(round, player, { force: true }, now, classify);
     if (outcome.ok && !outcome.already) graded += 1;
   }

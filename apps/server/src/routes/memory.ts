@@ -24,8 +24,8 @@ const ReplayBody = z.object({
 export async function memoryRoutes(app: FastifyInstance): Promise<void> {
   // Chạy khi BTC bấm BẮT ĐẦU — sinh chuỗi một lần cho cả lượt.
   registerStartHook('memory', (round) => {
-    if (!round.sequence) {
-      round.sequence = generateSequence(seedFromRoundId(round.id));
+    if (!round.memory.sequence) {
+      round.memory.sequence = generateSequence(seedFromRoundId(round.id));
     }
   });
 
@@ -46,7 +46,7 @@ export async function memoryRoutes(app: FastifyInstance): Promise<void> {
     return {
       roundId: round.id,
       status: round.status,
-      level: player.level,
+      level: player.memory.level,
       sequence: currentSequence(round, player, now),
       pads: MEMORY_PAD_COUNT,
       stepMs: MEMORY_STEP_MS,

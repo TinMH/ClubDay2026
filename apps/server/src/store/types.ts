@@ -1,19 +1,17 @@
 /**
- * HỢP ĐỒNG ĐÓNG BĂNG — Phase F sở hữu, hai track CHỈ ĐỌC.
+ * Kiểu trong RAM của server: một lượt và những người chơi trong đó.
  *
- * File này chứa đủ field cho CẢ HAI game. Nếu bạn thấy cần thêm field,
- * dừng lại và nhắn người kia: đó là dấu hiệu hợp đồng thiếu.
- * Chi tiết: .hermes/plans/2026-09-12_201457-clubday-split-2-tracks.md
+ * MỖI TRACK SỞ HỮU MỘT TÚI RIÊNG (`player.math`, `player.draw`, …) thay vì đổ
+ * hết field vào một `Player` phẳng. Bản phẳng cũ khiến hai chuyện xảy ra:
+ *   - đọc `Player` không biết field nào thuộc game nào, phải tra ngược ra
+ *     service mới hiểu `seq` hay `qIndex` là của ai;
+ *   - thêm game thứ tư thì nó DÙNG KÉ `level` và `lastReplayAt` của Nhớ nhanh,
+ *     vì thêm field thứ mười lăm vào một kiểu phẳng trông còn tệ hơn. Hai game
+ *     không liên quan chia chung một field là bẫy đặt sẵn cho người sửa sau.
  *
- * ĐÃ MỞ MỘT LẦN, theo đúng cách hợp đồng cho phép — CHỈ thêm field mới, không đổi
- * nghĩa field cũ, nên track còn lại không phải sửa gì:
- *   - `streak`                                     (TRACK A — điểm là chuỗi đúng dài nhất)
- *   - `committed`, `commitReason`, `committedAt`   (TRACK B — chấm bài lúc NỘP)
- *   - `level`, `levelSentAt`, `lastReplayAt`       (TRACK C — Nhớ nhanh)
- *   - `sequence` trên `Round`                      (TRACK C — chuỗi ô cần nhớ)
- *
- * TRACK D (Ô khác màu) KHÔNG thêm field nào: nó dùng lại `level` và `lastReplayAt`
- * đúng nghĩa cũ, còn bàn chơi thì suy ra được từ mã lượt + cấp nên không cần lưu.
+ * Bốn túi LUÔN có mặt (không optional): mỗi lượt chỉ chạy một game nên ba túi
+ * kia chỉ tốn vài chục byte cho mỗi người chơi, đổi lại không chỗ nào phải viết
+ * `?.` hay kiểm tra null cho một thứ chắc chắn tồn tại.
  */
 
 /**
@@ -37,27 +35,8 @@ export interface Prediction {
   score: number;
 }
 
-export interface Player {
-  id: string;
-  name: string;
-  joinedAt: number;
-  /**
-   * Số mà BẢNG HẠNG xếp theo — mỗi game một công thức, và đây là chỗ duy nhất
-   * `dashboard.ts` đọc để so:
-   *   - Tính nhanh: CHUỖI ĐÚNG DÀI NHẤT (không phải tổng số câu đúng).
-   *   - Vẽ hình:  150 − số giây đã dùng.
-   *   - Nhớ nhanh: CẤP CAO NHẤT đã vượt (chuỗi dài nhất lặp đúng).
-   * Đổi công thức của một game là đổi luôn thứ tự bảng hạng của game đó.
-   */
-  score: number;
-  flagged: boolean;
-  /** Cả 2 game set = true khi người chơi xong lượt của mình. */
-  finished: boolean;
-  /** Dùng cho bảng hạng: đúng / sai. TRACK A ghi, track B để 0. */
-  correct: number;
-  wrong: number;
-
-  // ── TRACK A dùng (Tính nhanh) ──
+/** TRACK A — Tính nhanh. */
+export interface MathPlayerState {
   /**
    * Chuỗi đúng LIÊN TIẾP hiện tại. Trả lời sai là về 0 ngay.
    *
@@ -67,10 +46,10 @@ export interface Player {
   streak: number;
   /** Đang ở câu số mấy (0-based). */
   qIndex: number;
-  /** ⏱ Server ghi mỗi lần nhận đáp án — dùng chống spam. */
-  lastAnswerAt: number;
+}
 
-  // ── TRACK B dùng (Vẽ hình) ──
+/** TRACK B — Vẽ hình nhanh. */
+export interface DrawPlayerState {
   /** Số thứ tự frame gần nhất. */
   seq: number;
   /** ⏱ Server ghi mỗi lần nhận frame — dùng chống spam. */
@@ -92,12 +71,12 @@ export interface Player {
   commitReason: 'button' | 'timeout' | null;
   /** ⏱ Thời điểm SERVER chấm bài. */
   committedAt: number | null;
+}
 
-  // ── TRACK C & D dùng (Nhớ nhanh, Ô khác màu) ──
+/** TRACK C — Nhớ nhanh. */
+export interface MemoryPlayerState {
   /**
-   * Cấp ĐANG chơi (1-based).
-   *
-   * Nhớ nhanh: độ dài chuỗi phải lặp lại. Ô khác màu: độ khó của bàn chơi.
+   * Cấp ĐANG chơi (1-based) = độ dài chuỗi phải lặp lại.
    *
    * Giữ riêng khỏi `score` vì `score` là cấp CAO NHẤT đã vượt: lặp sai thì cấp
    * hiện tại về 1 nhưng kỷ lục vẫn còn — cùng triết lý với `streak` của Tính nhanh.
@@ -111,13 +90,56 @@ export interface Player {
    * Trả lời sớm hơn quãng đó nghĩa là không hề xem — xem services/memory-session.ts.
    */
   levelSentAt: number;
-  /** ⏱ Server ghi mỗi lần nhận một lượt lặp / một cú chạm — dùng chống spam. */
+  /** ⏱ Server ghi mỗi lần nhận một lượt lặp — dùng chống spam. */
   lastReplayAt: number;
+}
+
+/** TRACK D — Ô khác màu. */
+export interface SpotPlayerState {
+  /** Cấp ĐANG chơi (1-based) = độ khó của bàn: lưới dày thêm, màu sát nhau hơn. */
+  level: number;
+  /** ⏱ Server ghi mỗi lần nhận một cú chạm — dùng chống spam. */
+  lastPickAt: number;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  joinedAt: number;
+  /**
+   * Số mà BẢNG HẠNG xếp theo — mỗi game một công thức, và đây là chỗ duy nhất
+   * `dashboard.ts` đọc để so:
+   *   - Tính nhanh:  CHUỖI ĐÚNG DÀI NHẤT (không phải tổng số câu đúng).
+   *   - Vẽ hình:     150 − số giây đã dùng.
+   *   - Nhớ nhanh:   CẤP CAO NHẤT đã vượt (chuỗi dài nhất lặp đúng).
+   *   - Ô khác màu:  CẤP CAO NHẤT đã vượt.
+   * Đổi công thức của một game là đổi luôn thứ tự bảng hạng của game đó.
+   */
+  score: number;
+  flagged: boolean;
+  /** Mọi game set = true khi người chơi xong lượt của mình. */
+  finished: boolean;
+  /** Dùng cho bảng hạng: đúng / sai. Game Vẽ để 0. */
+  correct: number;
+  wrong: number;
+  /**
+   * ⏱ Lần cuối người này LÀM ĐƯỢC MỘT VIỆC được tính (trả lời, lặp chuỗi, chạm ô).
+   *
+   * Bảng hạng dùng nó làm mốc "xong lúc nào" khi bằng điểm. Tên cũ là
+   * `lastAnswerAt` — đúng với Tính nhanh, sai với ba game còn lại.
+   */
+  lastActionAt: number;
+
+  // Mỗi game một túi. Xem ghi chú đầu file về việc vì sao không để phẳng.
+  math: MathPlayerState;
+  draw: DrawPlayerState;
+  memory: MemoryPlayerState;
+  spot: SpotPlayerState;
 }
 
 export interface Round {
   id: string;
-  /** ⭐ Quyết định Play.tsx render MathGame hay DrawGame. */
+  /** ⭐ Quyết định Play.tsx render màn hình của game nào. */
   game: GameKind;
   status: RoundStatus;
   createdAt: number;
@@ -133,18 +155,18 @@ export interface Round {
    * 5/5 thì tụt xuống 5/3 và hai người bỗng thành thừa.
    */
   maxPlayers: number;
-  /** TRACK A: sinh sẵn khi bắt đầu lượt. */
-  questions: Question[] | null;
+  /** TRACK A: đề bài, sinh sẵn khi bắt đầu lượt. */
+  math: { questions: Question[] | null };
   /** TRACK B: từ khoá cần vẽ. */
-  target: { id: string; labelVi: string } | null;
+  draw: { target: { id: string; labelVi: string } | null };
   /**
    * TRACK C: chuỗi ô cần nhớ, sinh sẵn khi bắt đầu lượt.
    *
    * Cấp n = n phần tử ĐẦU của chuỗi này, nên lên cấp chỉ là nối thêm đúng một ô
-   * vào chuỗi cũ — giống trò Simon. Cả lượt dùng CHUNG một chuỗi để 5 người gặp
-   * đúng một đề bài.
+   * vào chuỗi cũ — giống trò Simon. Cả lượt dùng CHUNG một chuỗi để mọi người
+   * gặp đúng một đề bài.
    */
-  sequence: number[] | null;
+  memory: { sequence: number[] | null };
   /** Tăng mỗi lần lượt đổi → SSE phát khi version đổi. */
   version: number;
   /** false = lượt khôi phục từ snapshot sau khi server restart. */

@@ -10,16 +10,16 @@ const DURATION = 60_000;
 function setup(length = 12): { round: Round; player: Player } {
   const round = createRound('memory', T0);
   const player = addPlayer(round, 'An', T0);
-  round.sequence = generateSequence(42, length);
+  round.memory.sequence = generateSequence(42, length);
   round.startedAt = T0;
   round.endsAt = T0 + DURATION;
   round.status = 'playing';
-  player.levelSentAt = T0;
+  player.memory.levelSentAt = T0;
   return { round, player };
 }
 
 /** Chuỗi đúng của cấp hiện tại — theo server, không theo client. */
-const truth = (round: Round, level: number): number[] => (round.sequence ?? []).slice(0, level);
+const truth = (round: Round, level: number): number[] => (round.memory.sequence ?? []).slice(0, level);
 
 /** Thời điểm sớm nhất được phép nộp cấp `level` (đã xem hết chuỗi). */
 const watched = (sentAt: number, level: number): number => sentAt + level * MEMORY_STEP_MS;
@@ -45,21 +45,21 @@ describe('memory-session — chấm điểm', () => {
     let now = T0;
     // Vượt 3 cấp cho có kỷ lục.
     for (let level = 1; level <= 3; level++) {
-      now = watched(player.levelSentAt, level);
+      now = watched(player.memory.levelSentAt, level);
       expect(submitReplay(round, player, level, truth(round, level), now).ok).toBe(true);
     }
     expect(player.score).toBe(3);
-    expect(player.level).toBe(4);
+    expect(player.memory.level).toBe(4);
 
     // Bấm sai một ô ở cấp 4.
     const wrong = truth(round, 4);
     wrong[0] = (wrong[0]! + 1) % 4;
-    now = watched(player.levelSentAt, 4);
+    now = watched(player.memory.levelSentAt, 4);
     const res = submitReplay(round, player, 4, wrong, now);
 
     expect(res.ok).toBe(true);
     if (res.ok) expect(res.correct).toBe(false);
-    expect(player.level).toBe(1); // làm lại từ đầu
+    expect(player.memory.level).toBe(1); // làm lại từ đầu
     expect(player.score).toBe(3); // kỷ lục còn nguyên
     expect(player.wrong).toBe(1);
   });
@@ -94,8 +94,8 @@ describe('memory-session — chống gian lận', () => {
 
   it('càng lên cấp cao thì thời gian xem bắt buộc càng dài', () => {
     const { round, player } = setup();
-    player.level = 8;
-    player.levelSentAt = T0;
+    player.memory.level = 8;
+    player.memory.levelSentAt = T0;
     // Quãng đủ cho cấp 1 nhưng còn xa mới đủ cho cấp 8.
     const res = submitReplay(round, player, 8, truth(round, 8), watched(T0, 1));
     expect(res.ok).toBe(false);
@@ -108,7 +108,7 @@ describe('memory-session — chống gian lận', () => {
     expect(submitReplay(round, player, 1, truth(round, 1), first).ok).toBe(true);
 
     // Cấp 2 đã đủ thời gian xem, nhưng cách lượt trước chưa tới 250ms.
-    player.levelSentAt = first - 2 * MEMORY_STEP_MS;
+    player.memory.levelSentAt = first - 2 * MEMORY_STEP_MS;
     const res = submitReplay(round, player, 2, truth(round, 2), first + MIN_REPLAY_GAP_MS - 1);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('TOO_FAST');
@@ -136,8 +136,8 @@ describe('memory-session — chống gian lận', () => {
 
   it('số ô bấm không khớp độ dài cấp → từ chối', () => {
     const { round, player } = setup();
-    player.level = 3;
-    player.levelSentAt = T0;
+    player.memory.level = 3;
+    player.memory.levelSentAt = T0;
     const res = submitReplay(round, player, 3, truth(round, 2), watched(T0, 3));
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('BAD_LEVEL');
@@ -145,7 +145,7 @@ describe('memory-session — chống gian lận', () => {
 
   it('chưa từng nhận chuỗi mà đã nộp → từ chối', () => {
     const { round, player } = setup();
-    player.levelSentAt = 0;
+    player.memory.levelSentAt = 0;
     const res = submitReplay(round, player, 1, truth(round, 1), T0 + 10_000);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('BAD_LEVEL');
@@ -165,7 +165,7 @@ describe('memory-session — chuỗi gửi ra client', () => {
 
   it('chỉ gửi ĐÚNG cấp đang chơi, không lộ phần còn lại', () => {
     const { round, player } = setup();
-    player.level = 3;
+    player.memory.level = 3;
     const seq = currentSequence(round, player, T0 + 1_000);
     expect(seq).toEqual(truth(round, 3));
     expect(seq).toHaveLength(3); // không phải cả 12 ô
@@ -173,9 +173,9 @@ describe('memory-session — chuỗi gửi ra client', () => {
 
   it('gửi chuỗi là đóng dấu thời gian — mốc của chốt chống bot', () => {
     const { round, player } = setup();
-    player.levelSentAt = 0;
+    player.memory.levelSentAt = 0;
     currentSequence(round, player, T0 + 2_000);
-    expect(player.levelSentAt).toBe(T0 + 2_000);
+    expect(player.memory.levelSentAt).toBe(T0 + 2_000);
   });
 
   it('tải lại trang giữa chừng vẫn nhận đúng chuỗi của cấp mình', () => {

@@ -35,7 +35,7 @@ export async function spotRoutes(app: FastifyInstance): Promise<void> {
     return {
       roundId: round.id,
       status: round.status,
-      level: player.level,
+      level: player.spot.level,
       board: currentBoard(round, player),
       score: player.score,
       correct: player.correct,

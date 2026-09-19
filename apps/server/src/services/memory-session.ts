@@ -35,7 +35,7 @@ export type ReplayOutcome =
 
 /** Chuỗi của cấp hiện tại = `level` phần tử đầu của chuỗi cả lượt. */
 function sliceFor(round: Round, level: number): number[] | null {
-  const seq = round.sequence;
+  const seq = round.memory.sequence;
   if (!seq || level < 1 || level > seq.length) return null;
   return seq.slice(0, level);
 }
@@ -48,8 +48,8 @@ function sliceFor(round: Round, level: number): number[] | null {
  * lại trang giữa lượt.
  */
 export function currentSequence(round: Round, player: Player, now: number): number[] | null {
-  const seq = sliceFor(round, player.level);
-  if (seq) player.levelSentAt = now;
+  const seq = sliceFor(round, player.memory.level);
+  if (seq) player.memory.levelSentAt = now;
   return seq;
 }
 
@@ -80,51 +80,51 @@ export function submitReplay(
     return { ok: false, code: 'TIME_UP' };
   }
 
-  const expected = sliceFor(round, player.level);
+  const expected = sliceFor(round, player.memory.level);
   if (!expected) return { ok: false, code: 'NOT_PLAYING' };
 
   // Chặn cả việc nhảy cấp lẫn nộp lại cấp cũ.
-  if (level !== player.level || taps.length !== expected.length) {
+  if (level !== player.memory.level || taps.length !== expected.length) {
     return { ok: false, code: 'BAD_LEVEL' };
   }
 
   // Chưa từng nhận chuỗi mà đã nộp → không thể là người chơi thật.
-  if (player.levelSentAt === 0) return { ok: false, code: 'BAD_LEVEL' };
+  if (player.memory.levelSentAt === 0) return { ok: false, code: 'BAD_LEVEL' };
 
-  if (tooFast(player.lastReplayAt, now, MIN_REPLAY_GAP_MS)) {
+  if (tooFast(player.memory.lastReplayAt, now, MIN_REPLAY_GAP_MS)) {
     player.flagged = true;
     return { ok: false, code: 'TOO_FAST' };
   }
 
-  if (now - player.levelSentAt < expected.length * MEMORY_STEP_MS * MIN_WATCH_RATIO) {
+  if (now - player.memory.levelSentAt < expected.length * MEMORY_STEP_MS * MIN_WATCH_RATIO) {
     player.flagged = true;
     return { ok: false, code: 'TOO_FAST' };
   }
 
   const correct = expected.every((pad, i) => taps[i] === pad);
 
-  player.lastReplayAt = now;
-  // Dùng chung với Tính nhanh làm mốc "xong lúc nào" cho bảng hạng (dashboard.ts).
-  player.lastAnswerAt = now;
+  player.memory.lastReplayAt = now;
+  // Mốc "xong lúc nào" cho bảng hạng — dùng chung cho mọi game (dashboard.ts).
+  player.lastActionAt = now;
 
   if (correct) {
     player.correct += 1;
     // Điểm là cấp CAO NHẤT đã vượt — chính là độ dài chuỗi vừa lặp đúng.
-    if (player.level > player.score) player.score = player.level;
-    player.level += 1;
+    if (player.memory.level > player.score) player.score = player.memory.level;
+    player.memory.level += 1;
   } else {
     player.wrong += 1;
-    player.level = 1; // làm lại từ đầu; `score` giữ nguyên kỷ lục cũ
+    player.memory.level = 1; // làm lại từ đầu; `score` giữ nguyên kỷ lục cũ
   }
 
-  const next = sliceFor(round, player.level);
+  const next = sliceFor(round, player.memory.level);
   if (!next) {
     player.finished = true; // vượt hết chuỗi — trên thực tế không ai tới được
   } else {
-    player.levelSentAt = now;
+    player.memory.levelSentAt = now;
     syncRoundStatus(round, now);
   }
 
   touch(round); // đẩy điểm mới cho mọi client đang xem
-  return { ok: true, correct, score: player.score, level: player.level, sequence: next ?? [] };
+  return { ok: true, correct, score: player.score, level: player.memory.level, sequence: next ?? [] };
 }

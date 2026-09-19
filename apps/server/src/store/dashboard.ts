@@ -8,8 +8,8 @@ export type { DashboardRow } from '@clubday/contract';
  * Dùng +∞ thay vì 0 để người chưa xong không nhảy lên đầu khi so sánh.
  */
 function finishAt(p: Player): number {
-  if (p.solvedAt !== null) return p.solvedAt;
-  if (p.lastAnswerAt > 0) return p.lastAnswerAt;
+  if (p.draw.solvedAt !== null) return p.draw.solvedAt;
+  if (p.lastActionAt > 0) return p.lastActionAt;
   return Number.POSITIVE_INFINITY;
 }
 
@@ -27,7 +27,7 @@ export function dashboard(round: Round): DashboardRow[] {
       // Tính nhanh xếp theo CHUỖI DÀI NHẤT, Nhớ nhanh xếp theo CẤP CAO NHẤT —
       // cả hai đều là con số nhỏ nên bằng điểm là chuyện thường gặp. Khi bằng thì
       // ai làm đúng NHIỀU LẦN hơn thắng. Nếu rơi thẳng xuống so thời gian thì
-      // người làm ÍT hơn lại xếp trên — `lastAnswerAt` của họ sớm hơn — ngược hẳn
+      // người làm ÍT hơn lại xếp trên — `lastActionAt` của họ sớm hơn — ngược hẳn
       // với điều ai cũng nghĩ là công bằng.
       //
       // KHÔNG áp cho game Vẽ: ở đó `correct` luôn bằng 0, và điểm đã tính sẵn
@@ -50,7 +50,7 @@ export function dashboard(round: Round): DashboardRow[] {
         correct: p.correct,
         wrong: p.wrong,
         msToFinish: Number.isFinite(f) ? f - started : null,
-        solved: p.solved,
+        solved: p.draw.solved,
         flagged: p.flagged,
       };
     });
