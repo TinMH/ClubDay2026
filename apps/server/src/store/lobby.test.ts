@@ -8,7 +8,7 @@ import {
   startRound,
   syncRoundStatus,
 } from './lobby.js';
-import { addPlayer, createRound, getActiveGame, resetAll } from './store.js';
+import { addPlayer, createRound, getActiveGame, getLastGame, resetAll } from './store.js';
 import { DURATION_MS, MAX_PLAYERS } from './types.js';
 
 describe('lobby', () => {
@@ -113,6 +113,32 @@ describe('lobby', () => {
     const res = join('An');
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('GAME_CLOSED');
+  });
+
+  it('TẠM ĐÓNG không huỷ lượt đang chờ — người đã xếp hàng vẫn chơi được', () => {
+    // Đóng nghĩa là thôi nhận người mới, không phải đuổi người đã tới. BTC bấm
+    // tạm đóng để giải lao; huỷ luôn lượt đang có người đứng chờ là mất họ.
+    const waiting = createRound('math');
+    join('An', { roundId: waiting.id });
+
+    const closed = selectActiveGame(null);
+
+    expect(closed).toEqual([]);
+    expect(waiting.status).toBe('lobby');
+    expect(waiting.players.size).toBe(1);
+    // Và vẫn bắt đầu được: bắt đầu không phụ thuộc trò nào đang mở.
+    expect(startRound(waiting.id).ok).toBe(true);
+  });
+
+  it('mở lại trò vừa đóng thì người chơi vào được ngay', () => {
+    selectActiveGame('draw');
+    selectActiveGame(null);
+    expect(join('An').ok).toBe(false);
+
+    selectActiveGame(getLastGame());
+    const res = join('An');
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.round.game).toBe('draw');
   });
 
   it('join tự vào lượt của ĐÚNG trò đang mở', () => {

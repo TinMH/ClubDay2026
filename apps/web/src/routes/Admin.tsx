@@ -43,6 +43,8 @@ export function Admin() {
   const [rounds, setRounds] = useState<RoundSummary[]>([]);
   /** Trò đang mở — chỉ MỘT trò tại một thời điểm, do màn hình này quyết định. */
   const [activeGame, setActiveGame] = useState<GameKind | null>(null);
+  /** Trò mở gần đây nhất — cái mà nút "Mở lại" sẽ mở. */
+  const [lastGame, setLastGame] = useState<GameKind>('math');
   /** Sức chứa từng trò. Khởi đầu từ .env của server, BTC chỉnh ngay tại đây. */
   const [maxPlayers, setMaxPlayers] = useState<Record<GameKind, number> | null>(null);
   const [error, setError] = useState('');
@@ -61,6 +63,7 @@ export function Admin() {
       const res = await api.listRounds(token);
       setRounds(res.rounds);
       setActiveGame(res.activeGame);
+      setLastGame(res.lastGame);
       setMaxPlayers(res.maxPlayers);
       setError('');
     } catch (err) {
@@ -171,8 +174,10 @@ export function Admin() {
 
       <ActiveGamePanel
         activeGame={activeGame}
+        lastGame={lastGame}
         disabled={busy || !token}
         onClose={() => void act(() => api.setActiveGame(null, token))}
+        onReopen={() => void act(() => api.setActiveGame(lastGame, token))}
       />
 
       <section className="grid gap-4 sm:grid-cols-2">

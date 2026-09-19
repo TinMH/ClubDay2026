@@ -4,6 +4,7 @@ import {
   allRounds,
   createRound,
   getActiveGame,
+  getLastGame,
   getMaxPlayers,
   resetAll,
   setMaxPlayers,
@@ -65,6 +66,8 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
   /** Danh sách lượt gần đây — màn hình BTC. */
   app.get('/api/admin/rounds', async () => ({
     activeGame: getActiveGame(),
+    /** Trò mở gần đây nhất — để /admin có nút "Mở lại" khi đang tạm đóng. */
+    lastGame: getLastGame(),
     maxPlayers: getMaxPlayers(),
     rounds: allRounds()
       .sort((a, b) => b.createdAt - a.createdAt)

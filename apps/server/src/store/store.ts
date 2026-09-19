@@ -32,6 +32,15 @@ let activeGame: GameKind | null = 'math';
  * lúc sinh ra (xem `Round.maxPlayers`).
  */
 const maxPlayers: Record<GameKind, number> = { ...MAX_PLAYERS_BY_GAME };
+
+/**
+ * Trò được mở GẦN ĐÂY NHẤT — vẫn nhớ cả khi đang tạm đóng.
+ *
+ * Để màn hình BTC có nút "Mở lại <trò>" đối xứng với nút "Tạm đóng". Thiếu nó
+ * thì đóng xong không còn đường quay lại nào ngoài việc tạo một lượt mới, mà
+ * tạo lượt là một việc khác hẳn với mở lại.
+ */
+let lastGame: GameKind = 'math';
 /** playerId -> roundId, để tra ngược nhanh. */
 const playerIndex = new Map<string, string>();
 
@@ -61,6 +70,11 @@ export function getMaxPlayers(): Record<GameKind, number> {
  * nếu không thì một lượt đang 3/3 bỗng thành 3/2 và hai người đã xếp hàng thành
  * thừa.
  */
+/** Trò mở gần đây nhất — dùng cho nút "Mở lại" ở /admin. */
+export function getLastGame(): GameKind {
+  return lastGame;
+}
+
 export function setMaxPlayers(game: GameKind, value: number): void {
   maxPlayers[game] = value;
 }
@@ -73,6 +87,7 @@ export function setMaxPlayers(game: GameKind, value: number): void {
  */
 export function setActiveGame(game: GameKind | null): void {
   activeGame = game;
+  if (game !== null) lastGame = game;
 }
 
 export function allRounds(): Round[] {
@@ -112,6 +127,7 @@ export function createRound(game: GameKind, now = Date.now()): Round {
   rounds.set(id, round);
   // Tạo lượt cho game nào thì game đó thành game đang mở — BTC chỉ cần một thao tác.
   activeGame = game;
+  lastGame = game;
   return round;
 }
 
@@ -240,6 +256,7 @@ export function resetAll(): void {
   for (const r of rounds.values()) for (const pid of r.players.keys()) playerIndex.delete(pid);
   rounds.clear();
   activeGame = 'math';
+  lastGame = 'math';
   Object.assign(maxPlayers, MAX_PLAYERS_BY_GAME);
 }
 
