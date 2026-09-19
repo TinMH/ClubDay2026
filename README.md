@@ -116,7 +116,7 @@ ClubDay/
 │       │   │   ├── Lobby.tsx      ✅ 🔒 5 slot, chờ BTC
 │       │   │   ├── Play.tsx       ✅ 🔒 dispatcher → MathGame | DrawGame
 │       │   │   ├── Dashboard.tsx  ✅ 🔒 bảng hạng 5 người
-│       │   │   ├── Admin.tsx      ✅ 🔒 màn hình BTC (tạo lượt, bắt đầu, URL in QR)
+│       │   │   ├── Admin.tsx      ✅ 🔒 màn hình BTC (tạo lượt, bắt đầu, mã QR)
 │       │   │   ├── MathGame.tsx   ✅ 🅰️ màn hình Tính nhanh (đã xong)
 │       │   │   ├── DrawGame.tsx   ✅ 🅱️ màn hình Vẽ (frame = gợi ý, nút NỘP BÀI)
 │       │   │   └── MemoryGame.tsx ✅ 🅲 màn hình Nhớ nhanh (xem chuỗi → lặp lại)
@@ -476,7 +476,7 @@ Tắt server: `Ctrl+C` — server tự lưu snapshot trước khi thoát.
 | Bước | Ai | Làm gì |
 |---|---|---|
 | 1 | BTC | Mở `/admin`, dán `ADMIN_TOKEN` vào ô trên cùng (lưu vào máy, chỉ nhập một lần) |
-| 2 | BTC | Bấm **+ Lượt Tính nhanh** / **+ Lượt Vẽ hình** / **+ Lượt Nhớ nhanh** → trò đó thành **trò đang mở**, hiện mã 6 ký tự và URL để in QR |
+| 2 | BTC | Bấm **+ Lượt Tính nhanh** / **+ Lượt Vẽ hình** / **+ Lượt Nhớ nhanh** → trò đó thành **trò đang mở**, hiện mã 6 ký tự kèm **mã QR** để quét |
 | 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → nhập tên → vào phòng chờ của **trò BTC đang mở** |
 | 4 | | Tối đa **5 người**. Người thứ 6 bị chặn và báo "chờ lượt sau" |
 | 5 | BTC | Bấm **BẮT ĐẦU** — ở `/admin`, hoặc ở `/lobby/<mã>` nếu máy đó đã nhập token |
@@ -518,7 +518,9 @@ MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 - **Bắt buộc `npm run prefetch` trước** khi còn internet, và xác nhận bằng `npm run check:offline`
   → phải in `✅ OFFLINE OK`. Lệnh này chặn hẳn request tải model, nên chạy được nghĩa là
   sự kiện không phụ thuộc internet.
-- In QR trỏ `http://<IP>:8787` dán ở khu vực chơi.
+- In QR trỏ `http://<IP>:8787` dán ở khu vực chơi — lấy mã ngay ở `/admin` (ô **Cả sự kiện**,
+  bấm **Phóng to** rồi chụp/in). Mã QR sinh ngay trong trình duyệt, KHÔNG gọi dịch vụ ngoài
+  nên vẫn chạy khi offline.
 - Tắt sleep/hibernate và Windows Update trên máy BTC; cắm sạc.
 - Diễn tập trước bằng 5 người thật, cả 2 game.
 

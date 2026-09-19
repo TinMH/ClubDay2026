@@ -8,8 +8,9 @@ import {
   KeyRound,
   Lock,
   Play as PlayIcon,
+  Maximize2,
   Plus,
-  QrCode,
+  QrCode as QrIcon,
   SkipForward,
   TriangleAlert,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import { api, ApiError } from '../lib/api';
 import { loadAdminToken, saveAdminToken } from '../lib/session';
 import { GAME_THEME } from '../lib/game-theme';
 import { Shell } from '../components/Shell';
+import { QrCode, QrOverlay } from '../components/QrCode';
 import { StatusBadge } from '../components/Chips';
 import { DscLogo } from '../components/Logo';
 import {
@@ -66,6 +68,8 @@ export function Admin() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [page, setPage] = useState(0);
+  /** URL đang được phóng to hết màn hình — `null` = không mở. */
+  const [zoom, setZoom] = useState<{ value: string; title: string } | null>(null);
   const origin = window.location.origin;
 
   const refresh = useCallback(async () => {
@@ -264,18 +268,56 @@ export function Admin() {
         })}
       </section>
 
-      {joinUrl && (
-        <section className="card border-correct/50 bg-correct/10 p-4">
-          <p className="flex items-center gap-2 text-sm font-semibold text-correct">
-            <QrCode aria-hidden="true" className="h-5 w-5 shrink-0" />
-            Lượt đang mở — cho người chơi quét mã này:
-          </p>
-          <p className="mt-2 break-all font-mono text-lg font-bold">{joinUrl}</p>
-          <p className="mt-1 text-sm text-muted">
-            Hoặc dùng chung 1 mã cho cả sự kiện: <span className="font-mono">{origin}</span>
-          </p>
-        </section>
-      )}
+      {/*
+        Mã QR, không chỉ đường link: ở booth người chơi cầm điện thoại, gõ lại
+        một URL dài là rào cản thật. Hiện luôn hai mã — mã của LƯỢT đang mở (vào
+        thẳng lượt đó) và mã CHUNG cho cả sự kiện (in một lần, dán lên bàn, luôn
+        đưa vào trò BTC đang mở).
+      */}
+      <section className={`card p-4 ${joinUrl ? 'border-correct/50 bg-correct/10' : ''}`}>
+        <p
+          className={`flex items-center gap-2 text-sm font-semibold ${
+            joinUrl ? 'text-correct' : ''
+          }`}
+        >
+          <QrIcon aria-hidden="true" className="h-5 w-5 shrink-0" />
+          {joinUrl ? 'Lượt đang mở — cho người chơi quét mã này:' : 'Mã QR vào chơi'}
+        </p>
+
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
+          {joinUrl && (
+            <div className="flex items-center gap-3">
+              <QrCode value={joinUrl} size={132} className="shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wide text-muted">Lượt này</p>
+                <p className="break-all font-mono text-sm font-bold">{joinUrl}</p>
+                <button
+                  onClick={() => setZoom({ value: joinUrl, title: 'Lượt đang mở' })}
+                  className="btn btn-ghost btn-sm mt-2"
+                >
+                  <Maximize2 aria-hidden="true" className="h-4 w-4" />
+                  Phóng to
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <QrCode value={origin} size={132} className="shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted">Cả sự kiện</p>
+              <p className="break-all font-mono text-sm font-bold">{origin}</p>
+              <button
+                onClick={() => setZoom({ value: origin, title: 'Cả sự kiện' })}
+                className="btn btn-ghost btn-sm mt-2"
+              >
+                <Maximize2 aria-hidden="true" className="h-4 w-4" />
+                Phóng to
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -339,6 +381,18 @@ export function Admin() {
                   </div>
 
                   <span className="ml-auto flex gap-2">
+                    {/* Chỉ lượt còn nhận người mới cần QR — lượt đã xong thì quét vào cũng vô ích. */}
+                    {r.status === 'lobby' && r.live && (
+                      <button
+                        onClick={() =>
+                          setZoom({ value: `${origin}/r/${r.roundId}`, title: `Lượt ${r.roundId}` })
+                        }
+                        aria-label={`Mã QR lượt ${r.roundId}`}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        <QrIcon aria-hidden="true" className="h-4 w-4" />
+                      </button>
+                    )}
                     <Link to={`/lobby/${r.roundId}`} className="btn btn-ghost btn-sm">
                       <Eye aria-hidden="true" className="h-4 w-4" />
                       Xem
@@ -366,6 +420,9 @@ export function Admin() {
           </ul>
         )}
       </section>
+      {zoom && (
+        <QrOverlay value={zoom.value} title={zoom.title} onClose={() => setZoom(null)} />
+      )}
     </Shell>
   );
 }
