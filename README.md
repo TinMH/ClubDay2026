@@ -476,14 +476,16 @@ Tắt server: `Ctrl+C` — server tự lưu snapshot trước khi thoát.
 | Bước | Ai | Làm gì |
 |---|---|---|
 | 1 | BTC | Mở `/admin`, dán `ADMIN_TOKEN` vào ô trên cùng (lưu vào máy, chỉ nhập một lần) |
-| 2 | BTC | Bấm **+ Lượt Tính nhanh** hoặc **+ Lượt Vẽ hình** → hiện mã 6 ký tự và URL để in QR |
-| 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → **chọn trò chơi** → nhập tên → vào phòng chờ |
+| 2 | BTC | Bấm **+ Lượt Tính nhanh** / **+ Lượt Vẽ hình** / **+ Lượt Nhớ nhanh** → trò đó thành **trò đang mở**, hiện mã 6 ký tự và URL để in QR |
+| 3 | Người chơi | Quét QR (hoặc mở `http://<IP>:8787`) → nhập tên → vào phòng chờ của **trò BTC đang mở** |
 | 4 | | Tối đa **5 người**. Người thứ 6 bị chặn và báo "chờ lượt sau" |
 | 5 | BTC | Bấm **BẮT ĐẦU** — ở `/admin`, hoặc ở `/lobby/<mã>` nếu máy đó đã nhập token |
 | 6 | | Hết giờ tự chuyển sang bảng xếp hạng của đúng 5 người đó |
 
 Vài chi tiết đã cài sẵn:
-- Nút **BẮT ĐẦU** chỉ hiện ở `/lobby` nếu trình duyệt đó đã nhập `ADMIN_TOKEN` ở `/admin` (lưu trong localStorage). Máy BTC nhập một lần là xong.
+- **Mỗi thời điểm chỉ MỘT trò được chơi.** BTC chọn trò ở `/admin`; người chơi không tự chọn — trang chủ chỉ cho vào trò đang mở, trò còn lại hiện mờ "chưa tới lượt". Đổi trò thì mọi lượt đang **chờ** của trò cũ bị bỏ (lượt đang chơi vẫn chơi hết giờ). Nút **Tạm đóng** chặn người vào lượt mới trong lúc giải lao.
+- **Chỉ BTC bắt đầu được lượt.** `POST /api/rounds/:id/start` đòi header `x-admin-token`; gọi thẳng từ DevTools cũng nhận 401. Nút **BẮT ĐẦU** chỉ hiện ở `/lobby` nếu trình duyệt đó đã nhập `ADMIN_TOKEN` ở `/admin` (lưu trong localStorage) — đó chỉ là lối tắt giao diện cho máy BTC.
+- Chạy với `NODE_ENV=production` mà **thiếu `ADMIN_TOKEN`** thì mọi thao tác quản trị bị từ chối (503) thay vì mở toang. Ở chế độ dev vẫn cho qua kèm cảnh báo lúc khởi động.
 - Bắt đầu được với **≥ 1 người** — không có timeout tự động, BTC chủ động về nhịp.
 - Bấm **Bỏ qua** ở `/admin` để kết thúc lượt ngay.
 - Ai vào sau khi lượt đã bắt đầu sẽ bị từ chối — để không ai bị thiếu giờ so với người khác.
@@ -543,7 +545,9 @@ MODEL_OFFLINE=1 ADMIN_TOKEN=<mã-bí-mật> npm start
 | `EADDRINUSE :8787` | Cổng bị chiếm. Đổi `PORT` trong `.env`, hoặc tìm và tắt tiến trình: `netstat -ano \| grep :8787` rồi `taskkill /F /PID <pid>` |
 | Mở 5173 ra trang trắng | Chưa chạy `npm run dev:server` ở terminal kia |
 | `/admin` báo "Sai mã quản trị" | `ADMIN_TOKEN` trong `.env` khác với mã đã nhập |
-| Vào `/admin` không cần mã | `.env` chưa có `ADMIN_TOKEN`. Server in cảnh báo lúc khởi động — đọc log |
+| Vào `/admin` không cần mã | `.env` chưa có `ADMIN_TOKEN` (chỉ xảy ra ở chế độ dev). Server in cảnh báo lúc khởi động — đọc log |
+| `/admin` báo 503 `ADMIN_NOT_CONFIGURED` | Chạy production mà thiếu `ADMIN_TOKEN` — đặt biến rồi khởi động lại |
+| Người chơi báo "BTC chưa mở trò nào" | Đang ở trạng thái **Tạm đóng** — vào `/admin` tạo lượt cho trò muốn chơi |
 | "Lượt này đủ 5 người rồi" | Đúng thiết kế. BTC tạo lượt mới ở `/admin` |
 | Model lỗi khi khởi động | Chưa chạy `npm run prefetch` |
 | Sửa `.env` mà không thấy đổi | Server chỉ đọc `.env` lúc khởi động — phải khởi động lại |

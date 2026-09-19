@@ -9,6 +9,17 @@ import { MAX_PLAYERS } from './types.js';
 import { newPlayerId, newRoundId } from '../lib/id.js';
 
 const rounds = new Map<string, Round>();
+
+/**
+ * GAME ĐANG MỞ — mỗi thời điểm chỉ MỘT loại game được chơi.
+ *
+ * BTC chọn loại game ở trang /admin; người chơi không được tự chọn. Nhờ vậy cả
+ * khu vực cùng chơi một trò, không có chuyện nửa hàng người chờ "Tính nhanh"
+ * còn nửa kia đã nhảy sang "Vẽ hình".
+ *
+ * `null` = đang đóng, không cho ai vào lượt mới (giải lao giữa hai trò).
+ */
+let activeGame: GameKind | null = 'math';
 /** playerId -> roundId, để tra ngược nhanh. */
 const playerIndex = new Map<string, string>();
 
@@ -20,6 +31,20 @@ const listeners = new Map<string, Set<Listener>>();
 
 export function getRound(id: string): Round | null {
   return rounds.get(id.toUpperCase()) ?? null;
+}
+
+export function getActiveGame(): GameKind | null {
+  return activeGame;
+}
+
+/**
+ * Đổi game đang mở — CHỈ store ghi biến này.
+ *
+ * Dùng qua `selectActiveGame()` ở lobby.ts (nó còn đóng nốt các lượt của game cũ),
+ * đừng gọi thẳng từ route.
+ */
+export function setActiveGame(game: GameKind | null): void {
+  activeGame = game;
 }
 
 export function allRounds(): Round[] {
@@ -56,6 +81,8 @@ export function createRound(game: GameKind, now = Date.now()): Round {
     live: true,
   };
   rounds.set(id, round);
+  // Tạo lượt cho game nào thì game đó thành game đang mở — BTC chỉ cần một thao tác.
+  activeGame = game;
   return round;
 }
 
@@ -173,6 +200,7 @@ export function startGc(keepMs = 2 * 60 * 60 * 1_000, intervalMs = 5 * 60 * 1_00
 export function resetAll(): void {
   for (const r of rounds.values()) for (const pid of r.players.keys()) playerIndex.delete(pid);
   rounds.clear();
+  activeGame = 'math';
 }
 
 /** Dùng khi khôi phục từ snapshot lúc boot. */

@@ -7,9 +7,12 @@ import { toRoundState } from '../store/state.js';
 import { GAME_KINDS, MAX_PLAYERS } from '../store/types.js';
 import { requireAdmin } from './admin-guard.js';
 
+/**
+ * KHÔNG có trường `game`: loại trò do BTC chọn ở /admin, người chơi chỉ gửi tên
+ * (và mã lượt nếu quét QR riêng khu vực).
+ */
 const JoinBody = z.object({
   name: z.string().trim().min(1).max(20),
-  game: z.enum(GAME_KINDS).optional(),
   roundId: z.string().trim().length(6).optional(),
 });
 
@@ -20,6 +23,7 @@ const STATUS: Record<string, number> = {
   ROUND_STARTED: 409,
   NOT_LOBBY: 409,
   EMPTY: 409,
+  GAME_CLOSED: 409,
 };
 
 export async function roundRoutes(app: FastifyInstance): Promise<void> {
@@ -33,7 +37,6 @@ export async function roundRoutes(app: FastifyInstance): Promise<void> {
     if (!parsed.success) return reply.code(400).send({ error: 'BAD_REQUEST' });
 
     const result = join(parsed.data.name, {
-      ...(parsed.data.game ? { game: parsed.data.game } : {}),
       ...(parsed.data.roundId ? { roundId: parsed.data.roundId } : {}),
     });
 
@@ -82,7 +85,13 @@ export async function roundRoutes(app: FastifyInstance): Promise<void> {
     return { roundId: round.id, game: round.game, status: round.status, rows: dashboard(round) };
   });
 
-  /** BTC bấm BẮT ĐẦU. Cần ≥ 1 người trong lượt. */
+  /**
+   * BTC bấm BẮT ĐẦU. Cần ≥ 1 người trong lượt.
+   *
+   * `requireAdmin` là chốt chặn duy nhất và là chốt chặn thật: người chơi có mở
+   * DevTools gọi thẳng endpoint này cũng nhận 401. Nút BẮT ĐẦU ở phòng chờ chỉ
+   * là lối tắt cho máy BTC, không phải thứ quyết định quyền.
+   */
   app.post('/api/rounds/:id/start', { preHandler: requireAdmin }, async (req, reply) => {
     const { id } = req.params as { id: string };
     const result = startRound(id);

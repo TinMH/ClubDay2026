@@ -4,6 +4,7 @@ import {
   Eye,
   House,
   KeyRound,
+  Lock,
   Play as PlayIcon,
   Plus,
   QrCode,
@@ -34,6 +35,8 @@ const GAMES: readonly GameKind[] = GAME_KINDS;
 export function Admin() {
   const [token, setToken] = useState(loadAdminToken);
   const [rounds, setRounds] = useState<RoundSummary[]>([]);
+  /** Trò đang mở — chỉ MỘT trò tại một thời điểm, do màn hình này quyết định. */
+  const [activeGame, setActiveGame] = useState<GameKind | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const origin = window.location.origin;
@@ -46,6 +49,7 @@ export function Admin() {
     try {
       const res = await api.listRounds(token);
       setRounds(res.rounds);
+      setActiveGame(res.activeGame);
       setError('');
     } catch (err) {
       setError(
@@ -63,6 +67,11 @@ export function Admin() {
     return () => clearInterval(t);
   }, [token, refresh]);
 
+  /**
+   * Tạo lượt mới cho `game` — đồng thời đặt luôn trò này thành trò ĐANG MỞ.
+   * Server sẽ đóng mọi lượt CHỜ của trò trước đó, nên không bao giờ có hai trò
+   * cùng nhận người chơi một lúc.
+   */
   async function create(game: GameKind) {
     setBusy(true);
     try {
@@ -131,6 +140,33 @@ export function Admin() {
         )}
       </div>
 
+      <section className="card p-4">
+        <p className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-semibold">Trò đang mở:</span>
+          {activeGame ? (
+            <span className={`rounded-full border-2 px-2.5 py-0.5 font-bold ${GAME_THEME[activeGame].chip}`}>
+              {GAME_LABEL[activeGame]}
+            </span>
+          ) : (
+            <span className="rounded-full border-2 border-line px-2.5 py-0.5 font-bold text-muted">
+              Đang đóng
+            </span>
+          )}
+          <button
+            onClick={() => act(() => api.setActiveGame(null, token))}
+            disabled={busy || !token || activeGame === null}
+            className="btn btn-ghost btn-sm ml-auto"
+          >
+            <Lock aria-hidden="true" className="h-4 w-4" />
+            Tạm đóng
+          </button>
+        </p>
+        <p className="mt-2 text-xs text-muted">
+          Người chơi không tự chọn trò — họ chỉ vào được trò đang mở. Tạo lượt cho trò nào thì
+          trò đó được mở, và mọi lượt đang CHỜ của trò trước sẽ bị bỏ.
+        </p>
+      </section>
+
       <section className="grid gap-3 sm:grid-cols-3">
         {GAMES.map((g) => {
           const { icon: Icon, tile } = GAME_THEME[g];
@@ -139,7 +175,9 @@ export function Admin() {
               key={g}
               onClick={() => create(g)}
               disabled={busy || !token}
-              className="btn btn-ghost w-full justify-start gap-3 p-4 text-left"
+              className={`btn btn-ghost w-full justify-start gap-3 p-4 text-left ${
+                g === activeGame ? 'border-correct/60' : ''
+              }`}
             >
               <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${tile}`}>
                 <Icon aria-hidden="true" className="h-6 w-6" />
@@ -151,6 +189,7 @@ export function Admin() {
                 </span>
                 <span className="block font-sans text-xs font-normal text-muted">
                   {DURATION_MS[g] / 1000} giây · tối đa {MAX_PLAYERS} người
+                  {g === activeGame && <span className="font-bold text-correct"> · đang mở</span>}
                 </span>
               </span>
             </button>

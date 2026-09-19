@@ -1,6 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { join, registerEndHook, registerStartHook, skipRound, startRound, syncRoundStatus } from './lobby.js';
-import { addPlayer, createRound, resetAll } from './store.js';
+import {
+  join,
+  registerEndHook,
+  registerStartHook,
+  selectActiveGame,
+  skipRound,
+  startRound,
+  syncRoundStatus,
+} from './lobby.js';
+import { addPlayer, createRound, getActiveGame, resetAll } from './store.js';
 import { DURATION_MS, MAX_PLAYERS } from './types.js';
 
 describe('lobby', () => {
@@ -34,6 +42,43 @@ describe('lobby', () => {
     const res = join('An', { roundId: 'ZZZZZZ' });
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.code).toBe('NOT_FOUND');
+  });
+
+  it('chỉ MỘT trò được mở: join vào lượt của trò đã đóng bị từ chối', () => {
+    const mathRound = createRound('math');
+    selectActiveGame('draw');
+
+    const res = join('An', { roundId: mathRound.id });
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.code).toBe('GAME_CLOSED');
+  });
+
+  it('đổi trò thì lượt CHỜ của trò cũ bị đóng, lượt ĐANG CHƠI thì không', () => {
+    const waiting = createRound('math');
+    const playing = createRound('math');
+    join('An', { roundId: playing.id });
+    startRound(playing.id);
+
+    const closed = selectActiveGame('draw');
+
+    expect(closed.map((r) => r.id)).toEqual([waiting.id]);
+    expect(waiting.status).toBe('done');
+    expect(playing.status).toBe('playing');
+    expect(getActiveGame()).toBe('draw');
+  });
+
+  it('không mở trò nào thì không ai vào được lượt mới', () => {
+    selectActiveGame(null);
+    const res = join('An');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.code).toBe('GAME_CLOSED');
+  });
+
+  it('join tự vào lượt của ĐÚNG trò đang mở', () => {
+    selectActiveGame('draw');
+    const res = join('An');
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.round.game).toBe('draw');
   });
 
   it('startRound đặt MỘT đồng hồ chung và gọi start hook của đúng game', () => {

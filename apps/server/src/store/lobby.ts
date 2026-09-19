@@ -4,7 +4,16 @@
  */
 import type { GameKind, Player, Round } from './types.js';
 import { DURATION_MS, MAX_PLAYERS } from './types.js';
-import { addPlayer, allRounds, createRound, getRound, openRound, touch } from './store.js';
+import {
+  addPlayer,
+  allRounds,
+  createRound,
+  getActiveGame,
+  getRound,
+  openRound,
+  setActiveGame,
+  touch,
+} from './store.js';
 
 // ─────────────── hook khi bắt đầu lượt ───────────────
 //
@@ -37,24 +46,29 @@ export function registerEndHook(game: GameKind, fn: EndHook): void {
 
 export type JoinResult =
   | { ok: true; round: Round; player: Player }
-  | { ok: false; code: 'NOT_FOUND' | 'ROUND_FULL' | 'ROUND_STARTED' };
+  | { ok: false; code: 'NOT_FOUND' | 'ROUND_FULL' | 'ROUND_STARTED' | 'GAME_CLOSED' };
 
 /**
  * Cách A (không có roundId): tự vào lượt đang mở, hoặc tạo lượt mới nếu chưa có.
  * Cách B (có roundId):    vào đúng lượt chỉ định — dùng cho QR riêng từng khu vực.
+ *
+ * LOẠI GAME DO BTC CHỌN, không do người chơi: cả hai cách đều phải khớp với game
+ * đang mở (`getActiveGame()`). Vì thế hàm này KHÔNG nhận tham số `game` — client
+ * gửi gì cũng không đổi được trò đang chạy.
  */
-export function join(
-  name: string,
-  opts: { game?: GameKind; roundId?: string } = {},
-  now = Date.now(),
-): JoinResult {
+export function join(name: string, opts: { roundId?: string } = {}, now = Date.now()): JoinResult {
+  const active = getActiveGame();
+  if (!active) return { ok: false, code: 'GAME_CLOSED' };
+
   let round: Round;
   if (opts.roundId) {
     const found = getRound(opts.roundId);
     if (!found) return { ok: false, code: 'NOT_FOUND' };
+    // Lượt của trò đã đóng → không cho vào nữa, kể cả khi ai đó còn giữ link cũ.
+    if (found.game !== active) return { ok: false, code: 'GAME_CLOSED' };
     round = found;
   } else {
-    round = openRound(opts.game ?? 'math', now);
+    round = openRound(active, now);
   }
 
   // Chặn join sau khi bắt đầu → không ai bị thiếu giờ so với người khác.
@@ -64,6 +78,29 @@ export function join(
 
   const player = addPlayer(round, name, now);
   return { ok: true, round, player };
+}
+
+// ─────────────── chọn game đang mở ───────────────
+
+/**
+ * BTC chọn trò sẽ chơi ở thời điểm này (`null` = tạm đóng, không ai vào được).
+ *
+ * Đổi trò thì mọi lượt CHỜ của trò cũ bị bỏ luôn: nếu để nguyên, người đã quét QR
+ * vào đó sẽ đứng mãi ở phòng chờ của một trò không còn được bắt đầu nữa.
+ * Lượt đang CHƠI thì không đụng tới — cứ để họ chơi hết giờ.
+ *
+ * @returns các lượt vừa bị đóng.
+ */
+export function selectActiveGame(game: GameKind | null, now = Date.now()): Round[] {
+  setActiveGame(game);
+  const closed: Round[] = [];
+  for (const round of allRounds()) {
+    if (round.live === false || round.status !== 'lobby') continue;
+    if (game !== null && round.game === game) continue;
+    skipRound(round.id, now);
+    closed.push(round);
+  }
+  return closed;
 }
 
 // ─────────────── bắt đầu ───────────────

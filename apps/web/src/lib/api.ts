@@ -58,6 +58,8 @@ const get = <T>(path: string, token?: string): Promise<T> =>
 export interface ClientConfig {
   signupFormUrl: string;
   signupNameEntry: string;
+  /** Trò BTC đang mở. `null` = đang đóng, chưa cho vào lượt mới. */
+  activeGame: GameKind | null;
 }
 
 /** `null` = game đó chưa có lượt nào đang chờ. */
@@ -75,22 +77,13 @@ export interface JoinResponse {
 
 export const api = {
   /**
-   * Vào lượt.
-   *
-   * `game` BẮT BUỘC ở Cách A (không có `roundId`): server mặc định `'math'` khi
-   * thiếu, và `openRound` chỉ tìm lượt CÙNG game — nên bỏ trống là người chơi
-   * luôn bị đẩy vào Tính nhanh, không cách nào tới được game Vẽ.
-   *
-   * Ở Cách B (`/r/<mã>`) thì game do chính lượt đó quyết định, `game` bị bỏ qua.
+   * Vào lượt. KHÔNG có `game`: loại trò do BTC chọn ở /admin, server quyết định —
+   * client gửi lên cũng không đổi được trò đang chạy.
    */
-  join: (name: string, opts: { game?: GameKind; roundId?: string } = {}) =>
+  join: (name: string, opts: { roundId?: string } = {}) =>
     request<JoinResponse>(
       '/api/rounds/join',
-      json({
-        name,
-        ...(opts.game ? { game: opts.game } : {}),
-        ...(opts.roundId ? { roundId: opts.roundId } : {}),
-      }),
+      json({ name, ...(opts.roundId ? { roundId: opts.roundId } : {}) }),
     ),
 
   state: (roundId: string) => get<RoundState>(`/api/rounds/${roundId}/state`),
@@ -112,7 +105,15 @@ export const api = {
   createRound: (game: GameKind, token: string) =>
     request<{ roundId: string }>('/api/admin/rounds', json({ game }, token)),
 
-  listRounds: (token: string) => get<{ rounds: RoundSummary[] }>('/api/admin/rounds', token),
+  listRounds: (token: string) =>
+    get<{ activeGame: GameKind | null; rounds: RoundSummary[] }>('/api/admin/rounds', token),
+
+  /** BTC: chọn trò được chơi lúc này (`null` = tạm đóng). */
+  setActiveGame: (game: GameKind | null, token: string) =>
+    request<{ activeGame: GameKind | null; closed: string[] }>(
+      '/api/admin/active-game',
+      json({ game }, token),
+    ),
 
   skipRound: (roundId: string, token: string) =>
     request<{ ok: true }>(`/api/admin/rounds/${roundId}/skip`, json({}, token)),

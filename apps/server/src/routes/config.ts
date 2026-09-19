@@ -11,12 +11,19 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { SIGNUP_FORM_URL, SIGNUP_NAME_ENTRY } from '../config.js';
+import { getActiveGame } from '../store/store.js';
+import type { GameKind } from '../store/types.js';
 
 export interface ClientConfig {
   /** Rỗng = chưa cấu hình → client KHÔNG hiện nút đăng ký. */
   signupFormUrl: string;
   /** Rỗng = không điền sẵn tên. */
   signupNameEntry: string;
+  /**
+   * Trò đang được chơi — BTC chọn. `null` = đang đóng.
+   * Trang chủ đọc để biết hiện trò nào và có cho vào lượt hay không.
+   */
+  activeGame: GameKind | null;
   serverNow: number;
 }
 
@@ -24,6 +31,7 @@ export async function configRoutes(app: FastifyInstance): Promise<void> {
   app.get('/api/config', async (): Promise<ClientConfig> => ({
     signupFormUrl: SIGNUP_FORM_URL,
     signupNameEntry: SIGNUP_NAME_ENTRY,
+    activeGame: getActiveGame(),
     serverNow: Date.now(),
   }));
 }

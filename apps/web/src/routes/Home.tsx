@@ -13,6 +13,7 @@ const MESSAGES: Record<string, string> = {
   ROUND_STARTED: 'Lượt này đã bắt đầu rồi — chờ lượt sau nhé.',
   NOT_FOUND: 'Không tìm thấy lượt này. Kiểm tra lại mã.',
   BAD_REQUEST: 'Tên không hợp lệ (1–20 ký tự).',
+  GAME_CLOSED: 'BTC vừa đổi trò — chờ một chút rồi thử lại nhé.',
 };
 
 const GAMES: readonly GameKind[] = GAME_KINDS;
@@ -56,15 +57,21 @@ export function Home() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const [name, setName] = useState('');
-  const [game, setGame] = useState<GameKind | null>(null);
+  /**
+   * Trò BTC đang mở. `undefined` = chưa nạp xong, `null` = BTC đang tạm đóng.
+   *
+   * NGƯỜI CHƠI KHÔNG CHỌN TRÒ: mỗi thời điểm cả booth chơi đúng một trò, do BTC
+   * quyết ở /admin. Màn hình này chỉ hiển thị lại quyết định đó.
+   */
+  const [activeGame, setActiveGame] = useState<GameKind | null | undefined>(undefined);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<OpenRounds | null>(null);
   const roundId = code?.toUpperCase();
 
-  // Cách B: game do chính lượt trong URL quyết định, người chơi không chọn.
-  const needsGame = !roundId;
-  const ready = name.trim().length > 0 && (!needsGame || game !== null);
+  // Cách B: game do chính lượt trong URL quyết định.
+  const closed = !roundId && activeGame === null;
+  const ready = name.trim().length > 0 && !closed;
 
   /**
    * Số người đang chờ, cập nhật mỗi 2 giây.
@@ -80,8 +87,11 @@ export function Home() {
     let alive = true;
     const tick = async () => {
       try {
-        const res = await api.openRounds();
-        if (alive) setWaiting(res);
+        // Cùng một nhịp: trò BTC đang mở (có thể đổi giữa chừng) và số người chờ.
+        const [cfg, res] = await Promise.all([api.config(), api.openRounds()]);
+        if (!alive) return;
+        setActiveGame(cfg.activeGame);
+        setWaiting(res);
       } catch {
         /* mất mạng một nhịp thì giữ số cũ — không xoá đi làm màn hình nhảy */
       }
@@ -100,10 +110,7 @@ export function Home() {
     setBusy(true);
     setError('');
     try {
-      const res = await api.join(name.trim(), {
-        ...(roundId ? { roundId } : {}),
-        ...(game ? { game } : {}),
-      });
+      const res = await api.join(name.trim(), { ...(roundId ? { roundId } : {}) });
       saveSession({ playerId: res.playerId, roundId: res.roundId, game: res.game, name: name.trim() });
       navigate(`/lobby/${res.roundId}`);
     } catch (err) {
@@ -127,47 +134,32 @@ export function Home() {
       </header>
 
       {/*
-        Radio THẬT, không phải <div onClick>: bàn phím đi được bằng mũi trái/phải,
-        trình đọc màn hình đọc ra "1 trong 2", và trạng thái đã chọn không phải tự
-        dựng lại bằng aria. Input ẩn bằng `sr-only` nhưng vẫn nhận focus —
-        `peer-focus-visible` vẽ viền lên thẻ card.
-
-        Ở Cách B (`/r/<mã>`) thì game đã do lượt quyết định nên chỉ hiện thông tin,
-        không cho chọn — chọn ở đó là lừa người chơi, vì server bỏ qua.
+        DANH SÁCH, không phải bộ chọn: trò nào được chơi là do BTC bấm ở /admin.
+        Vẫn hiện đủ các trò để người chơi biết booth có gì, nhưng trò chưa tới
+        lượt thì làm mờ và nói rõ — mờ mà không giải thích là bẫy.
       */}
-      <fieldset className="border-0 p-0">
-        <legend className="mb-2 text-sm font-semibold">
-          {needsGame ? 'Chọn trò chơi' : 'Trò chơi của lượt này'}
-        </legend>
+      <section aria-label="Các trò chơi">
+        <p className="mb-2 text-sm font-semibold">
+          {roundId ? 'Trò chơi của lượt này' : 'Trò đang chơi'}
+        </p>
         <div className="grid grid-cols-2 gap-3">
           {GAMES.map((g, i) => {
             const { icon: Icon, tile, blurb } = GAME_THEME[g];
-            const selected = game === g;
+            // Cách B: lượt trong URL tự quyết game, không có trò nào bị mờ.
+            const open = !!roundId || g === activeGame;
             return (
-              <label
+              <div
                 key={g}
-                className={`card animate-rise relative block cursor-pointer p-4 transition-all ${
-                  selected ? 'ring-2 ring-accent' : ''
-                } ${needsGame ? '' : 'cursor-default opacity-70'} ${
+                aria-current={open && !roundId ? 'true' : undefined}
+                className={`card animate-rise block p-4 transition-all ${
+                  open ? '' : 'opacity-45'
+                } ${
                   /* Số game lẻ: thẻ cuối trải hết hàng, không để lại một ô trống
                      trông như thiếu mất một game. */
                   GAMES.length % 2 === 1 && i === GAMES.length - 1 ? 'col-span-2' : ''
                 }`}
                 style={{ animationDelay: `${80 + i * 70}ms` }}
               >
-                <input
-                  type="radio"
-                  name="game"
-                  value={g}
-                  checked={selected}
-                  disabled={!needsGame}
-                  onChange={() => setGame(g)}
-                  className="peer sr-only"
-                />
-                <span
-                  aria-hidden="true"
-                  className="absolute inset-0 rounded-[inherit] peer-focus-visible:ring-2 peer-focus-visible:ring-fg"
-                />
                 <span className={`grid h-11 w-11 place-items-center rounded-xl ${tile}`}>
                   <Icon aria-hidden="true" className="h-6 w-6" />
                 </span>
@@ -175,12 +167,17 @@ export function Home() {
                 <p className="mt-1 text-xs text-muted">
                   {DURATION_MS[g] / 1000} giây · {blurb}
                 </p>
-                {needsGame && <WaitingLine game={g} data={waiting} />}
-              </label>
+                {!roundId &&
+                  (open ? (
+                    <WaitingLine game={g} data={waiting} />
+                  ) : (
+                    <p className="mt-2 h-5 text-xs text-muted">chưa tới lượt</p>
+                  ))}
+              </div>
             );
           })}
         </div>
-      </fieldset>
+      </section>
 
       <form
         onSubmit={submit}
@@ -225,9 +222,9 @@ export function Home() {
           )}
         </button>
 
-        {/* Nút mờ mà không nói vì sao là bẫy — nói thẳng còn thiếu gì. */}
-        {needsGame && game === null && name.trim().length > 0 && (
-          <p className="text-center text-sm text-muted">Chọn một trò chơi ở trên để vào chơi</p>
+        {/* Nút mờ mà không nói vì sao là bẫy — nói thẳng vì sao chưa vào được. */}
+        {closed && (
+          <p className="text-center text-sm text-muted">BTC chưa mở trò nào — chờ một chút nhé.</p>
         )}
 
         {error && (

@@ -34,7 +34,14 @@ export function Lobby() {
     try {
       await api.startRound(roundId, adminToken);
     } catch (err) {
-      setError(err instanceof ApiError && err.status === 401 ? 'Sai mã quản trị.' : 'Không bắt đầu được.');
+      const status = err instanceof ApiError ? err.status : 0;
+      setError(
+        status === 401
+          ? 'Sai mã quản trị.'
+          : status === 503
+            ? 'Server chưa đặt ADMIN_TOKEN — xem .env.'
+            : 'Không bắt đầu được.',
+      );
     }
   }
 
@@ -119,10 +126,15 @@ export function Lobby() {
         <WaitDots />
       </p>
 
+      {/*
+        Lối tắt cho máy BTC: chỉ hiện khi máy này đã nhập mã quản trị ở /admin.
+        Người chơi không thấy nút — và kể cả có gọi thẳng API thì server vẫn
+        đòi `x-admin-token`, nên đây thuần tuý là chuyện giao diện.
+      */}
       {adminToken && (
         <button onClick={start} disabled={players.length === 0} className="btn btn-correct btn-lg w-full">
           <PlayIcon aria-hidden="true" className="h-6 w-6" fill="currentColor" />
-          BẮT ĐẦU ({players.length} người)
+          BẮT ĐẦU ({players.length} người) · BTC
         </button>
       )}
 
