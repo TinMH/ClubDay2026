@@ -1,6 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowRight, LoaderCircle, ShieldCheck, Sparkles, TriangleAlert, Users } from 'lucide-react';
+import {
+  ArrowRight,
+  LoaderCircle,
+  Lock,
+  ShieldCheck,
+  Sparkles,
+  TriangleAlert,
+  Users,
+} from 'lucide-react';
 import { api, ApiError, type OpenRounds } from '../lib/api';
 import { saveSession } from '../lib/session';
 import { GAME_THEME } from '../lib/game-theme';
@@ -135,8 +143,10 @@ export function Home() {
 
       {/*
         DANH SÁCH, không phải bộ chọn: trò nào được chơi là do BTC bấm ở /admin.
-        Vẫn hiện đủ các trò để người chơi biết booth có gì, nhưng trò chưa tới
-        lượt thì làm mờ và nói rõ — mờ mà không giải thích là bẫy.
+        Vẫn hiện đủ các trò để người chơi biết booth có gì, nhưng phải NHÌN PHÁT
+        RA NGAY đâu là trò đang chơi — nên trò đang mở được viền màu của chính
+        nó + nhãn "ĐANG MỞ", còn trò chưa tới lượt bị rút hết màu (grayscale) và
+        nói thẳng lý do. Mờ mà không giải thích là bẫy.
       */}
       <section aria-label="Các trò chơi">
         <p className="mb-2 text-sm font-semibold">
@@ -144,15 +154,15 @@ export function Home() {
         </p>
         <div className="grid grid-cols-2 gap-3">
           {GAMES.map((g, i) => {
-            const { icon: Icon, tile, blurb } = GAME_THEME[g];
+            const { icon: Icon, tile, blurb, active, chip } = GAME_THEME[g];
             // Cách B: lượt trong URL tự quyết game, không có trò nào bị mờ.
             const open = !!roundId || g === activeGame;
             return (
               <div
                 key={g}
                 aria-current={open && !roundId ? 'true' : undefined}
-                className={`card animate-rise block p-4 transition-all ${
-                  open ? '' : 'opacity-45'
+                className={`card animate-rise relative block p-4 transition-all ${
+                  open ? active : 'opacity-50 grayscale'
                 } ${
                   /* Số game lẻ: thẻ cuối trải hết hàng, không để lại một ô trống
                      trông như thiếu mất một game. */
@@ -160,9 +170,18 @@ export function Home() {
                 }`}
                 style={{ animationDelay: `${80 + i * 70}ms` }}
               >
-                <span className={`grid h-11 w-11 place-items-center rounded-xl ${tile}`}>
-                  <Icon aria-hidden="true" className="h-6 w-6" />
-                </span>
+                <div className="flex items-start justify-between gap-2">
+                  <span className={`grid h-11 w-11 place-items-center rounded-xl ${tile}`}>
+                    <Icon aria-hidden="true" className="h-6 w-6" />
+                  </span>
+                  {open && !roundId && (
+                    <span
+                      className={`rounded-full border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${chip}`}
+                    >
+                      Đang mở
+                    </span>
+                  )}
+                </div>
                 <p className="mt-3 font-display text-lg font-bold leading-tight">{GAME_LABEL[g]}</p>
                 <p className="mt-1 text-xs text-muted">
                   {DURATION_MS[g] / 1000} giây · {blurb}
@@ -171,7 +190,10 @@ export function Home() {
                   (open ? (
                     <WaitingLine game={g} data={waiting} />
                   ) : (
-                    <p className="mt-2 h-5 text-xs text-muted">chưa tới lượt</p>
+                    <p className="mt-2 flex h-5 items-center gap-1 text-xs text-muted">
+                      <Lock aria-hidden="true" className="h-3 w-3 shrink-0" />
+                      chưa tới lượt
+                    </p>
                   ))}
               </div>
             );

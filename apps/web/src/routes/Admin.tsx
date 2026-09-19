@@ -23,10 +23,24 @@ import {
   GAME_LABEL,
   MAX_PLAYERS,
   type GameKind,
+  type RoundStatus,
   type RoundSummary,
 } from '../lib/types';
 
 const GAMES: readonly GameKind[] = GAME_KINDS;
+
+/**
+ * Viền của MỘT DÒNG LƯỢT theo trạng thái.
+ *
+ * Danh sách này dài và mọi dòng trông như nhau, nên cái duy nhất BTC cần tìm —
+ * lượt còn bấm BẮT ĐẦU được — phải nổi lên trước: chờ thì viền tím sáng, đang
+ * chơi thì viền vàng, xong rồi thì chìm xuống nhường chỗ.
+ */
+const ROW: Record<RoundStatus, string> = {
+  lobby: 'border-secondary/70',
+  playing: 'border-accent/70',
+  done: 'opacity-70',
+};
 
 /**
  * Màn hình BTC: tạo lượt, xem ai đã vào, bắt đầu / bỏ qua, và in QR.
@@ -96,6 +110,8 @@ export function Admin() {
     }
   }
 
+  const ActiveIcon = activeGame ? GAME_THEME[activeGame].icon : Lock;
+
   // Lượt đang mở gần nhất → hiện URL để BTC in QR.
   const openRound = rounds.find((r) => r.status === 'lobby' && r.live);
   const joinUrl = openRound ? `${origin}/r/${openRound.roundId}` : null;
@@ -140,28 +156,45 @@ export function Admin() {
         )}
       </div>
 
-      <section className="card p-4">
-        <p className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-semibold">Trò đang mở:</span>
-          {activeGame ? (
-            <span className={`rounded-full border-2 px-2.5 py-0.5 font-bold ${GAME_THEME[activeGame].chip}`}>
-              {GAME_LABEL[activeGame]}
-            </span>
-          ) : (
-            <span className="rounded-full border-2 border-line px-2.5 py-0.5 font-bold text-muted">
-              Đang đóng
-            </span>
-          )}
-          <button
-            onClick={() => act(() => api.setActiveGame(null, token))}
-            disabled={busy || !token || activeGame === null}
-            className="btn btn-ghost btn-sm ml-auto"
+      {/*
+        Trạng thái quan trọng nhất của màn hình này: ĐANG MỞ TRÒ NÀO. Nó được vẽ
+        to, bằng icon + màu của chính trò đó, để BTC liếc một cái là biết — và để
+        lúc đang đóng thì trông khác hẳn chứ không chỉ đổi mỗi chữ.
+      */}
+      <section
+        className={`card flex flex-wrap items-center gap-3 p-4 ${
+          activeGame ? GAME_THEME[activeGame].active : 'border-dashed'
+        }`}
+      >
+        <span
+          className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${
+            activeGame ? GAME_THEME[activeGame].tile : 'bg-surface-2 text-muted'
+          }`}
+        >
+          <ActiveIcon aria-hidden="true" className="h-6 w-6" />
+        </span>
+
+        <div className="min-w-0">
+          <p className="text-xs font-bold uppercase tracking-[0.15em] text-muted">Trò đang mở</p>
+          <p
+            className={`font-display text-2xl font-extrabold leading-tight ${
+              activeGame ? '' : 'text-muted'
+            }`}
           >
-            <Lock aria-hidden="true" className="h-4 w-4" />
-            Tạm đóng
-          </button>
-        </p>
-        <p className="mt-2 text-xs text-muted">
+            {activeGame ? GAME_LABEL[activeGame] : 'Đang đóng'}
+          </p>
+        </div>
+
+        <button
+          onClick={() => act(() => api.setActiveGame(null, token))}
+          disabled={busy || !token || activeGame === null}
+          className="btn btn-ghost btn-sm ml-auto"
+        >
+          <Lock aria-hidden="true" className="h-4 w-4" />
+          Tạm đóng
+        </button>
+
+        <p className="w-full text-xs text-muted">
           Người chơi không tự chọn trò — họ chỉ vào được trò đang mở. Tạo lượt cho trò nào thì
           trò đó được mở, và mọi lượt đang CHỜ của trò trước sẽ bị bỏ.
         </p>
@@ -176,20 +209,26 @@ export function Admin() {
               onClick={() => create(g)}
               disabled={busy || !token}
               className={`btn btn-ghost w-full justify-start gap-3 p-4 text-left ${
-                g === activeGame ? 'border-correct/60' : ''
+                g === activeGame ? GAME_THEME[g].active : ''
               }`}
             >
               <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${tile}`}>
                 <Icon aria-hidden="true" className="h-6 w-6" />
               </span>
               <span className="min-w-0">
-                <span className="flex items-center gap-1 text-lg">
+                <span className="flex flex-wrap items-center gap-1 text-lg">
                   <Plus aria-hidden="true" className="h-5 w-5" />
                   Lượt {GAME_LABEL[g]}
+                  {g === activeGame && (
+                    <span
+                      className={`rounded-full border-2 px-2 py-0.5 font-sans text-[0.65rem] font-bold uppercase tracking-wide ${GAME_THEME[g].chip}`}
+                    >
+                      Đang mở
+                    </span>
+                  )}
                 </span>
                 <span className="block font-sans text-xs font-normal text-muted">
                   {DURATION_MS[g] / 1000} giây · tối đa {MAX_PLAYERS} người
-                  {g === activeGame && <span className="font-bold text-correct"> · đang mở</span>}
                 </span>
               </span>
             </button>
@@ -221,7 +260,9 @@ export function Admin() {
               return (
                 <li
                   key={r.roundId}
-                  className={`card flex flex-wrap items-center gap-3 p-3 ${r.live ? '' : 'opacity-60'}`}
+                  className={`card flex flex-wrap items-center gap-3 p-3 ${ROW[r.status]} ${
+                    r.live ? '' : 'opacity-50'
+                  }`}
                 >
                   <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${tile}`}>
                     <Icon aria-hidden="true" className="h-5 w-5" />

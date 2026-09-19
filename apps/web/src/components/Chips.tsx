@@ -1,4 +1,4 @@
-import { LoaderCircle, Wifi, WifiOff } from 'lucide-react';
+import { Check, Hourglass, LoaderCircle, Play, Wifi, WifiOff, type LucideIcon } from 'lucide-react';
 import { GAME_THEME } from '../lib/game-theme';
 import { GAME_LABEL, type GameKind, type RoundStatus } from '../lib/types';
 
@@ -40,18 +40,37 @@ export function ConnectionPill({
   );
 }
 
-const STATUS: Record<RoundStatus, { label: string; cls: string }> = {
-  lobby: { label: 'Đang chờ', cls: 'bg-secondary/15 text-secondary' },
-  playing: { label: 'Đang chơi', cls: 'bg-accent/15 text-accent' },
-  done: { label: 'Đã xong', cls: 'bg-surface-2 text-muted' },
+/**
+ * Ba trạng thái phải phân biệt được TỪ XA, ở màn hình BTC có hàng chục lượt xếp
+ * chồng nhau. Nên mỗi trạng thái khác nhau ở BA thứ cùng lúc — màu, icon, và độ
+ * đậm của nền — chứ không chỉ khác sắc tím/xám như trước:
+ *   Đang chờ  → tím sáng, viền đặc, icon đồng hồ cát (cái DUY NHẤT bấm được)
+ *   Đang chơi → vàng, khối đặc, icon play (đang chạy đồng hồ)
+ *   Đã xong   → xám chìm, icon tick (chuyện đã rồi)
+ */
+const STATUS: Record<RoundStatus, { label: string; cls: string; icon: LucideIcon }> = {
+  lobby: {
+    label: 'Đang chờ',
+    cls: 'border-secondary bg-secondary/25 text-secondary',
+    icon: Hourglass,
+  },
+  playing: { label: 'Đang chơi', cls: 'border-accent bg-accent text-ink', icon: Play },
+  done: { label: 'Đã xong', cls: 'border-line bg-surface-2 text-muted', icon: Check },
 };
 
 /** Trạng thái lượt, dịch sang tiếng Việt. */
 export function StatusBadge({ status }: { status: RoundStatus }) {
-  const s = STATUS[status];
+  const { label, cls, icon: Icon } = STATUS[status];
   return (
-    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${s.cls}`}>
-      {s.label}
+    <span
+      className={`inline-flex items-center gap-1 rounded-full border-2 px-2.5 py-0.5 text-xs font-bold ${cls}`}
+    >
+      <Icon
+        aria-hidden="true"
+        className={`h-3 w-3 shrink-0 ${status === 'playing' ? 'animate-throb' : ''}`}
+        {...(status === 'playing' ? { fill: 'currentColor' } : {})}
+      />
+      {label}
     </span>
   );
 }
