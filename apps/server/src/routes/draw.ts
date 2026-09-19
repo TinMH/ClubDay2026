@@ -117,11 +117,17 @@ export async function drawRoutes(app: FastifyInstance): Promise<void> {
   // Nạp model ở NỀN ngay khi khởi động, KHÔNG chờ: server phải listen được ngay
   // lập tức, còn model cần ~700ms cộng warmup. Từ lúc bật server tới lúc người
   // chơi đầu tiên bấm BẮT ĐẦU luôn dài hơn thế rất nhiều.
-  void loadModel().catch((err: unknown) => {
-    app.log.error(
-      `Không nạp được model nhận diện: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  });
+  //
+  // Trừ lúc chạy test: `buildApp()` ở đó chỉ để gọi thử route, mà nạp model thì
+  // đụng mạng, tải hàng chục MB và làm bộ test phụ thuộc internet. Test nào cần
+  // chấm hình thì truyền classifier giả vào thẳng service (xem draw-session.test.ts).
+  if (process.env.NODE_ENV !== 'test') {
+    void loadModel().catch((err: unknown) => {
+      app.log.error(
+        `Không nạp được model nhận diện: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    });
+  }
 
   /**
    * Nhận một frame vẽ và trả về GỢI Ý.
