@@ -65,10 +65,23 @@ function replayResult(over: Partial<ReplayResult> = {}): ReplayResult {
 const pad = (i: number) => screen.getByLabelText(new RegExp(`^Ô ${i}:`));
 
 /** Chờ nháy xong chuỗi rồi mới tới lượt chạm. */
+/**
+ * Đợi màn hình phát xong chuỗi và MỞ bàn ô cho người chơi chạm.
+ *
+ * Không chỉ đẩy đồng hồ đủ số mili-giây rồi tin là xong: chuỗi chỉ bắt đầu phát
+ * SAU KHI `memoryApi.sequence()` trả về, mà `mount()` chỉ đợi hàm đó được GỌI.
+ * Đẩy đồng hồ trước lúc timer phát chuỗi kịp đăng ký thì nó không bao giờ chạy,
+ * bàn ô đứng yên ở trạng thái khoá, và mọi cú chạm sau đó rơi vào hư không —
+ * test fail kiểu ngẫu nhiên, khoảng một lần trong mười lần chạy.
+ *
+ * Nên: đợi bàn ô hiện ra (đang khoá = đang phát) → đẩy đồng hồ → đợi nó mở.
+ */
 async function playbackDone(length: number) {
+  await waitFor(() => expect(pad(1)).toHaveProperty('disabled', true));
   await act(async () => {
     vi.advanceTimersByTime(length * MEMORY_STEP_MS);
   });
+  await waitFor(() => expect(pad(1)).toHaveProperty('disabled', false));
 }
 
 async function mount() {
