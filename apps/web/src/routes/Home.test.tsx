@@ -46,7 +46,7 @@ const renderAt = (path: string) =>
   );
 
 /** Sức chứa mặc định của cả 4 trò — server trả theo từng trò. */
-const MAXES = { math: 5, draw: 5, memory: 5, spot: 5 } as const;
+const MAXES = { math: 8, draw: 3, memory: 5, spot: 5 } as const;
 
 const nameField = () => screen.getByLabelText(/tên của bạn/i);
 const joinButton = () => screen.getByRole('button', { name: /vào chơi/i }) as HTMLButtonElement;
@@ -153,8 +153,34 @@ describe('Home — tình hình lượt đang chờ', () => {
     });
     renderAt('/');
 
-    await waitFor(() => expect(screen.getByText(/3\/5 đang chờ/)).toBeTruthy());
-    expect(screen.getByText(/còn 2 nữa/)).toBeTruthy();
+    // Tính nhanh đặt 8 người (xem MAXES) → phải là "3/8", không phải "3/5".
+    await waitFor(() => expect(screen.getByText(/3\/8 đang chờ/)).toBeTruthy());
+    expect(screen.getByText(/còn 5 nữa/)).toBeTruthy();
+  });
+
+  it('hiện MÃ LƯỢT của trò đang mở, để đối chiếu với màn hình BTC', async () => {
+    // BTC hô "lượt CP9ESB"; người chơi phải thấy đúng mã đó trước khi nhập tên.
+    configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'math', maxPlayers: MAXES });
+    openMock.mockResolvedValue({
+      open: { math: { roundId: 'CP9ESB', players: 2 }, draw: null, memory: null, spot: null },
+      max: MAXES,
+    });
+    renderAt('/');
+
+    await waitFor(() => expect(screen.getByText('CP9ESB')).toBeTruthy());
+  });
+
+  it('lượt vừa tạo chưa ai vào → vẫn hiện mã, và mời thay vì đọc số 0', async () => {
+    configMock.mockResolvedValue({ signupFormUrl: '', signupNameEntry: '', activeGame: 'math', maxPlayers: MAXES });
+    openMock.mockResolvedValue({
+      open: { math: { roundId: 'NEW123', players: 0 }, draw: null, memory: null, spot: null },
+      max: MAXES,
+    });
+    renderAt('/');
+
+    await waitFor(() => expect(screen.getByText('NEW123')).toBeTruthy());
+    expect(screen.getByText(/bạn vào là người đầu tiên/)).toBeTruthy();
+    expect(screen.queryByText(/0\/8 đang chờ/)).toBeNull();
   });
 
   it('trò đang mở mà chưa ai chờ thì nói rõ, không để trống gây đoán', async () => {
@@ -166,6 +192,21 @@ describe('Home — tình hình lượt đang chờ', () => {
     await waitFor(() =>
       expect(screen.getAllByText(/chưa có ai — bạn vào là người đầu tiên/)).toHaveLength(1),
     );
+  });
+
+  it('mỗi trò hiện sức chứa CỦA CHÍNH NÓ, không phải một con số chung', async () => {
+    // Trước đây trang chủ ghi "tối đa 5 người một lượt" cho cả app — sai ngay khi
+    // BTC đặt Tính nhanh 8 người còn Vẽ hình 3 người.
+    renderAt('/');
+    await waitFor(() => expect(screen.getByText(/90 giây · tối đa 8 người/)).toBeTruthy());
+    expect(screen.getByText(/15 giây · tối đa 3 người/)).toBeTruthy();
+  });
+
+  it('vào bằng /r/<mã> vẫn nạp được sức chứa', async () => {
+    // Vòng nạp cấu hình từng nằm chung với vòng đếm người chờ, mà vòng đó tắt ở
+    // Cách B — nên màn hình kẹt ở con số mặc định.
+    renderAt('/r/abc123');
+    await waitFor(() => expect(screen.getByText(/90 giây · tối đa 8 người/)).toBeTruthy());
   });
 
   it('KHÔNG gọi /api/rounds/open ở Cách B — lượt đã do URL quyết định', async () => {
