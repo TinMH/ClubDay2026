@@ -1,17 +1,7 @@
 import type { Player, Round } from './types.js';
+import type { DashboardRow } from '@clubday/contract';
 
-export interface DashboardRow {
-  rank: number;
-  playerId: string;
-  name: string;
-  score: number;
-  correct: number;
-  wrong: number;
-  /** Thời gian (ms kể từ lúc bắt đầu lượt) để hoàn thành; null = chưa xong. */
-  msToFinish: number | null;
-  solved: boolean;
-  flagged: boolean;
-}
+export type { DashboardRow } from '@clubday/contract';
 
 /**
  * Thời điểm người chơi hoàn thành lượt; +∞ = chưa xong (xếp cuối).
