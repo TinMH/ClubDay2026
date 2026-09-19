@@ -20,6 +20,18 @@ const rounds = new Map<string, Round>();
  * `null` = đang đóng, không cho ai vào lượt mới (giải lao giữa hai trò).
  */
 let activeGame: GameKind | null = 'math';
+
+/**
+ * SỨC CHỨA từng trò, sống trong RAM như mọi thứ khác ở đây.
+ *
+ * Khởi đầu bằng giá trị trong `.env`, rồi BTC chỉnh trực tiếp ở /admin — giữa sự
+ * kiện không ai muốn mở terminal sửa file rồi khởi động lại server. Khởi động
+ * lại thì về lại giá trị `.env`, đúng như mọi state khác của app này.
+ *
+ * Đổi con số ở đây KHÔNG đụng tới lượt đã tạo: mỗi lượt chốt sức chứa của nó
+ * lúc sinh ra (xem `Round.maxPlayers`).
+ */
+const maxPlayers: Record<GameKind, number> = { ...MAX_PLAYERS_BY_GAME };
 /** playerId -> roundId, để tra ngược nhanh. */
 const playerIndex = new Map<string, string>();
 
@@ -35,6 +47,22 @@ export function getRound(id: string): Round | null {
 
 export function getActiveGame(): GameKind | null {
   return activeGame;
+}
+
+/** Sức chứa hiện hành của từng trò — bản sao, người gọi sửa không ảnh hưởng store. */
+export function getMaxPlayers(): Record<GameKind, number> {
+  return { ...maxPlayers };
+}
+
+/**
+ * BTC đổi sức chứa của một trò. Người gọi phải kiểm giá trị trước (route dùng zod).
+ *
+ * Chỉ ảnh hưởng lượt TẠO TỪ ĐÂY VỀ SAU — lượt đang chờ giữ nguyên luật của nó,
+ * nếu không thì một lượt đang 3/3 bỗng thành 3/2 và hai người đã xếp hàng thành
+ * thừa.
+ */
+export function setMaxPlayers(game: GameKind, value: number): void {
+  maxPlayers[game] = value;
 }
 
 /**
@@ -74,7 +102,7 @@ export function createRound(game: GameKind, now = Date.now()): Round {
     startedAt: null,
     endsAt: null,
     players: new Map(),
-    maxPlayers: MAX_PLAYERS_BY_GAME[game],
+    maxPlayers: maxPlayers[game],
     questions: null,
     target: null,
     sequence: null,
@@ -212,6 +240,7 @@ export function resetAll(): void {
   for (const r of rounds.values()) for (const pid of r.players.keys()) playerIndex.delete(pid);
   rounds.clear();
   activeGame = 'math';
+  Object.assign(maxPlayers, MAX_PLAYERS_BY_GAME);
 }
 
 /** Dùng khi khôi phục từ snapshot lúc boot. */

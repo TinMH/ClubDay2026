@@ -1,11 +1,10 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { join, startRound } from '../store/lobby.js';
-import { getRound, peekOpenRound } from '../store/store.js';
+import { getMaxPlayers, getRound, peekOpenRound } from '../store/store.js';
 import { dashboard } from '../store/dashboard.js';
 import { toRoundState } from '../store/state.js';
 import { GAME_KINDS } from '../store/types.js';
-import { MAX_PLAYERS_BY_GAME } from '../config.js';
 import { requireAdmin } from './admin-guard.js';
 
 /**
@@ -68,7 +67,7 @@ export async function roundRoutes(app: FastifyInstance): Promise<void> {
       open[game] = r ? { roundId: r.id, players: r.players.size } : null;
     }
     // `max` theo TỪNG trò: sức chứa mỗi trò một khác (xem MAX_PLAYERS_BY_GAME).
-    return { open, max: MAX_PLAYERS_BY_GAME, serverNow: Date.now() };
+    return { open, max: getMaxPlayers(), serverNow: Date.now() };
   });
 
   /** Trạng thái lượt — client poll khi cần, hoặc dùng SSE. */

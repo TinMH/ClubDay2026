@@ -7,10 +7,12 @@ import {
   House,
   KeyRound,
   Lock,
+  Minus,
   Play as PlayIcon,
   Maximize2,
   Plus,
   QrCode as QrIcon,
+  Users,
   SkipForward,
   TriangleAlert,
 } from 'lucide-react';
@@ -26,6 +28,7 @@ import {
   GAME_KINDS,
   GAME_LABEL,
   DEFAULT_MAX_PLAYERS,
+  MAX_PLAYERS_CAP,
   type GameKind,
   type RoundStatus,
   type RoundSummary,
@@ -140,6 +143,24 @@ export function Admin() {
       setError('Không tạo được lượt.');
     } finally {
       setBusy(false);
+    }
+  }
+
+  /**
+   * Đổi sức chứa của một trò.
+   *
+   * Vẽ con số mới NGAY (không chờ vòng làm mới 2 giây): bấm + mà số đứng yên nửa
+   * giây thì BTC bấm tiếp, và tăng hai bậc cho một cú bấm.
+   */
+  async function changeCap(game: GameKind, value: number) {
+    if (value < 1 || value > MAX_PLAYERS_CAP) return;
+    setMaxPlayers((m) => (m ? { ...m, [game]: value } : m));
+    try {
+      const res = await api.setMaxPlayers(game, value, token);
+      setMaxPlayers(res.maxPlayers);
+    } catch {
+      setError('Không đổi được số người.');
+      void refresh(); // lấy lại con số thật của server
     }
   }
 
@@ -263,36 +284,75 @@ export function Admin() {
       <section className="grid gap-3 sm:grid-cols-3">
         {GAMES.map((g) => {
           const { icon: Icon, tile } = GAME_THEME[g];
+          const cap = maxPlayers?.[g] ?? DEFAULT_MAX_PLAYERS;
           return (
-            <button
+            <div
               key={g}
-              onClick={() => create(g)}
-              disabled={busy || !token}
-              className={`btn btn-ghost w-full justify-start gap-3 p-4 text-left ${
+              className={`card flex flex-col gap-3 p-4 ${
                 g === activeGame ? GAME_THEME[g].active : ''
               }`}
             >
-              <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${tile}`}>
-                <Icon aria-hidden="true" className="h-6 w-6" />
-              </span>
-              <span className="min-w-0">
-                <span className="flex flex-wrap items-center gap-1 text-lg">
-                  <Plus aria-hidden="true" className="h-5 w-5" />
-                  Lượt {GAME_LABEL[g]}
-                  {g === activeGame && (
-                    <span
-                      className={`rounded-full border-2 px-2 py-0.5 font-sans text-[0.65rem] font-bold uppercase tracking-wide ${GAME_THEME[g].chip}`}
-                    >
-                      Đang mở
-                    </span>
-                  )}
+              <button
+                onClick={() => create(g)}
+                disabled={busy || !token}
+                className="flex min-w-0 items-center gap-3 text-left"
+              >
+                <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${tile}`}>
+                  <Icon aria-hidden="true" className="h-6 w-6" />
                 </span>
-                <span className="block font-sans text-xs font-normal text-muted">
-                  {DURATION_MS[g] / 1000} giây · tối đa{' '}
-                  {maxPlayers?.[g] ?? DEFAULT_MAX_PLAYERS} người
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-center gap-1 font-display text-lg font-bold">
+                    <Plus aria-hidden="true" className="h-5 w-5" />
+                    Lượt {GAME_LABEL[g]}
+                    {g === activeGame && (
+                      <span
+                        className={`rounded-full border-2 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide ${GAME_THEME[g].chip}`}
+                      >
+                        Đang mở
+                      </span>
+                    )}
+                  </span>
+                  <span className="block text-xs text-muted">{DURATION_MS[g] / 1000} giây</span>
                 </span>
-              </span>
-            </button>
+              </button>
+
+              {/*
+                Chỉnh sức chứa NGAY Ở ĐÂY, cạnh nút tạo lượt: giữa sự kiện mà phải
+                mở terminal sửa .env rồi khởi động lại server là không xong kịp.
+                Áp cho lượt tạo từ đây về sau — lượt đang chờ giữ nguyên luật của nó.
+              */}
+              <div className="flex items-center justify-between gap-2 border-t-2 border-line pt-3">
+                <span id={`cap-${g}`} className="flex items-center gap-1.5 text-xs text-muted">
+                  <Users aria-hidden="true" className="h-4 w-4 shrink-0" />
+                  Số người mỗi lượt
+                </span>
+                <span className="flex shrink-0 items-center gap-1">
+                  <button
+                    onClick={() => changeCap(g, cap - 1)}
+                    disabled={busy || !token || cap <= 1}
+                    aria-label={`Giảm số người ${GAME_LABEL[g]}`}
+                    className="btn btn-ghost btn-sm px-2"
+                  >
+                    <Minus aria-hidden="true" className="h-4 w-4" />
+                  </button>
+                  <span
+                    aria-labelledby={`cap-${g}`}
+                    role="status"
+                    className="w-8 text-center font-display text-xl font-extrabold tabular-nums"
+                  >
+                    {cap}
+                  </span>
+                  <button
+                    onClick={() => changeCap(g, cap + 1)}
+                    disabled={busy || !token || cap >= MAX_PLAYERS_CAP}
+                    aria-label={`Tăng số người ${GAME_LABEL[g]}`}
+                    className="btn btn-ghost btn-sm px-2"
+                  >
+                    <Plus aria-hidden="true" className="h-4 w-4" />
+                  </button>
+                </span>
+              </div>
+            </div>
           );
         })}
       </section>

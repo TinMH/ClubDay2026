@@ -323,7 +323,7 @@ xem hết n ô đã, mà xem hết mất `n × 600ms`. Bot nhận chuỗi rồi 
 Chạy kiểm tra bất cứ lúc nào:
 
 ```bash
-npm test       # 270 unit test — nền tảng + 4 track (206 server + 64 web)
+npm test       # 273 unit test — nền tảng + 4 track (209 server + 64 web)
 npm run smoke  # 86 kiểm tra end-to-end (tự bật server rồi tắt, có nạp model thật)
                # ⏱ chậm hơn trước ~20s: có kiểm tra phải chờ hết 15 giây thật của lượt Vẽ
 ```
@@ -489,7 +489,7 @@ Tắt server: `Ctrl+C` — server tự lưu snapshot trước khi thoát.
 | 6 | | Hết giờ tự chuyển sang bảng xếp hạng của đúng 5 người đó |
 
 Vài chi tiết đã cài sẵn:
-- **Số người mỗi lượt đặt được cho từng trò.** `MAX_PLAYERS=8` trong `.env` đổi mặc định cho mọi trò, `MAX_PLAYERS_DRAW=3` đè riêng trò Vẽ. Nhận 1–20; gõ sai thì server cảnh báo rồi dùng mặc định chứ không sập. Mỗi lượt **chốt sức chứa lúc được tạo**, nên đổi cấu hình rồi khởi động lại giữa sự kiện không làm lượt đang chờ đổi luật giữa chừng.
+- **Số người mỗi lượt đặt được cho từng trò**, và chỉnh được **ngay trên `/admin`** bằng nút −/+ cạnh mỗi trò (1–20). Giá trị khởi đầu lấy từ `.env`: `MAX_PLAYERS=8` cho mọi trò, `MAX_PLAYERS_DRAW=3` đè riêng trò Vẽ; gõ sai thì server cảnh báo rồi dùng mặc định chứ không sập. Chỉnh ở `/admin` sống trong RAM như mọi state khác — **khởi động lại là về giá trị `.env`**. Mỗi lượt **chốt sức chứa lúc được tạo**, nên đổi số giữa chừng không làm lượt đang chờ đổi luật.
 - **Mỗi thời điểm chỉ MỘT trò được chơi.** BTC chọn trò ở `/admin`; người chơi không tự chọn — trang chủ chỉ cho vào trò đang mở, trò còn lại hiện mờ "chưa tới lượt". Đổi trò thì mọi lượt đang **chờ** của trò cũ bị bỏ (lượt đang chơi vẫn chơi hết giờ). Nút **Tạm đóng** chặn người vào lượt mới trong lúc giải lao.
 - **Chỉ BTC bắt đầu được lượt.** `POST /api/rounds/:id/start` đòi header `x-admin-token`; gọi thẳng từ DevTools cũng nhận 401. Nút **BẮT ĐẦU** chỉ có ở `/admin`; phòng chờ `/lobby/<mã>` là màn hình người chơi nên không có nút nào — nó chỉ báo "đang chờ BTC".
 - Chạy với `NODE_ENV=production` mà **thiếu `ADMIN_TOKEN`** thì mọi thao tác quản trị bị từ chối (503) thay vì mở toang. Ở chế độ dev vẫn cho qua kèm cảnh báo lúc khởi động.

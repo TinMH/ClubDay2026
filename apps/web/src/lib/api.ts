@@ -115,6 +115,13 @@ export const api = {
       rounds: RoundSummary[];
     }>('/api/admin/rounds', token),
 
+  /** BTC: đổi số người mỗi lượt của một trò. Áp cho lượt tạo từ đây về sau. */
+  setMaxPlayers: (game: GameKind, value: number, token: string) =>
+    request<{ maxPlayers: Record<GameKind, number> }>(
+      '/api/admin/max-players',
+      json({ game, value }, token),
+    ),
+
   /** BTC: chọn trò được chơi lúc này (`null` = tạm đóng). */
   setActiveGame: (game: GameKind | null, token: string) =>
     request<{ activeGame: GameKind | null; closed: string[] }>(

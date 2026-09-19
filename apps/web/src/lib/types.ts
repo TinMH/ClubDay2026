@@ -93,6 +93,9 @@ export const SCORE_LABEL: Record<GameKind, string> = {
  */
 export const DEFAULT_MAX_PLAYERS = 5;
 
+/** Trần cứng khi BTC chỉnh ở /admin. Phải khớp server (store/types.ts). */
+export const MAX_PLAYERS_CAP = 20;
+
 export const DURATION_MS: Record<GameKind, number> = {
   math: 90_000,
   draw: 15_000,

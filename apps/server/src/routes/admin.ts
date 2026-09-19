@@ -1,15 +1,25 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { allRounds, createRound, getActiveGame, resetAll } from '../store/store.js';
-import { MAX_PLAYERS_BY_GAME } from '../config.js';
+import {
+  allRounds,
+  createRound,
+  getActiveGame,
+  getMaxPlayers,
+  resetAll,
+  setMaxPlayers,
+} from '../store/store.js';
 import { selectActiveGame, skipRound } from '../store/lobby.js';
 import { toRoundState } from '../store/state.js';
-import { GAME_KINDS } from '../store/types.js';
+import { GAME_KINDS, MAX_PLAYERS_CAP } from '../store/types.js';
 import { requireAdmin } from './admin-guard.js';
 
 const CreateBody = z.object({ game: z.enum(GAME_KINDS) });
 /** `game: null` = tạm đóng, không ai vào lượt mới được. */
 const ActiveGameBody = z.object({ game: z.enum(GAME_KINDS).nullable() });
+const MaxPlayersBody = z.object({
+  game: z.enum(GAME_KINDS),
+  value: z.number().int().min(1).max(MAX_PLAYERS_CAP),
+});
 
 export async function adminRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', requireAdmin);
@@ -34,10 +44,23 @@ export async function adminRoutes(app: FastifyInstance): Promise<void> {
     return { roundId: round.id, game: round.game, state: toRoundState(round) };
   });
 
+  /**
+   * BTC đổi sức chứa của một trò, ngay trên /admin.
+   *
+   * Chỉ áp cho lượt TẠO TỪ ĐÂY VỀ SAU. Khởi động lại server thì về giá trị trong
+   * `.env` — đây là chỗ chỉnh nhanh giữa sự kiện, không phải nơi lưu cấu hình.
+   */
+  app.post('/api/admin/max-players', async (req, reply) => {
+    const parsed = MaxPlayersBody.safeParse(req.body);
+    if (!parsed.success) return reply.code(400).send({ error: 'BAD_REQUEST' });
+    setMaxPlayers(parsed.data.game, parsed.data.value);
+    return { maxPlayers: getMaxPlayers() };
+  });
+
   /** Danh sách lượt gần đây — màn hình BTC. */
   app.get('/api/admin/rounds', async () => ({
     activeGame: getActiveGame(),
-    maxPlayers: MAX_PLAYERS_BY_GAME,
+    maxPlayers: getMaxPlayers(),
     rounds: allRounds()
       .sort((a, b) => b.createdAt - a.createdAt)
       .slice(0, 30)

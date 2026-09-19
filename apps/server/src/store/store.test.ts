@@ -3,9 +3,11 @@ import {
   addPlayer,
   createRound,
   findPlayer,
+  getMaxPlayers,
   getRound,
   openRound,
   resetAll,
+  setMaxPlayers,
 } from './store.js';
 import { MAX_PLAYERS } from './types.js';
 
@@ -17,6 +19,31 @@ describe('store', () => {
     expect(r.id).toMatch(/^[A-HJ-NP-Z2-9]{6}$/); // không có I, O, 0, 1
     expect(r.status).toBe('lobby');
     expect(r.players.size).toBe(0);
+  });
+
+  it('BTC đổi sức chứa → lượt TẠO SAU nhận con số mới', () => {
+    setMaxPlayers('draw', 3);
+    expect(getMaxPlayers().draw).toBe(3);
+    expect(createRound('draw').maxPlayers).toBe(3);
+  });
+
+  it('lượt ĐÃ TẠO giữ nguyên sức chứa cũ khi BTC đổi số', () => {
+    // Nếu lượt đọc con số hiện hành thì một lượt đang 3/3 bỗng thành 3/2, và hai
+    // người đã đứng xếp hàng tự dưng thành thừa.
+    const before = createRound('math');
+    const was = before.maxPlayers;
+
+    setMaxPlayers('math', was + 4);
+
+    expect(before.maxPlayers).toBe(was);
+    expect(createRound('math').maxPlayers).toBe(was + 4);
+  });
+
+  it('getMaxPlayers trả BẢN SAO — sửa nó không đụng tới store', () => {
+    const snapshot = getMaxPlayers();
+    const was = snapshot.spot;
+    snapshot.spot = 99;
+    expect(getMaxPlayers().spot).toBe(was);
   });
 
   it('getRound nhận cả chữ thường', () => {
