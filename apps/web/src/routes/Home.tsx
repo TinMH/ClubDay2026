@@ -3,6 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   ArrowRight,
   Clock,
+  UserPlus,
   LoaderCircle,
   Lock,
   ShieldCheck,
@@ -12,6 +13,7 @@ import {
 } from 'lucide-react';
 import { api, ApiError, type OpenRounds } from '../lib/api';
 import { saveSession } from '../lib/session';
+import { buildSignupUrl } from '../lib/signup';
 import { GAME_THEME } from '../lib/game-theme';
 import { DEFAULT_MAX_PLAYERS, DURATION_MS, GAME_KINDS, GAME_LABEL, type GameKind } from '../lib/types';
 import { Shell } from '../components/Shell';
@@ -96,6 +98,8 @@ export function Home() {
   const [activeGame, setActiveGame] = useState<GameKind | null | undefined>(undefined);
   /** Sức chứa mỗi trò, do BTC đặt trong .env — `null` = chưa nạp xong. */
   const [maxPlayers, setMaxPlayers] = useState<Record<GameKind, number> | null>(null);
+  /** Link Form đăng ký CLB. Rỗng = BTC chưa cấu hình → không hiện nút. */
+  const [signupForm, setSignupForm] = useState({ url: '', nameEntry: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [waiting, setWaiting] = useState<OpenRounds | null>(null);
@@ -120,6 +124,7 @@ export function Home() {
         if (!alive) return;
         setActiveGame(cfg.activeGame);
         setMaxPlayers(cfg.maxPlayers);
+        setSignupForm({ url: cfg.signupFormUrl, nameEntry: cfg.signupNameEntry });
       } catch {
         /* mất mạng một nhịp thì giữ số cũ — không xoá đi làm màn hình nhảy */
       }
@@ -322,6 +327,27 @@ export function Home() {
           </p>
         )}
       </form>
+
+      {/*
+        Đăng ký CLB ngay ở trang chủ, nhưng là nút PHỤ (ghost) đặt dưới form.
+        Có người tới booth để đăng ký chứ không phải để chơi, và họ không nên
+        phải chơi hết một lượt mới thấy đường. Nhưng nó không được tranh chỗ với
+        "VÀO CHƠI": ở đây hành động chính vẫn là vào chơi.
+
+        Tên đang gõ dở được điền sẵn sang Form — họ vừa gõ xong, bắt gõ lại là
+        chỗ người ta bỏ cuộc.
+      */}
+      {signupForm.url && (
+        <a
+          href={buildSignupUrl(signupForm.url, signupForm.nameEntry, name.trim())}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="btn btn-ghost w-full"
+        >
+          <UserPlus aria-hidden="true" className="h-5 w-5" />
+          Đăng ký vào CLB
+        </a>
+      )}
 
       <ClubLinks className="mt-auto" />
 

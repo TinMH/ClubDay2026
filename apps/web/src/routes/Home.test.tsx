@@ -225,6 +225,28 @@ describe('Home — tình hình lượt đang chờ', () => {
     );
   });
 
+  it('BTC chưa cấu hình Form thì KHÔNG hiện nút đăng ký', async () => {
+    // Mặc định an toàn: chưa có link thì không dẫn người chơi tới trang lỗi.
+    renderAt('/');
+    await waitFor(() => expect(configMock).toHaveBeenCalled());
+    expect(screen.queryByRole('link', { name: /đăng ký/i })).toBeNull();
+  });
+
+  it('có Form thì hiện nút đăng ký, và ĐIỀN SẴN tên vừa gõ', async () => {
+    configMock.mockResolvedValue({
+      signupFormUrl: 'https://forms.gle/abc',
+      signupNameEntry: 'entry.123',
+      activeGame: 'math',
+      maxPlayers: MAXES,
+    });
+    renderAt('/');
+    fireEvent.change(nameField(), { target: { value: 'Minh' } });
+
+    const link = await screen.findByRole<HTMLAnchorElement>('link', { name: /đăng ký/i });
+    // Vừa gõ tên xong mà bắt gõ lại là chỗ người ta bỏ cuộc.
+    expect(link.href).toContain('entry.123=Minh');
+  });
+
   it('KHÔNG gọi /api/rounds/open ở Cách B — lượt đã do URL quyết định', async () => {
     renderAt('/r/abc123');
     await waitFor(() => expect(screen.getByLabelText(/tên của bạn/i)).toBeTruthy());
