@@ -67,8 +67,15 @@ export const MAX_PLAYERS_CAP = 20;
 
 /** Số ô trên bàn chơi. 4 ô vừa một lưới 2×2 to bằng ngón tay trên điện thoại. */
 export const MEMORY_PAD_COUNT = 4;
-/** Một ô sáng 400ms + tối 200ms. Nhanh hơn thì mắt không kịp tách hai ô liền nhau. */
-export const MEMORY_STEP_MS = 600;
+/**
+ * Một nhịp phát = 380ms sáng + 320ms tối (xem `MEMORY_LIT_MS` phía web).
+ *
+ * Trước là 600ms (400 sáng + 200 tối) và chơi thấy rối. Hai lý do, khe tối là
+ * lý do lớn hơn: chuỗi CHO PHÉP hai ô giống nhau đứng liền nhau, mà 200ms tối
+ * thì mắt đọc hai lần nháy đó thành MỘT lần nháy dài. Người chơi nhớ đúng vẫn
+ * bấm thiếu một ô, và không hiểu mình sai ở đâu.
+ */
+export const MEMORY_STEP_MS = 700;
 
 // ── Ô khác màu ──
 

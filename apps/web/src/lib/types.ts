@@ -61,9 +61,18 @@ export const SCORE_LABEL: Record<GameKind, string> = {
 export const DEFAULT_MAX_PLAYERS = MAX_PLAYERS;
 
 /**
- * Ô sáng bao lâu trong một nhịp phát lại của Nhớ nhanh.
+ * Ô sáng bao lâu trong một nhịp phát lại của Nhớ nhanh (phần còn lại là khe tối).
  *
  * Chỉ client cần biết (server chỉ quan tâm `MEMORY_STEP_MS` — tổng một nhịp), nên
  * nó ở lại đây chứ không vào hợp đồng chung.
  */
-export const MEMORY_LIT_MS = 400;
+export const MEMORY_LIT_MS = 380;
+
+/**
+ * Khoảng lặng TRƯỚC khi chuỗi bắt đầu nháy.
+ *
+ * Không có nó thì ô đầu tiên nháy ngay lúc màn hình vừa đổi, và người chơi còn
+ * đang nhìn chỗ khác — họ mất ô đầu mà không biết là đã mất. Một nhịp "chuẩn
+ * bị" ngắn kéo mắt về đúng bàn ô trước khi có gì để nhớ.
+ */
+export const MEMORY_LEAD_IN_MS = 700;

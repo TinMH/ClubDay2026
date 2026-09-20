@@ -191,16 +191,19 @@ body {
     box-shadow: 0 0 0 transparent;
     cursor: not-allowed;
   }
-  /* Ô đáp án thì giữ màu và chỉ làm mờ — đổi màu cả 4 ô sau mỗi lần bấm là quá gắt. */
+  /*
+   * Ô đáp án / ô nhớ khi bị khoá: giữ nguyên màu và KHÔNG tự làm mờ.
+   *
+   * Trước đây chỗ này đặt `opacity: 0.45` cho mọi ô khoá, và nó làm hỏng đúng
+   * hai khoảnh khắc quan trọng nhất: ô vừa bấm ở Tính nhanh, và ô đang nháy ở
+   * Nhớ nhanh — cả hai lúc đó đều `disabled`, nên cái cần sáng nhất lại bị mờ đi
+   * còn 45%. Việc làm mờ ô NÀO là chuyện của component (nó mới biết ô nào đang
+   * sáng), không phải của CSS dùng chung.
+   */
   .btn-tile:disabled {
     --btn-fg: var(--color-ink);
     border-color: var(--color-line);
-    opacity: 0.45;
-  }
-  /* Ô đáp án vừa bấm vẫn khoá, nhưng phải sáng rõ để người chơi thấy mình đã chọn gì. */
-  .btn[aria-pressed='true']:disabled {
     cursor: default;
-    opacity: 1;
   }
   /* Rê chuột: khối nhấc lên, bóng dài ra. Không đổi độ sáng — brutalism không nhoè. */
   @media (hover: hover) {

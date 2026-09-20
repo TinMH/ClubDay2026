@@ -144,7 +144,22 @@ async function main() {
     await page.waitForTimeout(900);
     await page.screenshot({ path: `${OUT}/dashboard.png`, fullPage: true });
 
-    // ── 4. Quản trị ──
+    // ── 4. Nhớ nhanh, chụp đúng lúc đang nháy chuỗi ──
+    // Chỉ để mắt người kiểm: ô đang sáng có nổi hẳn lên so với ba ô tắt không.
+    const memRound = (await adminPost('/api/admin/rounds', { game: 'memory' })).roundId;
+    const mem = await phone.newPage();
+    await mem.goto(BASE, { waitUntil: 'networkidle' });
+    await mem.getByLabel('Tên của bạn').fill('Thu Hà');
+    await mem.getByRole('button', { name: /vào chơi/i }).click();
+    await mem.waitForURL(/\/lobby\//);
+    await adminPost(`/api/rounds/${memRound}/start`);
+    await mem.waitForURL(/\/play\//, { timeout: 10_000 });
+    // Canh vào GIỮA lần nháy đầu: 700ms chuẩn bị + ~190ms (ô sáng 380ms).
+    // Chụp ở 1100ms là trúng đúng lúc ô vừa tắt, và ảnh ra một ô xám đang mờ dần.
+    await mem.waitForTimeout(880);
+    await mem.screenshot({ path: `${OUT}/play-memory.png` });
+
+    // ── 5. Quản trị ──
     const desktop = await browser.newContext({ viewport: DESKTOP, deviceScaleFactor: 2 });
     const admin = await desktop.newPage();
     await admin.addInitScript((t) => localStorage.setItem('clubday.adminToken.v1', t), TOKEN);

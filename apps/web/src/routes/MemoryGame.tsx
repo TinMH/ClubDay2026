@@ -1,19 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CircleCheck, CircleX, Eye, Hand } from 'lucide-react';
+import { CircleCheck, CircleX, Eye, Hand, Hourglass } from 'lucide-react';
 import { MemoryPad } from '../components/MemoryPad';
 import { Spinner } from '../components/Chips';
 import { GameError, RoundOverCard } from '../components/GameStatus';
 import { classifyGameError } from '../lib/game-errors';
 import { Toast, ToastRegion, useToast } from '../components/Toast';
 import { memoryApi } from '../lib/api-memory';
-import { MEMORY_LIT_MS, MEMORY_STEP_MS, type GameProps } from '../lib/types';
+import {
+  MEMORY_LEAD_IN_MS,
+  MEMORY_LIT_MS,
+  MEMORY_STEP_MS,
+  type GameProps,
+} from '../lib/types';
 
 /** Nghỉ sau khi chấm, đủ để đọc "Đúng rồi!" trước khi chuỗi mới nháy lên. */
 const RESULT_PAUSE_MS = 800;
 /** Ô sáng lên bao lâu khi người chơi chạm — chỉ là phản hồi, không tính giờ. */
 const PRESS_MS = 140;
 
-type Phase = 'watch' | 'input' | 'sending';
+type Phase = 'ready' | 'watch' | 'input' | 'sending';
 
 /**
  * TRACK C — NHỚ NHANH (màn hình).
@@ -33,7 +38,7 @@ export function MemoryGame({ roundId, playerId, state }: GameProps) {
   const [sequence, setSequence] = useState<number[]>([]);
   /** Tăng mỗi lần có chuỗi mới — kể cả khi chuỗi giống hệt lần trước (lặp sai, về cấp 1). */
   const [cue, setCue] = useState(0);
-  const [phase, setPhase] = useState<Phase>('watch');
+  const [phase, setPhase] = useState<Phase>('ready');
   const [taps, setTaps] = useState<number[]>([]);
   const [lit, setLit] = useState<number | null>(null);
   const [pressed, setPressed] = useState<number | null>(null);
@@ -91,19 +96,27 @@ export function MemoryGame({ roundId, playerId, state }: GameProps) {
 
   useEffect(() => () => window.clearTimeout(nextTimer.current), []);
 
-  // Phát lại chuỗi: nháy từng ô, xong mới mở cho người chơi chạm.
+  // Phát lại chuỗi: nghỉ một nhịp cho người chơi nhìn về bàn ô, nháy từng ô,
+  // xong mới mở cho họ chạm.
   useEffect(() => {
     if (cue === 0 || sequence.length === 0) return;
-    setPhase('watch');
+    setPhase('ready');
     tapsRef.current = [];
     setTaps([]);
     setLit(null);
 
-    const timers = sequence.flatMap((pad, i) => [
-      window.setTimeout(() => setLit(pad), i * MEMORY_STEP_MS),
-      window.setTimeout(() => setLit(null), i * MEMORY_STEP_MS + MEMORY_LIT_MS),
-    ]);
-    timers.push(window.setTimeout(() => setPhase('input'), sequence.length * MEMORY_STEP_MS));
+    const timers = [window.setTimeout(() => setPhase('watch'), MEMORY_LEAD_IN_MS)];
+    for (const [i, pad] of sequence.entries()) {
+      const at = MEMORY_LEAD_IN_MS + i * MEMORY_STEP_MS;
+      timers.push(window.setTimeout(() => setLit(pad), at));
+      timers.push(window.setTimeout(() => setLit(null), at + MEMORY_LIT_MS));
+    }
+    timers.push(
+      window.setTimeout(
+        () => setPhase('input'),
+        MEMORY_LEAD_IN_MS + sequence.length * MEMORY_STEP_MS,
+      ),
+    );
 
     return () => timers.forEach(window.clearTimeout);
   }, [cue, sequence]);
@@ -151,7 +164,19 @@ export function MemoryGame({ roundId, playerId, state }: GameProps) {
     return <RoundOverCard title="Hết giờ!" detail={`Cấp cao nhất của bạn: ${best}`} />;
   }
 
-  const watching = phase === 'watch';
+  /**
+   * Ba trạng thái, mỗi trạng thái một màu và một câu.
+   *
+   * Không gộp "chuẩn bị" vào "lặp lại" chỉ vì cả hai đều chưa nháy ô nào: nói
+   * "Lặp lại đi!" trong lúc chưa có gì để lặp là đẩy người chơi bấm bừa, và bấm
+   * bừa lúc đó là mất luôn cấp đang chơi.
+   */
+  const bar =
+    phase === 'ready'
+      ? { cls: 'bg-surface-2 text-fg', Icon: Hourglass, text: 'Chuẩn bị…' }
+      : phase === 'watch'
+        ? { cls: 'bg-memory text-ink', Icon: Eye, text: 'Nhìn kỹ nhé…' }
+        : { cls: 'bg-accent text-ink', Icon: Hand, text: 'Lặp lại đi!' };
 
   return (
     <div className="space-y-5">
@@ -183,22 +208,11 @@ export function MemoryGame({ roundId, playerId, state }: GameProps) {
       */}
       <div
         aria-live="polite"
-        className={`card flex items-center justify-between gap-3 px-4 py-3 transition-colors ${
-          watching ? 'border-line bg-memory text-ink' : 'border-line bg-accent text-ink'
-        }`}
+        className={`card flex items-center justify-between gap-3 border-line px-4 py-3 transition-colors ${bar.cls}`}
       >
         <p className="flex items-center gap-2 font-display text-lg font-black uppercase">
-          {watching ? (
-            <>
-              <Eye aria-hidden="true" className="h-5 w-5 shrink-0" />
-              Nhìn kỹ nhé…
-            </>
-          ) : (
-            <>
-              <Hand aria-hidden="true" className="h-5 w-5 shrink-0" />
-              Lặp lại đi!
-            </>
-          )}
+          <bar.Icon aria-hidden="true" className="h-5 w-5 shrink-0" />
+          {bar.text}
         </p>
         <p className="shrink-0 text-right leading-tight">
           <span className="block text-xs font-bold uppercase">Cấp</span>

@@ -17,10 +17,10 @@ export interface ChoicePadProps {
  * xanh lá / đỏ: hai màu đó dành cho phản hồi đúng / sai.
  */
 const TILES = [
-  { color: '[--btn-bg:var(--color-secondary)] [--btn-edge:#6d28d9]', Shape: Circle },
-  { color: '[--btn-bg:var(--color-math)] [--btn-edge:#0e7490]', Shape: Triangle },
-  { color: '[--btn-bg:var(--color-accent)] [--btn-edge:var(--color-accent-deep)]', Shape: Square },
-  { color: '[--btn-bg:var(--color-draw)] [--btn-edge:#be185d]', Shape: Plus },
+  { bg: 'var(--color-secondary)', Shape: Circle },
+  { bg: 'var(--color-math)', Shape: Triangle },
+  { bg: 'var(--color-accent)', Shape: Square },
+  { bg: 'var(--color-draw)', Shape: Plus },
 ] as const;
 
 /**
@@ -81,8 +81,15 @@ export function ChoicePad({
       <div className="grid grid-cols-2 gap-3">
         {options.map((value, i) => {
           const isPicked = picked === value;
-          const { color, Shape } = TILES[i % TILES.length]!;
+          const { bg, Shape } = TILES[i % TILES.length]!;
           const outline = Shape === Plus;
+          /**
+           * Màu đặt bằng INLINE STYLE: `.btn:disabled` đặt `--btn-bg` về xám và
+           * thắng mọi class tiện ích. Bấm xong là cả bốn ô `disabled` trong lúc
+           * chờ server, nên ô VỪA BẤM cũng hoá xám — mất luôn phản hồi "mình vừa
+           * chọn cái này", đúng thứ duy nhất người chơi cần thấy lúc đó.
+           */
+          const tileStyle = { background: bg, color: 'var(--color-ink)' };
           return (
             <button
               key={`${value}-${i}`}
@@ -91,9 +98,10 @@ export function ChoicePad({
               disabled={locked}
               aria-pressed={isPicked}
               aria-label={`Đáp án ${i + 1}: ${value}`}
-              className={`btn btn-tile min-h-24 w-full text-4xl tabular-nums sm:min-h-28 sm:text-5xl ${color} ${
+              style={tileStyle}
+              className={`btn btn-tile min-h-24 w-full text-4xl tabular-nums sm:min-h-28 sm:text-5xl ${
                 isPicked ? 'ring-4 ring-fg ring-offset-4 ring-offset-ink' : ''
-              }`}
+              } ${locked && !isPicked ? 'opacity-40' : ''}`}
             >
               <Shape
                 aria-hidden="true"

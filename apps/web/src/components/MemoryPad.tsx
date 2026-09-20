@@ -21,10 +21,10 @@ export interface MemoryPadProps {
  * Cố tình tránh xanh lá / đỏ: hai màu đó dành cho phản hồi đúng / sai.
  */
 const PADS = [
-  { color: '[--btn-bg:var(--color-secondary)] [--btn-edge:#6d28d9]', Shape: Circle, name: 'tròn tím' },
-  { color: '[--btn-bg:var(--color-math)] [--btn-edge:#0e7490]', Shape: Triangle, name: 'tam giác xanh' },
-  { color: '[--btn-bg:var(--color-accent)] [--btn-edge:var(--color-accent-deep)]', Shape: Square, name: 'vuông vàng' },
-  { color: '[--btn-bg:var(--color-draw)] [--btn-edge:#be185d]', Shape: Plus, name: 'cộng hồng' },
+  { bg: 'var(--color-secondary)', Shape: Circle, name: 'tròn tím' },
+  { bg: 'var(--color-math)', Shape: Triangle, name: 'tam giác xanh' },
+  { bg: 'var(--color-accent)', Shape: Square, name: 'vuông vàng' },
+  { bg: 'var(--color-draw)', Shape: Plus, name: 'cộng hồng' },
 ] as const;
 
 export const PAD_COUNT = PADS.length;
@@ -32,9 +32,13 @@ export const PAD_COUNT = PADS.length;
 /**
  * Bàn 4 ô: server phát chuỗi bằng cách nháy sáng, người chơi lặp lại bằng cách chạm.
  *
- * Ô tối đi khi chưa tới lượt bấm (`disabled`) chứ không biến mất — người chơi
- * phải thấy được bốn ô ở nguyên vị trí trong lúc xem, không thì mỗi lần đổi lượt
- * lại phải tìm lại ô.
+ * Ô TẮT HẲN (mờ 25% + rút màu) khi chưa tới lượt bấm, chứ không chỉ mờ nhẹ:
+ * bốn ô vốn là bốn khối neon, để chúng còn 45% màu thì lúc phát chuỗi cả bàn vẫn
+ * rực và ô đang nháy không nổi lên được. Tối hết rồi mới bật một ô chính là cách
+ * trò Simon gốc làm, và đó là lý do nó dễ nhìn.
+ *
+ * Vẫn phải THẤY bốn ô ở nguyên vị trí trong lúc xem — tắt hẳn khác với biến mất,
+ * không thì mỗi lần đổi lượt người chơi lại phải tìm lại ô.
  */
 export function MemoryPad({ lit, pressed, disabled, onTap }: MemoryPadProps) {
   /** Giữ `onTap` mới nhất mà không phải đăng ký lại listener mỗi lần render. */
@@ -57,10 +61,22 @@ export function MemoryPad({ lit, pressed, disabled, onTap }: MemoryPadProps) {
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      {PADS.map(({ color, Shape, name }, i) => {
+      {PADS.map(({ bg, Shape, name }, i) => {
         const isLit = lit === i;
         const isPressed = pressed === i;
         const outline = Shape === Plus;
+        /**
+         * Màu đặt bằng INLINE STYLE, không phải class.
+         *
+         * `.btn:disabled` trong styles.css đặt `--btn-bg` về xám, và nó thắng mọi
+         * class tiện ích (độ đặc hiệu cao hơn). Mà suốt lúc phát chuỗi thì cả bốn
+         * ô đều `disabled` — nên ô ĐANG SÁNG cũng bị tô xám, và người chơi phải
+         * nhớ vị trí ô xám thay vì nhớ màu. Inline style thắng mọi selector.
+         *
+         * Ba ô còn lại vẫn để xám: tối hết rồi bật một ô chính là cách trò Simon
+         * làm cho dễ nhìn.
+         */
+        const litStyle = isLit || isPressed ? { background: bg, color: 'var(--color-ink)' } : undefined;
         return (
           <button
             key={i}
@@ -68,11 +84,12 @@ export function MemoryPad({ lit, pressed, disabled, onTap }: MemoryPadProps) {
             onPointerDown={() => !disabled && onTapRef.current(i)}
             disabled={disabled}
             aria-label={`Ô ${i + 1}: ${name}`}
-            className={`btn btn-tile min-h-28 w-full transition-all duration-100 sm:min-h-32 ${color} ${
+            style={litStyle}
+            className={`btn btn-tile min-h-28 w-full transition-all duration-100 sm:min-h-32 ${
               isLit || isPressed
                 ? 'scale-[1.04] brightness-150 ring-4 ring-fg ring-offset-4 ring-offset-ink'
                 : ''
-            } ${disabled && !isLit ? 'opacity-45' : ''}`}
+            } ${disabled && !isLit ? 'opacity-25 grayscale' : ''}`}
           >
             <Shape
               aria-hidden="true"

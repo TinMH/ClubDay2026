@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryGame } from './MemoryGame';
 import { memoryApi, type ReplayResult, type SequenceState } from '../lib/api-memory';
-import { MEMORY_STEP_MS, type RoundState } from '../lib/types';
+import { MEMORY_LEAD_IN_MS, MEMORY_STEP_MS, type RoundState } from '../lib/types';
 
 /**
  * Kiểm phần ĐIỀU KHIỂN của màn hình Nhớ nhanh: lúc nào được chạm, gửi gì lên
@@ -79,7 +79,7 @@ const pad = (i: number) => screen.getByLabelText(new RegExp(`^Ô ${i}:`));
 async function playbackDone(length: number) {
   await waitFor(() => expect(pad(1)).toHaveProperty('disabled', true));
   await act(async () => {
-    vi.advanceTimersByTime(length * MEMORY_STEP_MS);
+    vi.advanceTimersByTime(MEMORY_LEAD_IN_MS + length * MEMORY_STEP_MS);
   });
   await waitFor(() => expect(pad(1)).toHaveProperty('disabled', false));
 }
@@ -116,13 +116,27 @@ describe('MemoryGame', () => {
    * Chốt hợp đồng với server: phát lại 2 ô phải mất ĐỦ 2 × MEMORY_STEP_MS.
    * Mở sớm hơn là người chơi thật bị server gắn cờ gian lận.
    */
+  it('có nhịp CHUẨN BỊ trước khi ô đầu nháy, và chưa cho chạm', async () => {
+    // Không có nhịp này thì ô đầu nháy ngay lúc màn hình vừa đổi, người chơi còn
+    // đang nhìn chỗ khác — mất ô đầu mà không biết là đã mất.
+    await mount();
+    await waitFor(() => expect(screen.getByText(/chuẩn bị/i)).toBeTruthy());
+    expect(pad(1)).toHaveProperty('disabled', true);
+
+    await act(async () => {
+      vi.advanceTimersByTime(MEMORY_LEAD_IN_MS);
+    });
+    expect(screen.getByText(/nhìn kỹ/i)).toBeTruthy();
+  });
+
   it('chỉ mở cho chạm SAU khi nháy xong toàn bộ chuỗi', async () => {
     await mount();
     // Sát mốc nhưng CHƯA tới: ô thứ hai còn đang nháy.
     // Biên 150ms vì `shouldAdvanceTime` cho đồng hồ thật chạy xen vào — đo sát
     // hơn thì test chớp tắt theo tốc độ máy chạy CI, không theo code.
     await act(async () => {
-      vi.advanceTimersByTime(2 * MEMORY_STEP_MS - 150);
+      // Có nhịp "chuẩn bị" trước khi ô đầu nháy — tính cả nó vào mốc.
+      vi.advanceTimersByTime(MEMORY_LEAD_IN_MS + 2 * MEMORY_STEP_MS - 150);
     });
     expect(pad(1)).toHaveProperty('disabled', true);
 
