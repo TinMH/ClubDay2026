@@ -7,6 +7,7 @@ import { useRoundStream } from '../lib/sse';
 import { Shell } from '../components/Shell';
 import { Avatar } from '../components/Avatar';
 import { ConnectionPill, GameChip, WaitDots } from '../components/Chips';
+import { GameGuideCard } from '../components/GameGuide';
 import { DEFAULT_MAX_PLAYERS, type RoundState } from '../lib/types';
 
 /**
@@ -116,6 +117,13 @@ export function Lobby() {
           )}
         </ul>
       </section>
+
+      {/*
+        Luật bày SẴN ở đây, không giấu sau nút: đứng đợi BTC là khoảng thời gian
+        chết duy nhất trong cả lượt, và là lúc duy nhất người chơi đọc được mà
+        không mất giây nào của mình.
+      */}
+      {state && <GameGuideCard game={state.game} />}
 
       <p role="status" className="flex items-center justify-center gap-2 text-muted">
         Đang chờ BTC bắt đầu

@@ -7,6 +7,7 @@ import { useRoundStream } from '../lib/sse';
 import { Shell } from '../components/Shell';
 import { Countdown } from '../components/Countdown';
 import { ConnectionPill, GameChip, Spinner } from '../components/Chips';
+import { GameGuideButton } from '../components/GameGuide';
 import { MathGame } from './MathGame'; // TRACK A
 import { DrawGame } from './DrawGame'; // TRACK B
 import { MemoryGame } from './MemoryGame'; // TRACK C
@@ -93,6 +94,9 @@ export function Play() {
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <GameChip game={state.game} />
+          {/* Nút nhỏ, không chiếm chỗ: đồng hồ đang chạy, luật không được đứng
+              giữa người chơi và bàn chơi. */}
+          <GameGuideButton game={state.game} />
           {!connected && <ConnectionPill connected={false} offlineLabel="Mất kết nối…" />}
         </div>
         <div className="shrink-0 border-2 border-line bg-accent px-3 py-1.5 text-right text-ink shadow-[4px_4px_0_var(--color-edge)]">
